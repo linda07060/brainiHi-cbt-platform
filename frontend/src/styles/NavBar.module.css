@@ -1,0 +1,117 @@
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 2rem;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  position: relative;
+}
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #c10d3b;
+  z-index: 12;
+}
+.links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+.links a, .links .cta {
+  color: #222;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background 0.2s;
+}
+.links a:hover, .links .cta:hover {
+  background: #f6e8eb;
+}
+.cta {
+  background: #c10d3b;
+  color: #fff !important;
+  border-radius: 5px;
+}
+
+/* Hamburger menu for mobile/tablet */
+.menuToggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 13;
+  margin-left: 1rem;
+}
+.burger, .burgerOpen {
+  display: inline-block;
+  width: 28px;
+  height: 3px;
+  background: #c10d3b;
+  border-radius: 3px;
+  position: relative;
+  transition: all 0.3s;
+}
+.burger::before, .burger::after,
+.burgerOpen::before, .burgerOpen::after {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 3px;
+  background: #c10d3b;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+.burger::before {
+  top: -8px;
+}
+.burger::after {
+  bottom: -8px;
+}
+.burgerOpen {
+  background: transparent;
+}
+.burgerOpen::before {
+  transform: rotate(45deg);
+  top: 0;
+}
+.burgerOpen::after {
+  transform: rotate(-45deg);
+  bottom: 0;
+}
+
+/* Responsive nav */
+@media (max-width: 800px) {
+  .links {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    flex-direction: column;
+    gap: 0;
+    width: 200px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+    padding: 0.5rem 0;
+    display: none;
+    z-index: 11;
+    border-radius: 0 0 12px 12px;
+  }
+  .linksOpen {
+    display: flex;
+  }
+  .links a, .links .cta {
+    width: 100%;
+    text-align: left;
+    padding: 1rem 1.5rem;
+    border-radius: 0;
+    font-size: 1.05rem;
+  }
+  .menuToggle {
+    display: inline-block;
+  }
+}

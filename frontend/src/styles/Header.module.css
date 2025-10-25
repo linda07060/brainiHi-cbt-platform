@@ -1,0 +1,160 @@
+.header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 50;
+  background: var(--header-bg, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 2.5vw 1.1rem 2vw;
+  box-shadow: 0 2px 8px rgba(134,31,65,0.06);
+  transition: box-shadow 0.25s, background 0.25s;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Logo Link styling added */
+.logoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #eee;
+}
+
+.brand {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--primary, #861f41);
+  letter-spacing: 0.01em;
+}
+
+/* Hamburger menu styling */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 51;
+  margin-left: 1rem;
+}
+.hamburger span {
+  display: block;
+  width: 26px;
+  height: 3px;
+  background: var(--primary, #861f41);
+  margin: 4px 0;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 49;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  transition: right 0.3s;
+}
+
+.link {
+  font-weight: 500;
+  color: var(--header-link, #231f20);
+  font-size: 1.07rem;
+  padding: 0.2rem 0.9rem;
+  border-radius: 2rem;
+  background: none;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  position: relative;
+}
+
+.link:hover,
+.activeLink {
+  background: var(--secondary, #FDB913);
+  color: var(--primary, #861f41);
+}
+
+.ctaBtn {
+  background: var(--primary, #861f41);
+  color: #fff !important;
+  font-weight: 700;
+  padding: 0.55rem 1.7rem;
+  margin-left: 1.3rem;
+  border-radius: 2rem;
+  font-size: 1.07rem;
+  box-shadow: 0 2px 8px rgba(134,31,65,0.08);
+  transition: background 0.18s, color 0.18s;
+  border: none;
+  outline: none;
+}
+.ctaBtn:hover {
+  background: var(--secondary, #FDB913);
+  color: var(--primary, #861f41) !important;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: row;
+    padding: 0.7rem 1vw;
+  }
+  .brand {
+    font-size: 1.08rem;
+  }
+  .hamburger {
+    display: flex;
+  }
+  .nav {
+    position: fixed;
+    top: 0;
+    right: -100vw;
+    width: 70vw;
+    max-width: 350px;
+    height: 100vh;
+    background: var(--header-bg, #fff);
+    box-shadow: -6px 0 32px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding: 2.5rem 1.7rem;
+    z-index: 50;
+    font-size: 1.1rem;
+    transition: right 0.35s cubic-bezier(.4,.6,.5,1);
+  }
+  .navOpen {
+    right: 0;
+  }
+  .nav:not(.navOpen) {
+    right: -100vw;
+  }
+  .logoArea {
+    z-index: 52;
+  }
+  .ctaBtn, .link {
+    width: 100%;
+    text-align: left;
+    margin: 0.2rem 0;
+  }
+}

@@ -1,0 +1,8 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="40" rx="8" fill="#fff"/>
+  <text x="13" y="28" font-family="Segoe UI, Arial" font-size="24" font-weight="bold" fill="#1D4ED8">CBT</text>
+  <circle cx="90" cy="20" r="13" fill="#6D28D9"/>
+  <path d="M90 11a9 9 0 1 1 0 18a9 9 0 1 1 0-18z" fill="#22D3EE" opacity="0.7"/>
+  <path d="M81 20a9 9 0 0 1 18 0" stroke="#A3E635" stroke-width="2" fill="none"/>
+  <text x="60" y="28" font-family="Segoe UI, Arial" font-size="18" fill="#222">Platform</text>
+</svg>

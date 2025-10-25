@@ -1,0 +1,97 @@
+.wrapper {
+  background: #ededed;
+  padding: 3.8rem 1.2rem 4rem 1.2rem;
+}
+.centerText {
+  text-align: left;
+  max-width: 1100px;
+  margin: 0 auto 2.4rem auto;
+}
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #231f20;
+}
+.underline {
+  width: 60px;
+  height: 4px;
+  background: #861f41;
+  margin: 0.7rem 0 1.3rem 0;
+  border-radius: 2px;
+}
+.subtitle {
+  font-size: 1.14rem;
+  color: #23232b;
+  max-width: 700px;
+  margin-bottom: 1.6rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.7rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 18px #231f2010;
+  padding: 2.2rem 1.7rem 1.7rem 1.7rem;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: box-shadow 0.2s, transform 0.2s;
+  position: relative;
+  transform: skewY(0deg);
+}
+.card:hover {
+  box-shadow: 0 6px 32px #861f4140;
+  transform: translateY(-7px) skewY(-1deg) scale(1.012);
+  z-index: 2;
+}
+.cardTitle {
+  font-size: 1.19rem;
+  font-weight: 700;
+  color: #231f20;
+  margin-bottom: 0.7rem;
+}
+.cardDesc {
+  font-size: 1.04rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+  flex: 1 1 auto;
+}
+.readMore {
+  font-weight: bold;
+  color: #231f20;
+  text-decoration: none;
+  display: inline-block;
+  position: relative;
+  font-size: 1.04rem;
+  transition: color 0.18s;
+}
+.readMore:hover {
+  color: #861f41;
+}
+.yellowUnderline {
+  display: block;
+  height: 3px;
+  width: 68px;
+  background: #FDB913;
+  border-radius: 2px;
+  margin-top: 2px;
+  transition: background 0.24s;
+}
+.readMore:hover .yellowUnderline {
+  background: #861f41;
+}
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+  .centerText {
+    text-align: center;
+  }
+}

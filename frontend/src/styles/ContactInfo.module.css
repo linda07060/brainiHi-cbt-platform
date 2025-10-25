@@ -1,0 +1,60 @@
+.infoSection {
+  background: #fff;
+  padding: 2.5rem 1.2rem 2.2rem 1.2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.infoGrid {
+  display: flex;
+  gap: 2.7rem;
+  max-width: 840px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.infoItem {
+  background: #f7f7f9;
+  border-radius: 1rem;
+  box-shadow: 0 2px 12px #861f4122;
+  padding: 1.3rem 2rem;
+  min-width: 210px;
+  text-align: center;
+  flex: 1 1 220px;
+  max-width: 260px;
+}
+
+.icon {
+  font-size: 2.3rem !important;
+  margin-bottom: 0.3rem;
+  color: #861f41;
+}
+
+.infoHeading {
+  margin: 0.2rem 0 0.4rem 0;
+  color: #231f20;
+  font-size: 1.07rem;
+  font-weight: 700;
+}
+
+.infoValue {
+  margin: 0;
+  font-size: 1.07rem;
+  color: #23232b;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+@media (max-width: 700px) {
+  .infoGrid {
+    flex-direction: column;
+    gap: 1.2rem;
+    align-items: center;
+  }
+  .infoItem {
+    width: 100%;
+    max-width: 99vw;
+    padding: 1.3rem 1rem;
+  }
+}

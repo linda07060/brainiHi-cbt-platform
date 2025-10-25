@@ -1,0 +1,41 @@
+.faqSection {
+  background: #fff;
+  padding: 2.8rem 1.2rem 2.5rem 1.2rem;
+  text-align: center;
+}
+
+.faqTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #861f41;
+  margin-bottom: 1.7rem;
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.faqItem {
+  background: #f7f7f9;
+  border-radius: 0.7rem;
+  padding: 1.2rem 1.3rem;
+  text-align: left;
+  box-shadow: 0 2px 10px #861f4120;
+}
+
+.faqQ {
+  font-size: 1.07rem;
+  font-weight: 700;
+  color: #231f20;
+  margin-bottom: 0.3rem;
+}
+
+.faqA {
+  font-size: 1rem;
+  color: #333;
+  margin: 0;
+}

@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CWU Brand Colors (and dark mode) */
+:root {
+  --primary: #861f41;
+  --secondary: #FDB913;
+  --accent: #3A7CA5;
+  --background: #f9fafb;
+  --section-bg: #fff;
+  --features-bg: #fffbe7;
+  --card-desc: #231f20;
+  --header-link: #231f20;
+  --footer-bg: #861f41;
+  --footer-text: #fff;
+  --header-bg: #fff;
+}
+
+.dark {
+  --primary: #FDB913;
+  --secondary: #861f41;
+  --accent: #3A7CA5;
+  --background: #231f20;
+  --section-bg: #18181b;
+  --features-bg: #2e2323;
+  --card-desc: #fff;
+  --header-link: #FDB913;
+  --footer-bg: #231f20;
+  --footer-text: #FDB913;
+  --header-bg: #18181b;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--card-desc);
+  font-family: 'Inter', 'Poppins', 'Roboto', 'Segoe UI', Arial, sans-serif;
+  font-size: 17px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--secondary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
+  margin: 0 0 0.5em 0;
+  color: var(--primary);
+}
+
+section {
+  margin-bottom: 3.5rem;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: #e0e0e0;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 0.5rem;
+}
+
+button:focus, a:focus {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+@media (max-width: 900px) {
+  html { font-size: 15px; }
+  section { margin-bottom: 2rem; }
+}
+@media (max-width: 600px) {
+  html { font-size: 14px; }
+}

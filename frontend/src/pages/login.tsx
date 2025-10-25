@@ -20,11 +20,20 @@ export default function Login() {
   useEffect(() => {
     const { token } = router.query;
     if (typeof token === 'string' && token.length > 0) {
-      // Save token to localStorage and context
-      const auth = { token };
-      localStorage.setItem('auth', JSON.stringify(auth));
-      setUser(auth);
-      router.push('/dashboard');
+      // Fetch user profile using the token
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(res => {
+        const auth = { token, ...res.data };
+        localStorage.setItem('auth', JSON.stringify(auth));
+        setUser(auth);
+        router.push('/dashboard');
+      })
+      .catch(() => {
+        setMsg('Google login failed. Try again.');
+        setOpen(true);
+      });
     }
   }, [router.query.token, setUser, router]);
 

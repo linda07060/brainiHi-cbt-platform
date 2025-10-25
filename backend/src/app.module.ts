@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
@@ -11,25 +11,36 @@ import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
-    // Load .env variables globally
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // TypeORM database connection
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: () => ({
-        type: 'postgres',
-        host: process.env.DB_HOST,
-        port: parseInt(process.env.DB_PORT, 10),
-        username: process.env.DB_USER,
-        password: process.env.DB_PASS,
-        database: process.env.DB_NAME,
-        autoLoadEntities: true,
-        synchronize: true,
-      }),
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        // If DATABASE_URL is set, use it. Otherwise use local variables.
+        if (config.get('DATABASE_URL')) {
+          return {
+            type: 'postgres',
+            url: config.get('DATABASE_URL'),
+            autoLoadEntities: true,
+            synchronize: true,
+            ssl: { rejectUnauthorized: false }, // required for Railway/Render!
+          };
+        } else {
+          return {
+            type: 'postgres',
+            host: config.get('DB_HOST'),
+            port: parseInt(config.get('DB_PORT'), 10),
+            username: config.get('DB_USER'),
+            password: config.get('DB_PASS'),
+            database: config.get('DB_NAME'),
+            autoLoadEntities: true,
+            synchronize: true,
+          };
+        }
+      },
     }),
 
-    // Application modules
     UserModule,
     AuthModule,
     TestModule,

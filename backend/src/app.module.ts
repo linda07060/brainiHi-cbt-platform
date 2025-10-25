@@ -11,25 +11,16 @@ import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
-    // Load .env variables globally
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // TypeORM database connection
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: () => ({
-        type: 'postgres',
-        host: process.env.DB_HOST,
-        port: parseInt(process.env.DB_PORT, 10),
-        username: process.env.DB_USER,
-        password: process.env.DB_PASS,
-        database: process.env.DB_NAME,
-        autoLoadEntities: true,
-        synchronize: true,
-      }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: 'postgres://cbt_platform_db_user:L5HcqeluiammtS2PXqAgKRbCOdNJj3Lp@dpg-d3uld2odl3ps73f84seg-a.oregon-postgres.render.com:5432/cbt_platform_db',
+      autoLoadEntities: true,
+      synchronize: true, // Set to false in production!
+      ssl: { rejectUnauthorized: false }, // SSL required for Render and most cloud DBs
     }),
 
-    // Application modules
     UserModule,
     AuthModule,
     TestModule,

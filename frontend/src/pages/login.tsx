@@ -2,7 +2,7 @@ import Preloader from "../components/Preloader";
 import { Box, Button, Container, TextField, Typography, Divider, Snackbar, Alert } from '@mui/material';
 import GoogleButton from '../components/GoogleButton';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,18 @@ export default function Login() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
   const { setUser } = useAuth();
+
+  // Handle Google OAuth token in query
+  useEffect(() => {
+    const { token } = router.query;
+    if (typeof token === 'string' && token.length > 0) {
+      // Save token to localStorage and context
+      const auth = { token };
+      localStorage.setItem('auth', JSON.stringify(auth));
+      setUser(auth);
+      router.push('/dashboard');
+    }
+  }, [router.query.token, setUser, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -41,7 +41,7 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
     const data = await this.authService.validateGoogleUser(req.user);
-    // For SPA: redirect to frontend with JWT as a query param
-    return res.redirect(`${process.env.FRONTEND_ORIGIN}/login?token=${data.access_token}`);
+    // Redirect directly to dashboard instead of login
+    return res.redirect(`${process.env.FRONTEND_ORIGIN}/dashboard?token=${data.access_token}`);
   }
 }

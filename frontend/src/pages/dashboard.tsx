@@ -13,10 +13,33 @@ interface TestSummary {
 }
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const [tests, setTests] = useState<TestSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Handle Google OAuth token from query string
+  useEffect(() => {
+    const { token } = router.query;
+    if (!user && typeof token === 'string' && token.length > 0) {
+      // Option 1: If you have user info in token, just save it
+      // Option 2: If you need to fetch user info, do it here:
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(res => {
+        const auth = { token, ...res.data };
+        localStorage.setItem('auth', JSON.stringify(auth));
+        setUser(auth);
+        // Clean the URL (remove ?token=...)
+        router.replace('/dashboard');
+      })
+      .catch(() => {
+        // If token invalid, redirect to login
+        router.replace('/login');
+      });
+    }
+  }, [router.query.token, setUser, user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -29,14 +52,14 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  // If user is not present, redirect to /login (optional: or show login link)
+  // If user is not present, redirect to /login
   useEffect(() => {
     if (!user) {
       router.replace('/login');
     }
   }, [user, router]);
 
-  if (!user) return null; // or a loading spinner
+  if (!user) return null;
 
   return (
     <Box sx={{ maxWidth: 700, mx: 'auto', mt: 6 }}>

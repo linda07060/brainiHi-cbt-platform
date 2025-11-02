@@ -1,82 +1,97 @@
+import Head from "next/head";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import Testimonial from "../components/Testimonials";
+import Testimonials from "../components/Testimonials";
 import FeatureGrid from "../components/About/FeatureGrid";
-import ResponsiveMotion from "../components/ResponsiveMotion"; // <-- import the wrapper
+import ResponsiveMotion from "../components/ResponsiveMotion";
 import styles from "../styles/AboutPage.module.css";
+import layout from "../styles/Layout.module.css";
 
 export default function About() {
   return (
     <>
+      <Head>
+        <title>Prepare for exams faster with AI — About BrainiHi</title>
+        <meta
+          name="description"
+          content="Learn how BrainiHi helps students prepare for exams faster with AI-generated tests, instant explanations, and personalized practice."
+        />
+      </Head>
+
       <Header />
-      <ResponsiveMotion as="main" className={styles.main}>
-        {/* Hero Section */}
-        <section className={styles.hero}>
-          <div className={styles.heroOverlay}>
-            <h1 className={styles.heroHeader}>
-              Empowering Students to Excel in Mathematics with AI
-            </h1>
-            <p className={styles.heroSubtext}>
-              We’re building an intelligent platform that helps students practice smarter, understand deeply, and achieve higher scores — powered by the latest in neural network technology.
+
+      <ResponsiveMotion as="main" className={styles.main} role="main" aria-labelledby="about-hero-heading">
+        <div className={layout.container}>
+          {/* Hero Section */}
+          <section className={styles.hero} aria-label="About hero">
+            <div className={styles.heroOverlay}>
+              <h1 id="about-hero-heading" className={styles.heroHeader}>
+                Prepare for exams faster with AI — BrainiHi
+              </h1>
+              <p className={styles.heroSubtext}>
+                AI-generated practice tests, instant step-by-step explanations, and a personalized learning path to help you improve your scores and confidence.
+              </p>
+            </div>
+            <div className={styles.heroBar} aria-hidden="true">
+              <span className={styles.heroBarText}>About BrainiHi</span>
+            </div>
+          </section>
+
+          {/* Breadcrumb */}
+          <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+            <span>Home</span> <span aria-hidden="true">/</span> <span aria-current="page">About BrainiHi</span>
+          </nav>
+
+          {/* Feature Grid Section */}
+          <FeatureGrid />
+
+          {/* Our Mission Section */}
+          <section className={styles.section} aria-labelledby="mission-heading">
+            <h2 id="mission-heading" className={styles.sectionTitle}>Our Mission</h2>
+            <p className={styles.sectionText}>
+              At <strong>Brainihi.com</strong>, our mission is to make mathematics preparation accessible, intelligent, and personalized.
+              We believe learning math shouldn’t feel overwhelming — our AI generates custom tests, provides instant explanations for mistakes, and creates a study path that adapts to each learner so they can improve steadily and efficiently.
             </p>
-          </div>
-          <div className={styles.heroBar}>
-            <span className={styles.heroBarText}>About Brainihi.com</span>
-          </div>
-        </section>
+          </section>
 
-        {/* Breadcrumb */}
-        <div className={styles.breadcrumb}>
-          | About Brainihi.com
+          {/* How It Works Section */}
+          <section className={styles.howItWorks} aria-labelledby="howitworks-heading" id="how-it-works">
+            <h2 id="howitworks-heading" className={styles.sectionTitle}>How It Works</h2>
+            <div className={styles.howGrid}>
+              <div className={styles.howItem}>
+                <img src="/images/how1.png" alt="Take a smart test" className={styles.howIcon} />
+                <h3 className={styles.howHeader}>Take a Smart Test</h3>
+                <p className={styles.howDesc}>Start a test tailored to your topic and level — every session generates fresh, relevant questions.</p>
+              </div>
+              <div className={styles.howItem}>
+                <img src="/images/how2.png" alt="Get instant explanations" className={styles.howIcon} />
+                <h3 className={styles.howHeader}>Get Instant Explanations</h3>
+                <p className={styles.howDesc}>Review clear, step-by-step reasoning after each question so mistakes become learning opportunities.</p>
+              </div>
+              <div className={styles.howItem}>
+                <img src="/images/how3.png" alt="Track progress" className={styles.howIcon} />
+                <h3 className={styles.howHeader}>Track & Improve</h3>
+                <p className={styles.howDesc}>Monitor your progress with visual reports and targeted recommendations to focus study time where it matters most.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Our Story Section */}
+          <section className={styles.section} aria-labelledby="story-heading">
+            <h2 id="story-heading" className={styles.sectionTitle}>Our Story</h2>
+            <p className={styles.sectionText}>
+              The idea for <strong>Brainihi.com</strong> began with a simple goal — help students learn math more effectively. Our team of educators and AI researchers built a platform that combines proven teaching techniques with intelligent automation so learners get practice that fits their needs.
+            </p>
+          </section>
+
+          {/* Testimonials Section */}
+          <section className={styles.testimonialSection} aria-labelledby="testimonials-heading">
+            {/* <h2 id="testimonials-heading" className={styles.sectionTitle}>Loved by Students Everywhere</h2> */}
+            <Testimonials />
+          </section>
         </div>
-
-        {/* Feature Grid Section */}
-        <FeatureGrid />
-
-        {/* Our Mission Section */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Our Mission</h2>
-          <p className={styles.sectionText}>
-            At <b>Brainihi.com</b>, our mission is to make mathematics preparation accessible, intelligent, and personalized.
-            We believe learning math shouldn’t feel overwhelming — our AI generates custom tests, answers, and explanations so every student can study effectively at their own pace.
-          </p>
-        </section>
-
-        {/* How It Works Section */}
-        <section className={styles.howItWorks}>
-          <h2 className={styles.sectionTitle}>How It Works</h2>
-          <div className={styles.howGrid}>
-            <div className={styles.howItem}>
-              <img src="/images/how1.png" alt="Smart Test Creation" className={styles.howIcon} />
-              <h3 className={styles.howHeader}>Smart Test Creation</h3>
-              <p className={styles.howDesc}>The system generates new questions every time you practice.</p>
-            </div>
-            <div className={styles.howItem}>
-              <img src="/images/how2.png" alt="AI-Powered Explanations" className={styles.howIcon} />
-              <h3 className={styles.howHeader}>AI-Powered Explanations</h3>
-              <p className={styles.howDesc}>Understand each step through detailed reasoning generated by neural networks.</p>
-            </div>
-            <div className={styles.howItem}>
-              <img src="/images/how3.png" alt="Performance Tracking" className={styles.howIcon} />
-              <h3 className={styles.howHeader}>Performance Tracking</h3>
-              <p className={styles.howDesc}>Instantly view your results and areas for improvement.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Our Story Section */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Our Story</h2>
-          <p className={styles.sectionText}>
-            The idea for <b>Brainihi.com</b> was born from a simple goal — to make learning mathematics adaptive and engaging. Our team of educators and AI developers joined forces to create a tool that mimics real tutoring, combining smart automation with clear explanations.
-          </p>
-        </section>
-
-        {/* Testimonials Section */}
-        <section className={styles.testimonialSection}>
-          <Testimonial />
-        </section>
       </ResponsiveMotion>
+
       <Footer />
     </>
   );

@@ -1,31 +1,82 @@
+:root{
+  --max-width: 1100px;
+  --brand: #861f41;   /* primary brand */
+  --accent: #FDB913;  /* secondary accent */
+  --muted: #6b6b6b;
+  --bg: #ffffff;
+  --radius: 10px;
+  --shadow: 0 8px 30px rgba(20,20,24,0.04);
+}
+
+/* Section shell — minimalist with breathing space */
 .ctaSection {
-  padding: 2.7rem 1.2rem 2.7rem 1.2rem;
-  background: #861f41;
-  color: #fff;
+  background: transparent;
+  padding: 36px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Constrained inner container */
+.inner {
+  max-width: var(--max-width);
+  width: 100%;
+  padding: 28px;
+  border-radius: calc(var(--radius) + 4px);
+  background: linear-gradient(180deg, rgba(134,31,65,0.04), rgba(255,255,255,0.02));
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   text-align: center;
 }
 
+/* Headline */
 .ctaText {
-  font-size: 1.23rem;
+  margin: 0;
+  font-size: 1.05rem;
   font-weight: 700;
-  margin-bottom: 1.2rem;
-}
-
-.ctaButton {
-  background: #FDB913;
   color: #231f20;
-  border-radius: 0.5rem;
-  font-size: 1.08rem;
-  font-weight: bold;
-  padding: 0.95rem 2.5rem;
-  text-decoration: none;
-  display: inline-block;
-  margin-top: 0.5rem;
-  border: none;
-  transition: background 0.15s, color 0.15s;
+  max-width: 760px;
+  line-height: 1.35;
 }
 
-.ctaButton:hover {
-  background: #fff;
-  color: #861f41;
+/* Primary CTA button — simple, clear, high contrast */
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 160px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 0.98rem;
+  box-shadow: 0 8px 26px rgba(134,31,65,0.06);
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Hover / focus */
+.ctaButton:hover,
+.ctaButton:focus {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(134,31,65,0.09);
+  outline: none;
+}
+
+/* Accessible focus ring */
+.ctaButton:focus-visible {
+  box-shadow: 0 0 0 4px rgba(134,31,65,0.08), 0 18px 40px rgba(134,31,65,0.08);
+  border-color: rgba(134,31,65,0.12);
+}
+
+/* Responsive adjustments */
+@media (max-width: 720px) {
+  .inner { padding: 20px; }
+  .ctaText { font-size: 1rem; max-width: 100%; }
+  .ctaButton { min-width: 140px; padding: 10px 16px; font-size: 0.95rem; }
 }

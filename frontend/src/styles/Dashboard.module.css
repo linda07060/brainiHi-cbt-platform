@@ -1,0 +1,67 @@
+:root {
+  --brand: #861f41;
+  --muted: #6b6b6b;
+  --card-bg: #fff;
+}
+
+.container {
+  max-width: 980px;
+  margin: 24px auto;
+  padding: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+}
+
+.profileCard {
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(20,20,24,0.04);
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.testsCard {
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(20,20,24,0.04);
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.fieldRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.fieldLabel {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.fieldValue {
+  font-weight: 700;
+  color: #222;
+}
+
+/* plan badge */
+.planBadge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: rgba(134,31,65,0.08);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* responsive */
+@media (max-width: 820px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

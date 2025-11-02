@@ -1,136 +1,184 @@
-// TEST CHANGE
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Divider,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import GoogleButton from "../components/GoogleButton";
 import Preloader from "../components/Preloader";
-import { Box, Button, Container, TextField, Typography, Divider, Snackbar, Alert } from '@mui/material';
-import GoogleButton from '../components/GoogleButton';
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import styles from "../styles/Login.module.css";
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
-  const [open, setOpen] = useState(false);
-  const [success, setSuccess] = useState(false);
+/**
+ * Minimal, professional student login page.
+ * - Uses MUI components but applies a small CSS module for layout.
+ * - Includes "Forgot password" and "Register" links.
+ * - Honors site theme colors via frontend/src/theme.ts
+ */
+
+export default function Login(): JSX.Element {
   const router = useRouter();
   const { setUser } = useAuth();
 
-  // Handle Google OAuth token in query
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState("");
+  const [open, setOpen] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Handle Google OAuth token in query (if your flow redirects with token)
   useEffect(() => {
     const { token } = router.query;
-    if (typeof token === 'string' && token.length > 0) {
-      // Fetch user profile using the token
-      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(res => {
-        const auth = { token, ...res.data };
-        localStorage.setItem('auth', JSON.stringify(auth));
-        setUser(auth);
-        router.push('/dashboard');
-      })
-      .catch(() => {
-        setMsg('Google login failed. Try again.');
-        setOpen(true);
-      });
+    if (typeof token === "string" && token.length > 0) {
+      setLoading(true);
+      axios
+        .get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const auth = { token, ...res.data };
+          localStorage.setItem("auth", JSON.stringify(auth));
+          setUser(auth);
+          router.push("/dashboard");
+        })
+        .catch(() => {
+          setMsg("Google login failed. Try again.");
+          setOpen(true);
+        })
+        .finally(() => setLoading(false));
     }
   }, [router.query.token, setUser, router]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMsg('');
+    setMsg("");
     setSuccess(false);
+    setLoading(true);
+
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
         { email, password }
       );
-      // Combine token and user info
+
       const auth = { token: res.data.access_token, ...res.data.user };
-      // Save to localStorage for persistence
-      localStorage.setItem('auth', JSON.stringify(auth));
-      // Update context for immediate access
+      localStorage.setItem("auth", JSON.stringify(auth));
       setUser(auth);
+
       setSuccess(true);
-      setMsg('Login successful! Redirecting...');
+      setMsg("Login successful — redirecting...");
       setOpen(true);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+
+      setTimeout(() => router.push("/dashboard"), 900);
     } catch (error: any) {
       setSuccess(false);
       setMsg(
-        error.response?.data?.message ||
-        'Login failed. Please check your credentials and try again.'
+        error?.response?.data?.message ||
+          "Login failed. Please check your credentials and try again."
       );
       setOpen(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <>
       <Preloader />
-      <Container maxWidth="xs" sx={{ py: 8 }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" fontWeight="bold" mb={2}>
-            Welcome to CBT Portal
+      <Box className={styles.page}>
+        <Paper elevation={1} className={styles.card} component="main" role="main" aria-labelledby="login-title">
+          <Typography id="login-title" variant="h4" component="h1" className={styles.title}>
+            Welcome back
           </Typography>
-          <form onSubmit={handleSubmit}>
+
+          <Typography variant="body2" className={styles.subtitle}>
+            Sign in to access your practice tests, progress and personalised study plans.
+          </Typography>
+
+          <form onSubmit={handleSubmit} className={styles.form} noValidate>
             <TextField
-              label="Email"
+              id="email"
               name="email"
+              label="Email"
               type="email"
-              fullWidth
-              margin="normal"
-              required
               value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <TextField
-              label="Password"
-              name="password"
-              type="password"
-              fullWidth
-              margin="normal"
+              onChange={(e) => setEmail(e.target.value)}
               required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
+              fullWidth
+              size="small"
+              variant="outlined"
+              className={styles.field}
+              autoComplete="email"
             />
+
+            <TextField
+              id="password"
+              name="password"
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              size="small"
+              variant="outlined"
+              className={styles.field}
+              autoComplete="current-password"
+            />
+
+            <Box className={styles.row}>
+              <Link href="/forgot-password" className={styles.forgot}>
+                Forgot password?
+              </Link>
+            </Box>
+
             <Button
               type="submit"
               variant="contained"
+              color="primary"
               fullWidth
-              sx={{ mt: 2, py: 1.5, fontWeight: 'bold', fontSize: 18 }}
+              size="large"
+              sx={{ fontWeight: 800 }}
+              disabled={loading}
             >
-              Login
+              {loading ? "Signing in…" : "Sign in"}
             </Button>
+
+            <Divider className={styles.divider} sx={{ marginY: 2 }}>
+              or
+            </Divider>
+
+            <GoogleButton className={styles.googleBtn} />
+
+            <Typography variant="body2" className={styles.footerText}>
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className={styles.register}>
+                Create one
+              </Link>
+            </Typography>
           </form>
-          <Divider sx={{ my: 3 }}>or</Divider>
-          <GoogleButton />
-          <Link href="/register" style={{ display: 'block', marginTop: 24 }}>
-            Don&apos;t have an account? Register
-          </Link>
-          {/* Snackbar for success or error */}
-          <Snackbar
-            open={open}
-            autoHideDuration={2000}
-            onClose={() => setOpen(false)}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          >
-            {success ? (
-              <Alert severity="success" sx={{ width: '100%' }}>
-                {msg}
-              </Alert>
-            ) : (
-              <Alert severity="error" sx={{ width: '100%' }}>
-                {msg}
-              </Alert>
-            )}
-          </Snackbar>
-        </Box>
-      </Container>
+        </Paper>
+      </Box>
+
+      <Snackbar
+        open={open}
+        autoHideDuration={3000}
+        onClose={() => setOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity={success ? "success" : "error"} sx={{ width: "100%" }}>
+          {msg}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

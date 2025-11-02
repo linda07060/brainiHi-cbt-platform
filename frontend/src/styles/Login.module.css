@@ -1,0 +1,105 @@
+/* Minimal, professional login styles — uses site colors from theme.ts for MUI components */
+:root{
+  --max-width: 480px;
+  --brand: #861f41;   /* keep same brand maroon you used site-wide */
+  --accent: #FDB913;  /* optional accent */
+  --muted: #6b6b6b;
+  --bg: #f8fafb;
+}
+
+/* page layout */
+.page {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background: var(--bg);
+}
+
+/* centered card */
+.card {
+  width: 100%;
+  max-width: var(--max-width);
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(20,20,24,0.04);
+  border: 1px solid rgba(0,0,0,0.03);
+  background: #fff;
+}
+
+/* title + subtitle */
+.title {
+  margin: 0 0 6px 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #231f20;
+  text-align: center;
+}
+.subtitle {
+  margin: 0 0 18px 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* form */
+.form {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+.field {
+  width: 100%;
+}
+
+/* tiny helper row for forgot link */
+.row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.forgot {
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+.forgot:hover,
+.forgot:focus {
+  text-decoration: underline;
+}
+
+/* divider styling */
+.divider {
+  color: rgba(0,0,0,0.35);
+}
+
+/* google button spacing if needed */
+.googleBtn {
+  width: 100%;
+}
+
+/* footer text */
+.footerText {
+  margin-top: 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.register {
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+.register:hover,
+.register:focus {
+  text-decoration: underline;
+}
+
+/* Responsive tweaks */
+@media (max-width: 420px) {
+  .card { padding: 20px; }
+  .title { font-size: 1.25rem; }
+}

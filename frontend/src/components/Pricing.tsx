@@ -1,9 +1,22 @@
+import React from "react";
 import styles from "../styles/Pricing.module.css";
 
-const plans = [
+type Plan = {
+  icon?: string;
+  name: string;
+  price: string;
+  priceLabel?: string;
+  details: string[];
+  cta: string;
+  link: string;
+  highlight?: boolean;
+  badge?: string;
+};
+
+const plans: Plan[] = [
   {
     icon: "🟢",
-    name: "Free Plan",
+    name: "Free",
     price: "Free",
     details: [
       "Explore the platform",
@@ -12,81 +25,98 @@ const plans = [
       "No AI solutions included",
       "Perfect for getting started",
     ],
-    cta: "Start Free",
+    cta: "Start free",
     link: "/register",
-    highlight: false,
   },
   {
     icon: "🔵",
-    name: "Pro Plan",
-    price: "$12.99/month or $99/year",
-    priceLabel: " (36% off)",
+    name: "Pro",
+    price: "$12.99 / month",
+    priceLabel: "or $99 / year",
     details: [
-      "Full access to all math topics and quizzes",
+      "Full access to all topics and quizzes",
       "50 AI explanations per month",
       "Step-by-step solution breakdowns",
       "Smart recommendations for weak areas",
       "Personal progress tracker",
-      "Priority content updates",
     ],
-    cta: "Go Pro",
+    cta: "Get Pro",
     link: "/register",
     highlight: true,
-    badge: "Most Popular",
+    badge: "Most popular",
   },
   {
     icon: "🟣",
-    name: "Tutor Plan",
-    price: "$24.99/month or $199/year",
+    name: "Tutor",
+    price: "$24.99 / month",
+    priceLabel: "or $199 / year",
     details: [
       "Everything in Pro",
       "Unlimited AI explanations",
-      "Personal AI Tutor (ask any question, get detailed help)",
+      "Personal AI tutor (ask any question)",
       "Deep progress analytics",
       "Priority support",
-      "Early access to new learning modules",
     ],
-    cta: "Get Tutor Plan",
+    cta: "Get Tutor",
     link: "/register",
-    highlight: false,
   },
 ];
 
-export default function Pricing() {
+export default function Pricing(): JSX.Element {
   return (
     <section className={styles.pricingSection} id="pricing">
-      <h2 className={styles.heading}>Choose Your Plan</h2>
-      <div className={styles.cards}>
+      <h2 className={styles.heading}>Choose your plan</h2>
+
+      <div className={styles.cards} role="list">
         {plans.map((plan) => (
-          <div
-            className={`${styles.card} ${plan.highlight ? styles.highlight : ""}`}
+          <article
             key={plan.name}
+            role="listitem"
+            aria-labelledby={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`}
+            className={`${styles.card} ${plan.highlight ? styles.featured : ""}`}
           >
             <div className={styles.cardHeader}>
-              <span className={styles.planIcon} aria-hidden="true">
-                {plan.icon}
-              </span>
-              <span className={styles.planName}>{plan.name}</span>
-              {plan.badge && <span className={styles.badge}>{plan.badge}</span>}
-            </div>
-            <div className={styles.priceWrap}>
-              <span className={styles.price}>{plan.price}</span>
-              {plan.priceLabel && (
-                <span className={styles.priceLabel}>{plan.priceLabel}</span>
+              <div className={styles.planLeft}>
+                {plan.icon && (
+                  <span aria-hidden="true" style={{ fontSize: 20, marginRight: 6 }}>
+                    {plan.icon}
+                  </span>
+                )}
+                <div id={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`} className={styles.planName}>
+                  {plan.name}
+                </div>
+              </div>
+
+              {plan.badge && (
+                <div className={styles.badge} aria-hidden="true">
+                  {plan.badge}
+                </div>
               )}
             </div>
-            <ul className={styles.features}>
-              {plan.details.map((f) => (
-                <li key={f} className={styles.featureItem}>
-                  <span className={styles.featureDot}></span>
-                  {f}
+
+            <div className={styles.priceWrap}>
+              <div className={styles.priceMain}>{plan.price}</div>
+              {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
+            </div>
+
+            <ul className={styles.features} aria-label={`${plan.name} features`}>
+              {plan.details.map((d) => (
+                <li key={d} className={styles.featureItem}>
+                  <span className={styles.featureDot} aria-hidden="true" />
+                  <span>{d}</span>
                 </li>
               ))}
             </ul>
-            <a href={plan.link} className={styles.cta}>
+
+            <a
+              href={plan.link}
+              className={`${styles.cta} ${plan.highlight ? " " + styles["primary"] : " " + styles["primary"]}`}
+              role="button"
+              aria-label={`${plan.cta} - ${plan.name}`}
+            >
               {plan.cta}
             </a>
-          </div>
+          </article>
         ))}
       </div>
     </section>

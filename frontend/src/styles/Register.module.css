@@ -1,0 +1,48 @@
+:root{
+  --brand: #861f41;
+  --muted: #6b6b6b;
+  --card-bg: #fff;
+  --page-bg: #f8fafb;
+}
+
+.card {
+  background: var(--card-bg);
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(20,20,24,0.05);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 1.6rem;
+  color: #222;
+}
+
+.form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  width: 100%;
+}
+
+.fieldSelect {
+  width: 100%;
+}
+
+.footer {
+  margin-top: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* small screens */
+@media (max-width: 480px) {
+  .card { padding: 18px; }
+  .title { font-size: 1.3rem; }
+}

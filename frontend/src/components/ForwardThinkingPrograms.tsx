@@ -2,45 +2,76 @@ import { motion } from "framer-motion";
 import styles from "../styles/ForwardThinkingPrograms.module.css";
 import Link from "next/link";
 
-export default function ForwardThinkingPrograms() {
+const PROGRAM_STATS = {
+  subjects: "500+",
+  label: "Practice subjects",
+};
+
+export default function ForwardThinkingPrograms(): JSX.Element {
   return (
     <motion.section
       className={styles.programs}
-      initial={{ opacity: 0, y: 60 }}
+      initial={{ opacity: 0, y: 36 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.8, delay: 0.2, ease: [0.39, 0.58, 0.57, 1] }}
+      transition={{ duration: 0.7, delay: 0.08, ease: [0.36, 0.64, 0.2, 1] }}
+      aria-labelledby="programs-heading"
+      role="region"
     >
-      <div className={styles.left}>
-        <h2 className={styles.heading}>
-          <span className={styles.italic}>FORWARD-THINKING</span><br />
-          PROGRAMS
-        </h2>
-        <div className={styles.underline} />
-        <p className={styles.desc}>
-          Prepare for exam success and a brighter future. Brainihi offers AI-powered tools and up-to-date resources to help you master your subjects, improve your scores, and build confidence for any academic challenge.
-        </p>
-        <Link href="/login" className={styles.cta}>
-          EXPLORE PROGRAMS <span className={styles.arrow}>→</span>
-        </Link>
-        <div className={styles.assess}>
-          <span className={styles.assessQ}>Not sure which subject to focus on?</span>
-          <span className={styles.assessA}>
-            Take our quick <a href="/login" className={styles.assessLink}>study readiness assessment</a> to get a personalized learning plan.
-          </span>
-        </div>
-      </div>
-      <div className={styles.right}>
-        <div className={styles.grid}>
-          <img src="/images/program1.png" alt="Students collaborating on science project" className={styles.topImg} />
-          <div className={styles.majorsCard}>
-            <img src="/images/program2.png" alt="Exam success impact" className={styles.bgImg} />
-            <div className={styles.majorsText}>
-              <span className={styles.num}>500+</span>
-              <span className={styles.text}>PRACTICE SUBJECTS</span>
-            </div>
+      <div className={styles.inner}>
+        <div className={styles.left}>
+          <h2 id="programs-heading" className={styles.heading}>
+            <span className={styles.italic}>Forward‑thinking</span>
+            <br />
+            Programs
+          </h2>
+
+          <div className={styles.underline} aria-hidden="true" />
+
+          <p className={styles.desc}>
+            Prepare for exam success and a brighter future. BrainiHi combines AI‑driven diagnostics, step‑by‑step explanations, and curated practice so you
+            can focus on the topics that matter and improve fast.
+          </p>
+
+          <div className={styles.actions}>
+            <Link href="/programs" className={styles.primaryCta} aria-label="Explore programs">
+              Explore programs
+            </Link>
+
+            <Link href="/assessment" className={styles.link} aria-label="Take study readiness assessment">
+              Take the readiness assessment
+            </Link>
           </div>
-          <img src="/images/program3.png" alt="Hands-on practical learning" className={styles.rightImg} />
+        </div>
+
+        <div className={styles.visual}>
+          <div className={styles.grid}>
+            <img
+              src="/images/program1.png"
+              alt="Students collaborating"
+              className={styles.smallImg}
+              loading="lazy"
+              width={220}
+              height={140}
+            />
+
+            <div className={styles.statCard} aria-hidden="false">
+              <img src="/images/program2.png" alt="" className={styles.statBg} aria-hidden="true" />
+              <div className={styles.stat}>
+                <span className={styles.statNumber}>{PROGRAM_STATS.subjects}</span>
+                <span className={styles.statLabel}>{PROGRAM_STATS.label}</span>
+              </div>
+            </div>
+
+            <img
+              src="/images/program3.png"
+              alt="Practical learning"
+              className={styles.largeImg}
+              loading="lazy"
+              width={360}
+              height={460}
+            />
+          </div>
         </div>
       </div>
     </motion.section>

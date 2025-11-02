@@ -31,4 +31,16 @@ export class User {
 
   @Column({ default: 'beginner' })
   level: string;
+
+  // Optional human-friendly user identifier (nullable)
+  @Column({ nullable: true, unique: true })
+  user_uid: string;
+
+  // HMAC-SHA256 hash of the recovery passphrase (stored server-side only)
+  @Column({ nullable: true })
+  recoveryPassphraseHash: string;
+
+  // Phone number
+  @Column({ nullable: true })
+  phone: string;
 }

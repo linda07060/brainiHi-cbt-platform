@@ -1,264 +1,297 @@
-@keyframes fade-in-up {
-  0% { opacity: 0; transform: translateY(60px);}
-  100% { opacity: 1; transform: translateY(0);}
+:root{
+  --max-width: 1200px;
+  --accent: #861f41;
+  --muted: #6b6b6b;
+  --bg: #ffffff;
+  --soft-bg: #fffaf3;
+  --radius: 12px;
+  --shadow-light: 0 8px 24px rgba(20,20,24,0.04);
+  --transition-fast: 160ms;
 }
 
+/* Section shell */
 .centers {
-  background: #fff;
-  border-radius: 2rem;
-  box-shadow: 0 4px 32px 0 rgba(134,31,65,0.07);
-  margin: 0 auto 3rem auto;
-  max-width: 1200px;
-  padding: 3.2rem 2.5rem 3.2rem 2.5rem;
-  animation: fade-in-up 1.2s cubic-bezier(.39,.58,.57,1) 0.1s both;
+  background: transparent;
+  margin: 0 auto 3rem;
+  padding: 0;
+}
+
+/* Constraining inner container for consistent alignment */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  background: var(--bg);
+  border-radius: calc(var(--radius) + 6px);
+  padding: 36px 24px;
+  box-shadow: 0 10px 40px rgba(20,20,24,0.03);
   display: flex;
   flex-direction: column;
-  gap: 2.4rem;
+  gap: 28px;
+  animation: fade-in-up 1s cubic-bezier(.39,.58,.57,1) both;
 }
 
+/* KPI / stats block */
 .numbersBlock {
-  width: 100%;
-  margin-bottom: 2.2rem;
-  background: #fff;
-  padding: 1.4rem 0 2.2rem 0;
-  border-radius: 1.2rem;
-  box-shadow: 0 2px 22px #861f4107;
+  padding: 12px 6px 10px 6px;
+  border-radius: 10px;
+  background: transparent;
 }
 .numbersTitle {
-  font-size: 1.4rem;
-  font-weight: 900;
-  font-style: italic;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   text-align: center;
-  margin-bottom: 1.2rem;
-  background: #fff;
-  padding-top: .5rem;
-  letter-spacing: 0.01em;
+  margin-bottom: 12px;
 }
+
+/* grid of stats: use compact horizontal layout */
 .numbersGrid {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  gap: 3.5rem;
+  gap: 28px;
   flex-wrap: wrap;
-  background: #fff;
+  align-items: baseline;
 }
 .numberItem {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 170px;
-  margin-bottom: 0.7rem;
+  min-width: 140px;
+  text-align: center; /* ensure labels center by default */
 }
 .bigNumber {
-  font-size: 2.7rem;
-  font-weight: 900;
-  color: #861f41;
-  margin-bottom: 0.12em;
-  letter-spacing: -1px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 6px;
+  text-align: center;
 }
 .numLabel {
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: #231f20;
-  text-align: center;
-  letter-spacing: 0.01em;
+  font-size: 0.95rem;
+  color: #222;
+  font-weight: 600;
+  text-align: center; /* explicitly center label text */
+  max-width: 220px;   /* allow wrapping but keep centered */
+  line-height: 1.1;
+  margin: 0 auto;     /* center within the column */
 }
 
+/* Top header and CTA */
 .topBar {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 2rem;
+  gap: 18px;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
 .headerBlock {
-  flex: 1 1 400px;
+  flex: 1 1 520px;
+  min-width: 260px;
 }
-
 .heading {
-  font-size: 2.1rem;
-  font-weight: 900;
+  font-size: 1.6rem;
+  font-weight: 700;
   color: #231f20;
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.5px;
+  margin: 0 0 8px 0;
   line-height: 1.12;
 }
 .italic {
   font-style: italic;
-  font-weight: 900;
+  font-weight: 700;
+  color: var(--accent);
 }
 .underline {
-  width: 70px;
+  width: 56px;
   height: 4px;
-  background: #861f41;
-  margin: 0.5rem 0 1.7rem 0;
+  background: var(--accent);
   border-radius: 2px;
+  margin: 10px 0 16px 0;
 }
 .desc {
-  font-size: 1.16rem;
-  color: #23232b;
-  margin-bottom: 0.7rem;
-  max-width: 600px;
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
 }
 
+/* CTA simple primary */
 .cta {
-  background: #FDB913;
-  color: #231f20;
-  font-weight: 800;
-  font-size: 1.07rem;
-  padding: 0.9rem 2.1rem;
-  border-radius: 0.7rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  box-shadow: 0 8px 26px rgba(134,31,65,0.06);
+  border: none;
   display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 14px #FDB91322;
-  border: 2px solid #231f20;
-  transition: background 0.16s, color 0.16s, box-shadow 0.16s;
-  text-decoration: none;
+  gap: 10px;
 }
-.cta:hover {
-  background: #861f41;
-  color: #fff;
-  box-shadow: 0 3px 18px #861f4144;
-  border-color: #861f41;
-}
-.arrow {
-  font-size: 1.5rem;
-  font-weight: 800;
-}
+.cta:hover { transform: translateY(-2px); }
 
+/* Map + center area */
 .mapSection {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2.2rem;
-  align-items: flex-start;
-  margin-top: 1.2rem;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 22px;
+  align-items: start;
 }
 
+/* Map area displays the interactive map / visual */
+/* NOTE: overflow hidden and object-fit:cover used to crop any watermark/credit bar
+   at the image bottom on small screens while preserving markers. */
 .mapArea {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 0; /* reduce padding to avoid extra vertical space on mobile */
+  box-shadow: var(--shadow-light);
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  width: 480px;
-  min-width: 260px;
-  aspect-ratio: 16/9;
-  border-radius: 1.3rem;
-  overflow: hidden;
-  box-shadow: 0 2px 16px #861f4144;
-  background: #eee;
+  overflow: hidden; /* ensure image bottom (watermark) doesn't push content or show caption */
 }
-.bgImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  position: absolute;
-  top: 0; left: 0;
-  z-index: 0;
-}
+
+/* Make the map image cover the container and crop any bottom bar (watermark) */
 .mapImg {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  position: relative;
-  z-index: 1;
-  opacity: 0.97;
+  object-fit: cover;       /* crop and fill container */
+  object-position: center top; /* prioritize top of map so markers remain visible */
+  display: block;
+  border-radius: 6px;
 }
+
+/* markers remain absolute and visible above the map */
 .marker {
   position: absolute;
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 6px 18px rgba(134,31,65,0.08));
   z-index: 2;
 }
-.marker1 { top: 38%; left: 55%; }
-.marker2 { top: 53%; left: 62%; }
-.marker3 { top: 74%; left: 33%; }
+/* responsive example positions (adjust to match your map image) */
+.marker1 { top: 34%; left: 56%; transform: translate(-50%,-50%); }
+.marker2 { top: 52%; left: 68%; transform: translate(-50%,-50%); }
+.marker3 { top: 74%; left: 36%; transform: translate(-50%,-50%); }
 
-.centerInfo {
-  flex: 1 1 240px;
-  padding: 1.4rem 1.2rem;
-  background: rgba(35,31,32,0.92);
-  color: #fff;
-  border-radius: 1.2rem;
-  min-width: 220px;
-  box-shadow: 0 2px 8px #231f2033;
-  align-self: stretch;
+/* Selected center card (white, minimal) */
+.centerCard {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: var(--shadow-light);
+  border: 1px solid rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 1.1rem;
+  gap: 12px;
+  min-height: 240px;
+  justify-content: space-between;
 }
-.centerName {
-  display: block;
-  font-size: 1.13rem;
-  font-weight: 800;
-  background: #861f41;
-  padding: 0.28em 0.9em;
-  border-radius: 0.6em;
-  margin-bottom: 0.5em;
-  width: fit-content;
-  letter-spacing: 1px;
+.centerHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.centerNamePill {
+  background: rgba(134,31,65,0.08);
+  color: var(--accent);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95rem;
 }
 .centerDesc {
-  font-size: 1.09rem;
-  color: #fff;
-  margin-bottom: 0.6em;
+  color: #333;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.centerAddress {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: 0;
+}
+.centerHours {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.centerActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+.centerPhone {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
 }
 .centerCta {
-  background: #FDB913;
-  color: #231f20;
-  font-weight: 800;
-  font-size: 1rem;
-  padding: 0.7rem 2rem;
-  border-radius: 0.7rem;
-  display: inline-block;
-  margin-top: 0.3rem;
-  box-shadow: 0 2px 10px #FDB91322;
-  border: none;
-  text-decoration: none;
-  transition: background 0.16s, color 0.16s;
-}
-.centerCta:hover {
-  background: #861f41;
+  background: var(--accent);
   color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 700;
 }
 
-@media (max-width: 1000px) {
-  .centers {
-    padding: 2.1rem 0.7rem;
-  }
+/* Responsive behavior */
+@media (max-width: 1100px) {
+  .container { padding: 28px 18px; }
+  .mapSection { grid-template-columns: 1fr; }
+  .mapArea { min-height: 220px; }
+  .centerCard { min-height: auto; }
+  .numbersGrid { gap: 18px; }
+}
+
+/* Mobile tweaks that ensure the map and center card are visible and not clipped */
+@media (max-width: 700px) {
+  .heading { font-size: 1.2rem; }
+  .bigNumber { font-size: 1.6rem; } /* slightly larger for mobile legibility */
+  .numLabel { font-size: 0.95rem; }
+  .desc { font-size: 0.92rem; }
+  .cta { padding: 9px 14px; }
+  .mapSection { gap: 14px; grid-template-columns: 1fr; }
+
+  /* Make the KPI grid stack vertically and ensure each item is centered */
   .numbersGrid {
-    gap: 1.5rem;
-  }
-  .mapSection {
+    display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    align-items: center; /* center items horizontally */
+    gap: 20px;
+  }
+  .numberItem {
+    align-items: center; /* center number + label */
+    text-align: center;
+    min-width: 0; /* allow item to shrink */
+    width: 100%;
+    max-width: 320px; /* constrain for comfortable line-length */
+    margin: 0 auto;
   }
   .mapArea {
     width: 100%;
-    min-width: 180px;
-    max-width: 100vw;
+    min-width: 0;
+    max-width: 100%;
     aspect-ratio: 16/9;
+    padding: 0;
   }
-}
-
-@media (max-width: 700px) {
-  .centers {
-    padding: 1.2rem 0.3rem;
+  .mapImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* ensure watermark bar is cropped on small screens */
+    object-position: center top;
   }
-  .numbersTitle {
-    font-size: 1.04rem;
-  }
-  .bigNumber {
-    font-size: 1.5rem;
-  }
-  .heading {
-    font-size: 1.28rem;
-  }
-  .desc {
-    font-size: 0.9rem;
-  }
-  .centerInfo {
-    font-size: 0.92rem;
-    padding: 0.7rem 0.7rem;
-  }
+  .marker { width: 20px; height: 20px; }
+  .centerCard { padding: 12px; }
 }

@@ -1,4 +1,5 @@
 import styles from '../../styles/About/FeatureGrid.module.css';
+import layout from '../../styles/Layout.module.css';
 
 const features = [
   {
@@ -36,24 +37,26 @@ const features = [
 export default function FeatureGrid() {
   return (
     <section className={styles.wrapper}>
-      <div className={styles.centerText}>
-        <h2 className={styles.title}>At the Center of a Smarter Future</h2>
-        <div className={styles.underline} />
-        <p className={styles.subtitle}>
-          Brainihi.com is committed to accessible, research-driven, and empowering tools for math success. Explore the pillars of our platform below.
-        </p>
-      </div>
-      <div className={styles.grid}>
-        {features.map(f => (
-          <div className={styles.card} key={f.title}>
-            <h3 className={styles.cardTitle}>{f.title}</h3>
-            <p className={styles.cardDesc}>{f.desc}</p>
-            <a href={f.link} className={styles.readMore}>
-              READ MORE
-              <span className={styles.yellowUnderline}></span>
-            </a>
-          </div>
-        ))}
+      <div className={layout.container}>
+        <div className={styles.centerText}>
+          <h2 className={styles.title}>At the Center of a Smarter Future</h2>
+          <div className={styles.underline} />
+          <p className={styles.subtitle}>
+            Brainihi.com is committed to accessible, research-driven, and empowering tools for math success. Explore the pillars of our platform below.
+          </p>
+        </div>
+        <div className={styles.grid}>
+          {features.map(f => (
+            <div className={styles.card} key={f.title}>
+              <h3 className={styles.cardTitle}>{f.title}</h3>
+              <p className={styles.cardDesc}>{f.desc}</p>
+              <a href={f.link} className={styles.readMore}>
+                READ MORE
+                <span className={styles.yellowUnderline}></span>
+              </a>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

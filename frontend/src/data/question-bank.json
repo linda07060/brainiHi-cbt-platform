@@ -1,0 +1,462 @@
+[
+  {
+    "id": "sat-1",
+    "exam": "SAT",
+    "q": "If 2x + 3 = 11, what is x?",
+    "options": ["3", "4", "5", "6"],
+    "correctIndex": 1,
+    "shortExplanation": "2x = 8 → x = 4.",
+    "fullExplanation": "Subtract 3 from both sides to get 2x = 8, then divide both sides by 2 to get x = 4.",
+    "topic": "Algebra",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-2",
+    "exam": "SAT",
+    "q": "A train travels 60 miles in 1.5 hours. What is its average speed in mph?",
+    "options": ["30", "40", "45", "60"],
+    "correctIndex": 1,
+    "shortExplanation": "60 ÷ 1.5 = 40 mph.",
+    "fullExplanation": "Average speed = distance / time. 60 miles divided by 1.5 hours equals 40 miles per hour.",
+    "topic": "Ratios",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-3",
+    "exam": "SAT",
+    "q": "Which replacement is best: 'The committee has reached ___ decision.'",
+    "options": ["their", "its", "they're", "the"],
+    "correctIndex": 1,
+    "shortExplanation": "Committee is singular here; use 'its'.",
+    "fullExplanation": "In formal writing the collective noun 'committee' is treated as a single entity; the possessive singular pronoun 'its' is correct.",
+    "topic": "Grammar",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-4",
+    "exam": "SAT",
+    "q": "Triangle angles are 30° and 60°. What is the third angle?",
+    "options": ["30°", "60°", "90°", "120°"],
+    "correctIndex": 2,
+    "shortExplanation": "180 - 30 - 60 = 90°.",
+    "fullExplanation": "Sum of triangle interior angles is 180°, so the remaining angle is 180° − 30° − 60° = 90°.",
+    "topic": "Geometry",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-5",
+    "exam": "SAT",
+    "q": "Probability: 3 red, 2 blue balls. Draw red then blue without replacement. Probability?",
+    "options": ["3/5", "6/25", "3/10", "3/5 × 2/4 = 3/10"],
+    "correctIndex": 3,
+    "shortExplanation": "(3/5)×(2/4) = 3/10.",
+    "fullExplanation": "First draw red: 3/5. Then without replacement, blue probability is 2/4. Multiply: 3/5 × 2/4 = 6/20 = 3/10.",
+    "topic": "Probability",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-6",
+    "exam": "SAT",
+    "q": "If f(x) = 3x^2, what is f(2)?",
+    "options": ["6", "9", "12", "36"],
+    "correctIndex": 2,
+    "shortExplanation": "3 × (2^2) = 12.",
+    "fullExplanation": "Compute 2 squared = 4, then multiply by 3 to get 12.",
+    "topic": "Functions",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-7",
+    "exam": "SAT",
+    "q": "Combine: 'She studied overnight. She passed the exam.' Best concise version?",
+    "options": [
+      "Studying overnight, she passed the exam.",
+      "She studied overnight; she passed the exam.",
+      "She studied overnight and passed the exam.",
+      "Overnight study, passing the exam."
+    ],
+    "correctIndex": 2,
+    "shortExplanation": "Option 3 is clear and grammatically correct.",
+    "fullExplanation": "Combining the two clauses with 'and' keeps both actions parallel and concise: 'She studied overnight and passed the exam.'",
+    "topic": "Writing",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-8",
+    "exam": "SAT",
+    "q": "A value increases 20% then decreases 20%. Net change is:",
+    "options": ["0%", "4% decrease", "4% increase", "20% decrease"],
+    "correctIndex": 1,
+    "shortExplanation": "1.2 × 0.8 = 0.96 → 4% decrease.",
+    "fullExplanation": "Start with 1, increase 20% → 1.2. Decrease 20% → 1.2 × 0.8 = 0.96, which is 4% less than the original 1.",
+    "topic": "Percent",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-9",
+    "exam": "SAT",
+    "q": "If x/3 = 5, what's x?",
+    "options": ["8", "10", "15", "18"],
+    "correctIndex": 2,
+    "shortExplanation": "Multiply both sides by 3 → x = 15.",
+    "fullExplanation": "x/3 = 5. Multiply both sides by 3 to isolate x. x = 15.",
+    "topic": "Algebra",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-10",
+    "exam": "SAT",
+    "q": "Which supports a cause-effect claim?",
+    "options": [
+      "Because of X, Y happened.",
+      "X and Y happened.",
+      "Y because X was present.",
+      "Observational study shows correlation."
+    ],
+    "correctIndex": 0,
+    "shortExplanation": "Explicit 'Because' phrase indicates causal claim.",
+    "fullExplanation": "A sentence like 'Because of X, Y happened.' explicitly asserts causation; however, establishing causation requires appropriate evidence and study design.",
+    "topic": "Reading/Writing",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-11",
+    "exam": "SAT",
+    "q": "Simplify: (3x)(2x^2) = ?",
+    "options": ["6x", "5x^3", "6x^3", "9x^3"],
+    "correctIndex": 2,
+    "shortExplanation": "Multiply coefficients and add exponents: 3*2=6, x^1 * x^2 = x^3.",
+    "fullExplanation": "Multiply 3x × 2x^2 = (3×2) × x^(1+2) = 6x^3.",
+    "topic": "Algebra",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-12",
+    "exam": "SAT",
+    "q": "Which word best replaces 'correlation' without changing the meaning?",
+    "options": ["relationship", "experiment", "hypothesis", "prediction"],
+    "correctIndex": 0,
+    "shortExplanation": "Correlation means a relationship or association.",
+    "fullExplanation": "In many contexts, 'correlation' refers to a relationship or association between two variables; 'relationship' is the best synonym here.",
+    "topic": "Reading",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-13",
+    "exam": "SAT",
+    "q": "If a rectangle has length 8 and width 3, area is:",
+    "options": ["11", "24", "22", "32"],
+    "correctIndex": 1,
+    "shortExplanation": "Area = length × width = 8 × 3 = 24.",
+    "fullExplanation": "Multiply length by width: 8 × 3 = 24 square units.",
+    "topic": "Geometry",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-14",
+    "exam": "SAT",
+    "q": "Interpret: 'The data suggests a trend.' Which is correct tone?",
+    "options": ["Certain", "Suggestive", "Proven", "Irrelevant"],
+    "correctIndex": 1,
+    "shortExplanation": "'Suggests' implies a trend but not certainty.",
+    "fullExplanation": "The verb 'suggests' indicates that findings indicate a possible trend but do not prove it definitively.",
+    "topic": "Reading/Writing",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-15",
+    "exam": "SAT",
+    "q": "Solve: 5(x - 2) = 15. x = ?",
+    "options": ["5", "6", "8", "2"],
+    "correctIndex": 0,
+    "shortExplanation": "5(x-2)=15 → x-2=3 → x=5.",
+    "fullExplanation": "5(x − 2) = 15. Divide by 5 → x − 2 = 3. Add 2 → x = 5.",
+    "topic": "Algebra",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-16",
+    "exam": "SAT",
+    "q": "Which sentence avoids a comma splice?",
+    "options": [
+      "I went home, I was tired.",
+      "I went home; I was tired.",
+      "I went home I was tired.",
+      "I went, home; I was tired."
+    ],
+    "correctIndex": 1,
+    "shortExplanation": "Use semicolon to link two independent clauses correctly.",
+    "fullExplanation": "A semicolon or coordinating conjunction with a comma is required to link two independent clauses without creating a comma splice.",
+    "topic": "Writing",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-17",
+    "exam": "SAT",
+    "q": "If 3/4 of a number is 18, the number is:",
+    "options": ["12", "18", "24", "36"],
+    "correctIndex": 2,
+    "shortExplanation": "3/4 × n = 18 → n = 18 × 4/3 = 24.",
+    "fullExplanation": "Solve 3/4 × n = 18. Multiply both sides by 4/3: n = 18 × (4/3) = 24.",
+    "topic": "Fractions",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "sat-18",
+    "exam": "SAT",
+    "q": "Which punctuation correctly sets off a nonrestrictive clause?",
+    "options": ["That", "Which", "Who", "Whom"],
+    "correctIndex": 1,
+    "shortExplanation": "'Which' often introduces nonrestrictive clauses set off by commas.",
+    "fullExplanation": "Nonrestrictive clauses (extra information) are commonly introduced by 'which' and set off with commas; 'that' introduces restrictive clauses.",
+    "topic": "Grammar",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-19",
+    "exam": "SAT",
+    "q": "If line slopes are perpendicular: m1 = 2, what is m2?",
+    "options": ["2", "-2", "-1/2", "1/2"],
+    "correctIndex": 2,
+    "shortExplanation": "Perpendicular slopes multiply to -1: m2 = -1/2.",
+    "fullExplanation": "If m1 × m2 = -1 and m1 = 2 then m2 = -1/2 so the lines are perpendicular.",
+    "topic": "Algebra/Geometry",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "sat-20",
+    "exam": "SAT",
+    "q": "Which word best replaces 'ameliorate'?",
+    "options": ["worsen", "improve", "ignore", "test"],
+    "correctIndex": 1,
+    "shortExplanation": "Ameliorate means to improve.",
+    "fullExplanation": "'Ameliorate' is a formal verb meaning to make something better or improve it.",
+    "topic": "Vocabulary",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-1",
+    "exam": "ACT",
+    "q": "If y = 2x + 1, what is y when x = 3?",
+    "options": ["5", "6", "7", "8"],
+    "correctIndex": 2,
+    "shortExplanation": "2*3 + 1 = 7.",
+    "fullExplanation": "Substitute x = 3 into y = 2x + 1: y = 2(3) + 1 = 6 + 1 = 7.",
+    "topic": "Algebra",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-2",
+    "exam": "ACT",
+    "q": "Which sentence is grammatically correct?",
+    "options": ["She don't like math.", "She doesn't like math.", "She not like math.", "She no like math."],
+    "correctIndex": 1,
+    "shortExplanation": "Third-person singular requires 'doesn't'.",
+    "fullExplanation": "Use 'doesn't' (does not) for third-person singular subjects: 'She doesn't like math.'",
+    "topic": "English",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-3",
+    "exam": "ACT",
+    "q": "A 5 kg mass accelerates at 2 m/s². Net force (N)?",
+    "options": ["2 N", "5 N", "10 N", "20 N"],
+    "correctIndex": 2,
+    "shortExplanation": "F = ma → 5 × 2 = 10 N.",
+    "fullExplanation": "Newton's second law: Force equals mass times acceleration. 5 kg × 2 m/s² = 10 N.",
+    "topic": "Science Reasoning",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-4",
+    "exam": "ACT",
+    "q": "If a passage provides no evidence for a claim, the claim is:",
+    "options": ["Well supported", "Unsupported", "Proven", "Disproven"],
+    "correctIndex": 1,
+    "shortExplanation": "Without evidence, a claim is unsupported.",
+    "fullExplanation": "A claim lacking supporting evidence should be considered unsupported until evidence is provided.",
+    "topic": "Reading",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-5",
+    "exam": "ACT",
+    "q": "Area of circle with radius 3 is:",
+    "options": ["3π", "6π", "9π", "18π"],
+    "correctIndex": 2,
+    "shortExplanation": "A = πr² → π×9 = 9π.",
+    "fullExplanation": "Use area formula A = πr². With r = 3, area = π × 3² = 9π.",
+    "topic": "Geometry",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-6",
+    "exam": "ACT",
+    "q": "Best way to compare growth rates of two series visually?",
+    "options": ["Overlay plots", "Separate axes", "Scatterplots only", "Tables"],
+    "correctIndex": 0,
+    "shortExplanation": "Overlay plots display both series on the same axes for direct comparison.",
+    "fullExplanation": "Overlaying plots with clear legends allows direct visual comparison of growth and trends between two series.",
+    "topic": "Data Interpretation",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-7",
+    "exam": "ACT",
+    "q": "Sample mean differs from population mean; this could indicate:",
+    "options": ["Certain error", "Sampling variation", "Causation", "No effect"],
+    "correctIndex": 1,
+    "shortExplanation": "Often due to sampling variation.",
+    "fullExplanation": "Differences may be due to sampling variation; statistical testing helps determine if the difference is significant.",
+    "topic": "Statistics",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-8",
+    "exam": "ACT",
+    "q": "Best revision: 'Because he was late, the bus left without him.'",
+    "options": [
+      "Because he was late, the bus left without him.",
+      "The bus left without him because he was late.",
+      "He was late because the bus left without him.",
+      "Late, he missed the bus."
+    ],
+    "correctIndex": 1,
+    "shortExplanation": "Option 2 places cause after result and reads naturally.",
+    "fullExplanation": "Reordering the sentence gives clearer focus: 'The bus left without him because he was late.' is natural and explicit.",
+    "topic": "English",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-9",
+    "exam": "ACT",
+    "q": "If you increase by 25% then decrease by 20%, net effect?",
+    "options": ["+5%", "0%", "-5%", "-10%"],
+    "correctIndex": 1,
+    "shortExplanation": "1.25 × 0.8 = 1.0 → net 0% change.",
+    "fullExplanation": "Start with 1, multiply by 1.25 then by 0.8 results in 1.0, so there is no net percent change.",
+    "topic": "Percent",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-10",
+    "exam": "ACT",
+    "q": "When studies conflict, best approach is to:",
+    "options": ["Ignore studies", "Evaluate methods", "Assume both true", "Pick the newest"],
+    "correctIndex": 1,
+    "shortExplanation": "Compare methods and sample sizes to judge reliability.",
+    "fullExplanation": "Evaluate study design, sample size, and biases to determine which study provides stronger evidence.",
+    "topic": "Science Reasoning",
+    "difficulty": "advanced"
+  },
+  {
+    "id": "act-11",
+    "exam": "ACT",
+    "q": "Which is the mode in {2, 3, 3, 4, 5}?",
+    "options": ["2", "3", "4", "5"],
+    "correctIndex": 1,
+    "shortExplanation": "3 appears most frequently.",
+    "fullExplanation": "Mode is the value that appears most often; 3 appears twice while others appear once.",
+    "topic": "Statistics",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-12",
+    "exam": "ACT",
+    "q": "Convert 0.75 to a fraction.",
+    "options": ["3/4", "1/2", "7/10", "2/3"],
+    "correctIndex": 0,
+    "shortExplanation": "0.75 = 75/100 = 3/4 after simplification.",
+    "fullExplanation": "Convert decimal to fraction and simplify: 75/100 reduces to 3/4.",
+    "topic": "Fractions",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-13",
+    "exam": "ACT",
+    "q": "Which punctuation best completes: 'She wanted to win ___ she trained daily.'",
+    "options": [", because", "; because", "because", ": because"],
+    "correctIndex": 1,
+    "shortExplanation": "Use semicolon before a conjunction linking two independent clauses when not using a coordinating conjunction.",
+    "fullExplanation": "A semicolon can join closely related independent clauses; 'She wanted to win; she trained daily.' or 'She wanted to win because she trained daily.' Both are acceptable, but semicolon usage here is strong.",
+    "topic": "English",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-14",
+    "exam": "ACT",
+    "q": "What is 15% of 200?",
+    "options": ["15", "20", "30", "45"],
+    "correctIndex": 2,
+    "shortExplanation": "0.15 × 200 = 30.",
+    "fullExplanation": "Multiply 200 by 0.15 to find 15% of 200 which equals 30.",
+    "topic": "Percent",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-15",
+    "exam": "ACT",
+    "q": "Which choice best summarizes a passage that describes causes and effects?",
+    "options": ["List of events", "Cause-effect relationships", "Anecdotal evidence", "Author biography"],
+    "correctIndex": 1,
+    "shortExplanation": "Summarize by focusing on cause and effect.",
+    "fullExplanation": "A passage about causes and effects is best summarized by identifying the causal relationships and their consequences.",
+    "topic": "Reading",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-16",
+    "exam": "ACT",
+    "q": "Slope of a line through (1,2) and (4,8) is:",
+    "options": ["2", "3", "6", "1/2"],
+    "correctIndex": 0,
+    "shortExplanation": "(8−2)/(4−1) = 6/3 = 2.",
+    "fullExplanation": "Slope (m) = (y2 − y1) / (x2 − x1) = (8 − 2) / (4 − 1) = 6 / 3 = 2.",
+    "topic": "Algebra",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-17",
+    "exam": "ACT",
+    "q": "Which is a primary function of the respiratory system?",
+    "options": ["Digestion", "Gas exchange", "Circulation", "Hormone production"],
+    "correctIndex": 1,
+    "shortExplanation": "Primary role is gas exchange (oxygen in, CO2 out).",
+    "fullExplanation": "The respiratory system's main function is to exchange gases between the body and the environment, supplying oxygen and removing carbon dioxide.",
+    "topic": "Science Reasoning",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-18",
+    "exam": "ACT",
+    "q": "If a graph shows inverse relationship, as X increases, Y:",
+    "options": ["increases", "decreases", "stays same", "oscillates"],
+    "correctIndex": 1,
+    "shortExplanation": "Inverse relationship means one variable decreases as the other increases.",
+    "fullExplanation": "In an inverse relationship, the dependent variable decreases when the independent variable increases, indicating a negative correlation.",
+    "topic": "Data Interpretation",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "act-19",
+    "exam": "ACT",
+    "q": "Which revision removes redundancy: 'I returned back to the store.'",
+    "options": ["I returned to the store.", "I back to the store.", "I returned back the store.", "To the store I returned back."],
+    "correctIndex": 0,
+    "shortExplanation": "Remove 'back' after 'returned' to avoid redundancy.",
+    "fullExplanation": "'Return' already implies going back, so 'I returned to the store.' is the concise, correct version.",
+    "topic": "English",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "act-20",
+    "exam": "ACT",
+    "q": "Which is best support when evaluating conflicting experimental results?",
+    "options": ["Evaluate sample sizes", "Assume both are valid", "Ignore them", "Take averages"],
+    "correctIndex": 0,
+    "shortExplanation": "Compare sample sizes and methodology to assess reliability.",
+    "fullExplanation": "When results conflict, examine study methodology, sample sizes, and controls to determine which findings are more reliable.",
+    "topic": "Science Reasoning",
+    "difficulty": "advanced"
+  }
+]

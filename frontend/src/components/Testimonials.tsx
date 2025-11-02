@@ -1,50 +1,79 @@
-import ResponsiveMotion from "./ResponsiveMotion"; // Import the wrapper
+import React from "react";
 import styles from "../styles/Testimonials.module.css";
 
-const testimonials = [
+type Testimonial = {
+  quote: string;
+  name: string;
+  affiliation?: string;
+  avatar?: string;
+  highlight?: boolean;
+};
+
+const testimonials: Testimonial[] = [
   {
-    name: "Brenda Lee",
-    institution: "University of California, Los Angeles (UCLA)",
+    quote:
+      "It feels like having a personal tutor... instant explanations made math easier.",
+    name: "Brenda White",
+    affiliation: "UCLA",
     avatar: "/images/avatar1.png",
-    quote: "It feels like having a personal tutor! The AI-generated tests and instant explanations made math easier and more enjoyable for me.",
   },
   {
+    quote:
+      "Exactly what I needed for exam prep. Smart tests and tracking helped me improve every week.",
     name: "Clara Lee",
-    institution: "Massachusetts Institute of Technology (MIT)",
+    affiliation: "MIT",
     avatar: "/images/avatar2.png",
-    quote: "Exactly what I needed for exam prep. The smart tests and tracking tools helped me stay consistent and improve every week.",
   },
   {
+    quote:
+      "Learning math has never been this easy. The system adapts to my weaknesses perfectly.",
     name: "Allen Kell",
-    institution: "Stanford University",
+    affiliation: "Stanford",
     avatar: "/images/avatar3.png",
-    quote: "Learning math has never been this easy. The explanations are clear, and the system adapts to my weaknesses perfectly.",
+    highlight: true,
   },
 ];
 
-export default function Testimonials() {
+export default function Testimonials(): JSX.Element {
   return (
-    <ResponsiveMotion
-      as="section"
-      className={styles.testimonials}
-      initial={{ opacity: 0, y: 60 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.4, ease: [0.39, 0.58, 0.57, 1] }}
-      id="testimonials"
-    >
-      <h2 className={styles.heading}>Loved by Students Everywhere</h2>
-      <div className={styles.cards}>
-        {testimonials.map((t) => (
-          <div className={styles.card} key={t.name}>
-            <img src={t.avatar} alt={t.name} className={styles.avatar} />
-            <blockquote className={styles.quote}>“{t.quote}”</blockquote>
-            <div className={styles.meta}>
-              <span className={styles.name}>{t.name}</span>
-              <span className={styles.inst}>{t.institution}</span>
-            </div>
-          </div>
-        ))}
+    <section className={styles.testimonialsWrap} aria-labelledby="testimonials-heading">
+      <h2 id="testimonials-heading" className={styles.testimonialsHeading}>
+        Loved by students everywhere
+      </h2>
+
+      <div className={styles.testimonialsGrid} role="list">
+        {testimonials.map((t, i) => {
+          const id = `testimonial-${i}`;
+          return (
+            <article
+              key={id}
+              role="listitem"
+              aria-labelledby={`${id}-name`}
+              tabIndex={0}
+              className={`${styles.testimonialCard} ${t.highlight ? styles.highlight : ""}`}
+            >
+              <div className={styles.testimonialHeader}>
+                <div className={styles.testimonialAvatar}>
+                  <img src={t.avatar} alt={`${t.name} avatar`} />
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div id={`${id}-name`} className={styles.testimonialAuthor}>
+                    {t.name}
+                  </div>
+                  {t.affiliation && (
+                    <div className={styles.testimonialAffiliation}>{t.affiliation}</div>
+                  )}
+                </div>
+              </div>
+
+              <blockquote className={styles.testimonialQuote} cite={t.affiliation}>
+                “{t.quote}”
+              </blockquote>
+            </article>
+          );
+        })}
       </div>
-    </ResponsiveMotion>
+    </section>
   );
 }

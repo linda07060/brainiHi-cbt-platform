@@ -1,100 +1,194 @@
-.footer {
-  background: var(--footer-bg, #861f41);
-  color: var(--footer-text, #fff);
-  padding: 3rem 2vw 2rem 2vw;
-  border-radius: 2rem 2rem 0 0;
-  box-shadow: 0 -2px 12px rgba(134,31,65,0.08);
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 2rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-.brand {
-  flex: 2 1 160px;
-}
-.logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 0.5rem;
-  background: #f9fafb;
-}
-.brandText {
-  font-weight: 800;
-  font-size: 1.15rem;
-  color: var(--secondary, #FDB913);
-  display: block;
-  margin-bottom: 0.2rem;
-}
-.desc {
-  font-size: 0.97rem;
-  color: #f5d6db;
-  margin-bottom: 0.6rem;
-}
-.links {
-  flex: 1 1 120px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.35rem;
-}
-.link {
-  color: var(--secondary, #FDB913);
-  font-size: 1rem;
-  text-decoration: none;
-  font-weight: 600;
-  border-radius: 2rem;
-  padding: 0.15rem 0.7rem;
-  transition: background 0.13s, color 0.13s;
-  width: fit-content;
-  background: none;
-}
-.link:hover {
-  background: var(--secondary, #FDB913);
-  color: var(--primary, #861f41);
-}
-.social {
-  flex: 1 1 120px;
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.5rem;
-}
-.socialIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--secondary, #FDB913);
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  transition: background 0.15s;
-  color: var(--primary, #861f41);
-}
-.socialIcon:hover {
-  background: #fff;
-  color: var(--primary, #861f41);
-}
-.copy {
-  width: 100%;
-  text-align: center;
-  font-size: 0.99rem;
-  color: var(--secondary, #FDB913);
-  margin-top: 2.2rem;
-  letter-spacing: 0.01em;
+/* Footer.module.css
+   Three-column footer with a top accent band (#fdb913).
+   All visible footer text and links use white for high contrast.
+*/
+
+:root {
+  --footer-slate: #36444b;    /* main footer background */
+  --footer-panel: #495a61;    /* right panel tone */
+  --footer-accent: #fdb913;   /* yellow top stripe */
+  --footer-text: #ffffff;     /* make footer text white as requested */
+  --footer-muted: rgba(255,255,255,0.75); /* slightly muted white for subtle items */
 }
 
+.footer {
+  width: 100%;
+  background: var(--footer-slate);
+  color: var(--footer-text);
+  font-family: inherit;
+}
+
+/* thin accent at top */
+.accent {
+  height: 8px;
+  background: var(--footer-accent);
+  width: 100%;
+}
+
+/* inner container */
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 1rem 24px;
+  box-sizing: border-box;
+}
+
+/* grid layout - 3 columns on desktop, stacked on mobile */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 360px;
+  gap: 28px;
+  align-items: start;
+}
+
+/* general column styles */
+.col {
+  padding-right: 8px;
+}
+
+.colHeading {
+  font-size: 1.05rem;
+  margin: 0 0 1rem 0;
+  color: var(--footer-text);
+  font-weight: 800;
+}
+
+/* ensure all anchors inside footer render as white (including visited) */
+.footer a,
+.footer a:visited {
+  color: var(--footer-text);
+  text-decoration: none;
+  transition: color 0.12s, text-decoration 0.12s;
+}
+
+/* link lists */
+.linkList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.linkList li {
+  margin: 0.5rem 0;
+}
+.linkList a {
+  color: var(--footer-text); /* white */
+  font-weight: 600;
+}
+.linkList a:hover,
+.linkList a:focus {
+  color: var(--footer-text);
+  text-decoration: underline;
+}
+
+/* brand column (darker panel look) */
+.brandCol {
+  background: var(--footer-panel);
+  padding: 24px;
+  border-radius: 2px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.brandInner {
+  display: flex;
+  gap: 16px;
+}
+.brandLogo {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #fffbe7;
+  padding: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+.brandText {
+  color: var(--footer-text);
+  font-size: 0.95rem;
+}
+.brandTitle {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.05rem;
+  color: var(--footer-text);
+  font-weight: 800;
+}
+.address {
+  margin: 0 0 0.6rem 0;
+  color: var(--footer-text);
+  line-height: 1.4;
+}
+.contactLink {
+  color: var(--footer-text);
+  text-decoration: none;
+}
+.contactLink:hover { text-decoration: underline; }
+
+/* small utility line with quick links */
+.quickLinks {
+  margin: 0.6rem 0 0;
+  color: var(--footer-text);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.quickLinks a { color: var(--footer-text); text-decoration: underline; }
+
+/* social icons */
+.social {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+}
+.socialIcon {
+  color: var(--footer-text);
+  opacity: 0.95;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  transition: transform 0.12s, background 0.12s;
+  text-decoration: none;
+}
+.socialIcon:hover { transform: translateY(-3px); background: rgba(255,255,255,0.04); }
+
+/* bottom tiny row */
+.bottom {
+  margin-top: 26px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding-top: 16px;
+}
+.copy {
+  margin: 0;
+  color: var(--footer-text); /* white */
+  font-size: 0.9rem;
+}
+.legal {
+  margin: 0;
+  color: var(--footer-text); /* white */
+  font-size: 0.9rem;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.legal a { color: var(--footer-text); text-decoration: underline; }
+.dot { opacity: 0.35; margin: 0 8px; }
+
+/* Responsiveness */
 @media (max-width: 900px) {
-  .footer {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+  .brandCol { order: 3; }
+  .bottom {
     flex-direction: column;
     align-items: flex-start;
-    padding: 2rem 1vw 1.5rem 1vw;
-    gap: 1.5rem;
-  }
-  .copy {
-    margin-top: 1.2rem;
+    gap: 8px;
   }
 }

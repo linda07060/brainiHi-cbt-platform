@@ -24,24 +24,46 @@ const features = [
   },
 ];
 
-export default function Features() {
+export default function Features(): JSX.Element {
   return (
     <ResponsiveMotion
       as="section"
       className={styles.features}
-      initial={{ opacity: 0, y: 60 }}
+      initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.2, ease: [0.39, 0.58, 0.57, 1] }}
+      transition={{ duration: 0.6, delay: 0.15, ease: [0.39, 0.58, 0.57, 1] }}
       id="features"
+      aria-labelledby="features-heading"
     >
-      <h2 className={styles.title}>Everything You Need to Master Exams</h2>
-      <div className={styles.grid}>
-        {features.map((f) => (
-          <div className={styles.card} key={f.title}>
-            <img src={f.icon} alt={f.title} className={styles.icon} />
-            <h3 className={styles.cardTitle}>{f.title}</h3>
+      <h2 id="features-heading" className={styles.title}>
+        Everything You Need to Master Exams
+      </h2>
+
+      <div className={styles.grid} role="list" aria-label="Feature list">
+        {features.map((f, idx) => (
+          <article
+            key={f.title}
+            role="listitem"
+            className={styles.card}
+            aria-labelledby={`feature-title-${idx}`}
+          >
+            <div className={styles.iconWrap} aria-hidden="false">
+              <img
+                src={f.icon}
+                alt={`${f.title} icon`}
+                className={styles.icon}
+                loading="lazy"
+                width={56}
+                height={56}
+              />
+            </div>
+
+            <h3 id={`feature-title-${idx}`} className={styles.cardTitle}>
+              {f.title}
+            </h3>
+
             <p className={styles.cardDesc}>{f.desc}</p>
-          </div>
+          </article>
         ))}
       </div>
     </ResponsiveMotion>

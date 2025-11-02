@@ -1,60 +1,128 @@
+:root{
+  --max-width: 1100px;
+  --card-bg: #ffffff;
+  --muted: #6c6c6c;
+  --accent: #861f41;
+  --soft-border: rgba(35,31,32,0.05);
+  --radius: 12px;
+  --shadow: 0 8px 28px rgba(20,20,24,0.04);
+}
+
+/* Outer shell */
 .infoSection {
-  background: #fff;
-  padding: 2.5rem 1.2rem 2.2rem 1.2rem;
+  background: transparent;
+  padding: 36px 16px;
   display: flex;
   justify-content: center;
 }
 
-.infoGrid {
-  display: flex;
-  gap: 2.7rem;
-  max-width: 840px;
+/* Constraining container */
+.container {
+  max-width: var(--max-width);
   width: 100%;
-  justify-content: center;
-  flex-wrap: wrap;
+  padding: 0 6px;
 }
 
-.infoItem {
-  background: #f7f7f9;
-  border-radius: 1rem;
-  box-shadow: 0 2px 12px #861f4122;
-  padding: 1.3rem 2rem;
-  min-width: 210px;
-  text-align: center;
-  flex: 1 1 220px;
-  max-width: 260px;
-}
-
-.icon {
-  font-size: 2.3rem !important;
-  margin-bottom: 0.3rem;
-  color: #861f41;
-}
-
-.infoHeading {
-  margin: 0.2rem 0 0.4rem 0;
-  color: #231f20;
-  font-size: 1.07rem;
-  font-weight: 700;
-}
-
-.infoValue {
+/* Grid: keeps cards aligned and responsive */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 18px;
+  list-style: none;
   margin: 0;
-  font-size: 1.07rem;
-  color: #23232b;
-  font-weight: 500;
-  word-break: break-word;
+  padding: 0;
 }
 
-@media (max-width: 700px) {
-  .infoGrid {
-    flex-direction: column;
-    gap: 1.2rem;
-    align-items: center;
+/* Card item */
+.item {
+  margin: 0;
+}
+
+/* Link wrapper makes the whole card clickable */
+.link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--soft-border);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: none;
+}
+
+/* subtle hover / focus */
+.link:hover,
+.link:focus {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+/* Icon styling */
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: rgba(134,31,65,0.06);
+  flex: 0 0 56px;
+}
+.icon {
+  color: var(--accent);
+  font-size: 28px !important;
+}
+
+/* Text block */
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Heading and value */
+.heading {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.value {
+  font-size: 1rem;
+  color: #222;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* small utility for accessibility-only heading */
+.visuallyHidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px,1px,1px,1px);
+  white-space: nowrap;
+}
+
+/* Responsive: collapse to a single column on narrow screens */
+@media (max-width: 880px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
   }
-  .infoItem {
-    width: 100%;
-    max-width: 99vw;
-    padding: 1.3rem 1rem;
+}
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
   }
+  .link {
+    gap: 12px;
+    padding: 16px;
+  }
+  .iconWrap { width: 48px; height: 48px; }
+  .icon { font-size: 24px !important; }
 }

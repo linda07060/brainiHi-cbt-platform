@@ -1,0 +1,97 @@
+:root{
+  --admin-surface: #ffffff;
+  --admin-muted: #6b6b6b;
+  --admin-accent: #861f41;
+  --admin-shadow: 0 8px 24px rgba(6,6,8,0.06);
+}
+
+/* root layout */
+.adminRoot {
+  min-height: 100vh;
+  background: var(--background);
+}
+
+/* toolbar */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* container: left nav + main */
+.container {
+  display: flex;
+  gap: 20px;
+}
+
+/* drawer */
+.drawer {
+  width: 220px;
+  flex-shrink: 0;
+}
+.drawerPaper {
+  width: 220px;
+  background: var(--admin-surface);
+  border-right: 1px solid rgba(0,0,0,0.04);
+  padding-top: 12px;
+}
+
+/* nav link reset */
+.navLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* main content */
+.main {
+  padding: 28px;
+  width: 100%;
+}
+
+/* cards row */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+/* card */
+.card {
+  background: var(--admin-surface);
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: var(--admin-shadow);
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* table area */
+.tableWrap {
+  margin-top: 12px;
+}
+
+/* small helpers */
+.kv {
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+}
+.kvValue {
+  font-weight: 700;
+  color: #222;
+  margin-top: 6px;
+}
+.planBadge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: rgba(134,31,65,0.06);
+  color: var(--admin-accent);
+  font-weight: 700;
+}
+
+/* responsive */
+@media (max-width: 900px) {
+  .drawerPaper { display: none; }
+  .container { padding-left: 12px; }
+  .main { padding: 18px; }
+}

@@ -1,0 +1,590 @@
+/* src/styles/ExamLanding.module.css
+   Polished refinements: consistent spacing, softer shadows, balanced vertical rhythm,
+   improved mobile centering, and subtle transitions for a more polished, minimalist finish.
+
+   Updates in this version:
+   - Ensure the video element displays the whole frame (object-fit: contain) with a neutral letterbox background.
+   - Stronger, higher-specificity submit button selectors to restyle the sample-test "Submit answers" control.
+   - Play overlay styles appended to support click-to-play when autoplay is blocked.
+   - Keep responsive, accessibility, and reduced-motion (:global(*)) fixes for CSS Modules purity.
+*/
+
+:root {
+  --exam-text: #231f20;
+  --exam-muted: #666666;
+  --exam-card-bg: #ffffff;
+  --exam-accent: var(--primary, #861f41);
+  --exam-cta: var(--secondary, #FDB913);
+  --trust-badge-bg: rgba(245, 248, 250, 0.96);
+  --correct-color: #138000;
+  --incorrect-color: #b00020;
+
+  /* Softer shadow and a lighter elevation scale for a minimalist feel */
+  --shadow-1: 0 6px 18px rgba(20,20,24,0.04);
+  --shadow-2: 0 10px 30px rgba(20,20,24,0.06);
+  --shadow-3: 0 16px 48px rgba(20,20,24,0.06);
+
+  --card-radius: 12px;
+  --gutter: 24px;
+  --rhythm: 12px; /* baseline rhythm for consistent spacing */
+  --transition-fast: 160ms;
+}
+
+/* Base section wrapper */
+.trustSection {
+  margin-top: 32px;
+  margin-bottom: 40px;
+  color: var(--exam-text);
+  font-family: inherit;
+}
+
+/* Top row: badge + logos */
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--gutter) / 1.5);
+  margin-bottom: 18px;
+  padding-bottom: 2px;
+}
+.leftBlock {
+  flex: 1 1 520px;
+  min-width: 240px;
+}
+.rightBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Trust badge */
+.trustBadge {
+  background: var(--trust-badge-bg);
+  padding: 16px;
+  border-radius: calc(var(--card-radius) - 2px);
+  box-shadow: var(--shadow-1);
+  transition: box-shadow var(--transition-fast) ease;
+}
+.trustBadge:hover { box-shadow: var(--shadow-2); }
+.trustBadge strong {
+  font-size: 1.18rem;
+  color: var(--exam-accent);
+  display: block;
+  line-height: 1.08;
+}
+.trustSub {
+  margin: 8px 0 0;
+  color: var(--exam-muted);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+/* CTAs */
+.quickActions {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.primaryCta {
+  background: var(--exam-accent);
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-1);
+}
+.primaryCta:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.secondaryCta {
+  padding: 10px 14px;
+  color: var(--exam-accent);
+  border-radius: 12px;
+  border: 1px solid rgba(134,31,65,0.08);
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+}
+
+/* Keyboard focus */
+.primaryCta:focus-visible,
+.secondaryCta:focus-visible {
+  outline: 3px solid rgba(134,31,65,0.12);
+  outline-offset: 3px;
+}
+
+/* Logos */
+.examLogos img {
+  height: 44px;
+  margin-left: 8px;
+  opacity: 0.98;
+  object-fit: contain;
+}
+.examLogosCompact img {
+  height: 48px;
+  margin-right: 8px;
+  object-fit: contain;
+}
+.brandLogo {
+  height: 40px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+/* Grids */
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gutter);
+  margin-top: 12px;
+}
+
+.contentGridProminent {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 360px;
+  gap: calc(var(--gutter) + 6px);
+  margin-top: 18px;
+  align-items: start;
+}
+
+/* Ensure consistent vertical rhythm and column behavior */
+.contentGridProminent > * {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rhythm);
+}
+
+/* Make center column content visually balanced */
+.centerCol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+/* Headings and lists */
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--exam-accent);
+}
+.subjectList { list-style: none; margin: 0; padding: 0; }
+.subjectList li { margin-bottom: 14px; }
+.subjectDesc { color: var(--exam-muted); font-size: 0.97rem; margin-top: 6px; line-height: 1.55; }
+
+/* Difficulty list */
+.difficultyList { list-style: none; margin: 8px 0 0; padding: 0; color: var(--exam-muted); }
+.difficultyList li { margin-bottom: 8px; }
+
+/* Sample test card */
+.sampleTest {
+  border: 1px solid rgba(0,0,0,0.03);
+  padding: 16px;
+  border-radius: var(--card-radius);
+  background: var(--exam-card-bg);
+  box-shadow: var(--shadow-1);
+}
+
+/* Questions and options (maintain rhythm) */
+.questionBlock { margin-bottom: 12px; border-radius: 8px; padding: 12px; background: #fcfcfd; border: 1px solid rgba(0,0,0,0.03); }
+.questionTitle { font-size: 0.96rem; margin-bottom: 8px; }
+.options { display:flex; flex-direction:column; gap:10px; }
+
+/* Option label */
+.optionLabel { display:flex; gap:12px; align-items:center; font-weight:700; color:var(--exam-text); cursor:pointer; }
+.optionLabel input[type="radio"] { appearance:none; width:18px; height:18px; border-radius:50%; border:2px solid rgba(0,0,0,0.12); }
+.optionLabel input[type="radio"]:checked { background:var(--exam-accent); border-color:var(--exam-accent); box-shadow:0 0 0 4px rgba(134,31,65,0.06); }
+.optionLabel input[type="radio"]:focus-visible { outline:3px solid rgba(134,31,65,0.12); outline-offset:2px; }
+
+/* Explanations */
+.explanation { margin-top:8px; background:#fffaf0; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.03); }
+.correct { color:var(--correct-color); font-weight:800; }
+.incorrect { color:var(--incorrect-color); font-weight:800; }
+
+/* Testimonials */
+.testimonials { display:flex; flex-direction:column; gap:12px; }
+.testimonial { border-radius:10px; padding:14px; background:#f7f9fa; box-shadow:var(--shadow-1); }
+
+/* Video / media */
+/* Use a neutral (dark) background for letterboxing and object-fit: contain so full frame is visible */
+.videoWrap { margin-top: 8px; }
+.videoInner {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000; /* letterbox background */
+  box-shadow: var(--shadow-1);
+}
+/* ensure video inner keeps a pleasing min-height on large screens */
+.centerCol .videoInner { min-height: 220px; }
+
+/* target video element and any videoEl class used by components */
+.videoInner video,
+.videoInner .videoEl,
+.videoInner iframe,
+.videoInner img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
+  object-fit: contain; /* show full frame, with letterboxing if needed */
+  background: transparent;
+}
+
+/* PREVIEW CARD (right column poster) - polished */
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  justify-content: flex-start;
+}
+.previewImage {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: var(--shadow-2);
+  object-fit: cover;
+  display: block;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.previewImage:hover { transform: translateY(-4px); box-shadow: var(--shadow-3); }
+.previewCaption {
+  font-size: 0.92rem;
+  color: var(--exam-muted);
+  text-align: center;
+  max-width: 320px;
+}
+
+/* Modal */
+@keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.modalOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1200; padding:20px; animation:overlayFade 180ms ease-out both; }
+.modalContent { width:100%; max-width:960px; background:#fff; border-radius:12px; padding:18px; box-shadow:0 20px 60px rgba(0,0,0,0.24); position:relative; max-height:90vh; overflow:auto; animation:modalIn 220ms cubic-bezier(.2,.9,.2,1) both; }
+.modalClose { position:absolute; top:10px; right:12px; background:transparent; border:none; font-size:26px; cursor:pointer; }
+
+/* small tweak for brand logo area */
+.rightBlock img.brandLogo,
+.rightBlock img[alt="BrainiHi"],
+.rightBlock img[src$="logo.png"],
+.rightBlock img[src$="brainihi-badge.png"],
+.rightBlock img[src*="brainihi"] {
+  opacity: 0.95;
+  height: 40px;
+  display: block;
+  object-fit: contain;
+}
+
+/* small text helper */
+.small { font-size: 0.92rem; color: var(--exam-muted); }
+
+/* ---------------- Responsive refinements ---------------- */
+
+/* Tablet and below */
+@media (max-width: 1000px) {
+  .contentGrid { grid-template-columns: 1fr; }
+  .contentGridProminent { grid-template-columns: 1fr; gap: 18px; }
+  .examLogos img { height: 36px; }
+  .trustBadge { padding: 14px; width: 100%; }
+  .sampleTest { padding: 14px; }
+  .previewImage { max-width: 420px; }
+  .centerCol .videoInner { min-height: 200px; }
+}
+
+/* Mobile: improved stacking, centering and consistent rhythm */
+@media (max-width: 720px) {
+  .topRow {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .leftBlock {
+    flex: none;
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .trustBadge {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .rightBlock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 4px;
+    width: 100%;
+  }
+
+  .quickActions { justify-content: center; }
+
+  .examLogosCompact img, .examLogos img { height: 38px; margin: 0 6px; }
+
+  .contentGridProminent { grid-template-columns: 1fr; }
+
+  .centerCol {
+    width: 100%;
+    padding: 0 12px;
+    align-items: center;
+  }
+
+  .sectionTitle { text-align: center; }
+
+  /* preview card: center under CTAs and keep compact */
+  .previewCard { margin-top: 12px; align-items: center; }
+  .previewImage { max-width: 360px; margin: 0 auto; border-radius: 12px; }
+  .previewCaption { max-width: 360px; margin: 0 auto; text-align: center; }
+}
+
+/* ---------------- Submit button fixes ---------------- */
+/* High-specificity selectors to restyle the submit control inside the sample test */
+.sampleTest .submitBtn,
+.sampleTest button[type="submit"],
+.sampleTest input[type="submit"],
+.sampleTest .controlsContainer button[type="submit"],
+.sampleTest .controlsContainer input[type="submit"],
+.sampleFooter .submitBtn,
+.sampleFooter button[type="submit"],
+.sampleFooter input[type="submit"] {
+  background: var(--exam-accent) !important;
+  color: #fff !important;
+  padding: 10px 16px !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+  border: 0 !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.07) !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hover state */
+.sampleTest .submitBtn:hover,
+.sampleTest button[type="submit"]:hover,
+.sampleTest input[type="submit"]:hover,
+.sampleFooter .submitBtn:hover,
+.sampleFooter button[type="submit"]:hover,
+.sampleFooter input[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.10) !important;
+}
+
+/* Extra fallback: if submit is inside .formContainer */
+.formContainer .sampleTest button[type="submit"],
+.formContainer .sampleTest input[type="submit"] {
+  background: var(--exam-accent) !important;
+  color: #fff !important;
+}
+
+/* Optional helper class you can add to markup if needed */
+.primarySubmit {
+  /* reuse primary style visually (if you prefer to add this class to the element) */
+  background: var(--exam-accent);
+  color: #fff;
+  padding: 10px 16px;
+  font-weight: 800;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Play overlay (append if not present) */
+.playOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.06));
+  border-radius: 12px;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.playButton {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.95);
+  display: inline-block;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+  position: relative;
+}
+.playButton::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 16px;
+  border-left: 18px solid var(--exam-accent);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+}
+
+/* --- Sample test refinements (append) --- */
+
+/* Slightly reduce question card padding and tighten spacing for denser, scannable layout */
+.questionBlock {
+  padding: 12px 14px; /* slightly narrower horizontally */
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: #fbfbfc;
+  border: 1px solid rgba(0,0,0,0.035);
+  box-shadow: 0 6px 18px rgba(20,20,24,0.03);
+}
+
+/* Question heading / number */
+.questionBlock > .questionTitle {
+  font-weight: 700;
+  font-size: 0.98rem;
+  margin-bottom: 10px;
+  color: var(--exam-text);
+  display: block;
+}
+
+/* Option list: reduce vertical gap and center radio vs label text */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* tighter than before */
+}
+
+/* Larger, more accessible radio size and tighter alignment */
+.optionLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* space between radio and text */
+  cursor: pointer;
+  font-weight: 600; /* medium weight for options (less heavy than full bold) */
+  color: var(--exam-text);
+  padding: 8px 6px; /* clickable area */
+  border-radius: 8px;
+  transition: background 150ms ease, transform 120ms ease;
+}
+
+/* Hover/focus affordance for keyboard users */
+.optionLabel:hover,
+.optionLabel:focus-within {
+  background: rgba(134,31,65,0.02);
+  transform: translateY(-1px);
+}
+
+/* Radio styling: slightly larger and more visible */
+.optionLabel input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.12);
+  display: inline-block;
+  position: relative;
+  flex: 0 0 auto;
+  background: #fff;
+}
+
+/* checked state: filled dot inside */
+.optionLabel input[type="radio"]:checked {
+  background: var(--exam-accent);
+  border-color: var(--exam-accent);
+  box-shadow: 0 0 0 4px rgba(134,31,65,0.06);
+}
+
+/* Accessibility: visible focus ring for keyboard */
+.optionLabel input[type="radio"]:focus-visible {
+  outline: 3px solid rgba(134,31,65,0.12);
+  outline-offset: 2px;
+}
+
+/* Option text runs across with comfortable line-height */
+.optionText {
+  line-height: 1.45;
+  font-size: 0.98rem;
+  color: #222; /* slightly darker for readability */
+}
+
+/* If you render option subtext, make it lighter */
+.optionSub {
+  font-size: 0.92rem;
+  color: var(--exam-muted);
+  margin-top: 6px;
+}
+
+/* Submit / run buttons in sample footer: ensure consistent CTA size & spacing */
+.sampleFooter {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* If your submit button doesn't have .submitBtn, add it in markup or rely on this selector */
+.sampleFooter button[type="submit"],
+.sampleTest button[type="submit"],
+.sampleTest .submitBtn,
+button.submitBtn {
+  background: var(--exam-accent);
+  color: #fff;
+  padding: 10px 16px;
+  font-weight: 800;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+}
+
+/* Secondary buttons (Try another set) as subtle outline */
+.sampleFooter .secondary {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.06);
+  color: var(--exam-text);
+  padding: 8px 14px;
+  border-radius: 10px;
+}
+
+/* Responsive: tighten spacing for smaller screens */
+@media (max-width: 900px) {
+  .questionBlock { padding: 12px; }
+  .optionLabel { gap: 10px; padding: 8px; }
+  .optionLabel input[type="radio"] { width: 18px; height: 18px; }
+}
+
+/* Tiny polish: slightly dim the question number color so content reads first */
+.questionNumber {
+  color: rgba(0,0,0,0.6);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+/* Accessibility: reduce motion - use :global to satisfy CSS Modules purity rule */
+@media (prefers-reduced-motion: reduce) {
+  :global(*) {
+    transition: none !important;
+    animation: none !important;
+  }
+}

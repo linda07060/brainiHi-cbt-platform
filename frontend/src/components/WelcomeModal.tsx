@@ -25,11 +25,11 @@ export default function WelcomeModal() {
         <div className={styles.content}>
           <div className={styles.left}>
             <h2 className={styles.heading}>
-              <span className={styles.italic}>HERE FOR YOUR SUCCESS</span>
+              Prepare for exams faster with AI
             </h2>
             <div className={styles.underline} />
             <p className={styles.desc}>
-              Brainihi gives you the tools you need to achieve academic success in the USA. Click below to visit our platform and start your learning journey today.
+              BrainiHi gives you AI-powered tools to practice smarter, understand mistakes, and raise your scores. Click below to start practicing.
             </p>
             <div className={styles.ctaGroup}>
               <button

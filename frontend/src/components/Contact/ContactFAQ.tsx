@@ -1,35 +1,50 @@
+import React from "react";
 import styles from "../../styles/ContactFAQ.module.css";
 
 const faqs = [
   {
     q: "How do I create a test?",
-    a: "Log in, select a topic, and click “Generate Test.” The AI will create one instantly.",
+    a: "Log in, choose a subject and topic, then click “Generate Test.” The AI will generate a short diagnostic or full practice test instantly.",
   },
   {
     q: "Is the platform free to use?",
-    a: "Yes, core features are free. Premium options provide advanced analytics and extra questions.",
+    a: "Core features are free. Premium plans unlock advanced analytics, additional practice items, and priority support.",
   },
   {
     q: "How do I get support?",
-    a: "You can use this contact page to reach us, or email support@brainihi.com.",
+    a: "Use the contact form on our Contact page or email support@brainihi.com for help with accounts, billing, or technical issues.",
   },
   {
-    q: "Can teachers use Brainihi.com?",
-    a: "Absolutely! We offer educator tools for classroom and group management.",
+    q: "Can teachers use BrainiHi?",
+    a: "Yes — we offer educator tools for classroom management, group assignments, and shared reporting.",
   },
 ];
 
-export default function ContactFAQ() {
+export default function ContactFAQ(): JSX.Element {
   return (
-    <section className={styles.faqSection}>
-      <h2 className={styles.faqTitle}>Quick Help & FAQ</h2>
-      <div className={styles.faqGrid}>
-        {faqs.map((item, idx) => (
-          <div className={styles.faqItem} key={idx}>
-            <h4 className={styles.faqQ}>{item.q}</h4>
-            <p className={styles.faqA}>{item.a}</p>
-          </div>
-        ))}
+    <section className={styles.faqSection} aria-labelledby="faq-heading">
+      <div className={styles.container}>
+        <h2 id="faq-heading" className={styles.faqTitle}>
+          Quick help & FAQ
+        </h2>
+
+        <p className={styles.lead}>
+          Short answers to common questions. Click any question to reveal a concise response.
+        </p>
+
+        <div className={styles.faqGrid}>
+          {faqs.map((item, idx) => (
+            <details className={styles.faqItem} key={idx} role="group" tabIndex={-1}>
+              <summary className={styles.faqQ} aria-expanded="false">
+                {item.q}
+                <span className={styles.caret} aria-hidden="true">▸</span>
+              </summary>
+              <div className={styles.faqA} aria-hidden="true">
+                {item.a}
+              </div>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );

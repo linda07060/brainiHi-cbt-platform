@@ -1,0 +1,76 @@
+/* Minimal, professional footer for legal links */
+
+.footerLegal {
+  width: 100%;
+  background: transparent;
+  padding: 18px 12px;
+  box-sizing: border-box;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Links group */
+.links {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.link {
+  color: #6b6b6b;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 6px 0;
+}
+.link:hover,
+.link:focus {
+  color: #231f20;
+  text-decoration: underline;
+  outline: none;
+}
+
+/* Right side small print */
+.right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #8a8a8a;
+  font-size: 0.95rem;
+}
+
+.copy {
+  color: #333;
+  font-weight: 700;
+}
+
+.small {
+  color: #8a8a8a;
+}
+
+/* separator dot */
+.sep {
+  color: rgba(0,0,0,0.06);
+  margin: 0 6px;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .inner {
+    padding: 8px 6px;
+    gap: 8px;
+    justify-content: center;
+    text-align: center;
+  }
+  .links { gap: 12px; }
+  .right { width: 100%; justify-content: center; order: 2; margin-top: 6px; }
+}

@@ -9,7 +9,8 @@ import Pricing from "../components/Pricing";
 import CTABanner from "../components/CTABanner";
 import Footer from "../components/Footer";
 import WelcomeModal from "../components/WelcomeModal";
-import ResponsiveMotion from "../components/ResponsiveMotion"; // <-- Import the wrapper
+import ResponsiveMotion from "../components/ResponsiveMotion";
+import layout from "../styles/Layout.module.css";
 
 export default function Home() {
   return (
@@ -17,14 +18,16 @@ export default function Home() {
       <WelcomeModal />
       <Header />
       <ResponsiveMotion as="main">
-        <Hero />
-        <Features />
-        <ForwardThinkingPrograms />
-        <HowItWorks />
-        <ExamCenters />
-        <Testimonials />
-        <Pricing />
-        <CTABanner />
+        <div className={layout.container}>
+          <Hero />
+          <Features />
+          <ForwardThinkingPrograms />
+          <HowItWorks />
+          <ExamCenters />
+          <Testimonials />
+          <Pricing />
+          <CTABanner />
+        </div>
       </ResponsiveMotion>
       <Footer />
     </>

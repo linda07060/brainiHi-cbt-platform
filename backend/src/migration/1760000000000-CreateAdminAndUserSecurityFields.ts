@@ -1,18 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+/* url: (local file) */
+import { MigrationInterface, QueryRunner } from "typeorm";
 
-/**
- * Migration: Create admin table and ensure user table has required columns
- * - Adds "admin" table for site administrators
- * - Adds/ensures user columns: user_uid (unique), phone, recoveryPassphraseHash, active
- * - Creates user_security_answer table if missing (stores hashed security answers)
- *
- * Note:
- * - This migration is written for Postgres. If you use another DB, adjust SQL accordingly.
- * - Run with your normal TypeORM migration command, e.g.:
- *     npx typeorm migration:run -d dist/src/data-source.js
- *   or for ts-node:
- *     npx ts-node --transpile-only ./node_modules/typeorm/cli.js migration:run -d src/data-source.ts
- */
 export class CreateAdminAndUserSecurityFields1760000000000 implements MigrationInterface {
   name = 'CreateAdminAndUserSecurityFields1760000000000';
 
@@ -72,14 +60,21 @@ export class CreateAdminAndUserSecurityFields1760000000000 implements MigrationI
       );
     `);
 
-    // Index and FK for user_security_answer
+    // Index for user_security_answer
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "IDX_user_security_answer_userId" ON "user_security_answer" ("userId");
     `);
 
+    // Add FK only if it doesn't already exist (Postgres doesn't support ADD CONSTRAINT IF NOT EXISTS)
     await queryRunner.query(`
-      ALTER TABLE "user_security_answer"
-      ADD CONSTRAINT IF NOT EXISTS "FK_user_security_answer_user" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE;
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_user_security_answer_user') THEN
+          ALTER TABLE "user_security_answer"
+          ADD CONSTRAINT "FK_user_security_answer_user" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE;
+        END IF;
+      END;
+      $$;
     `);
   }
 

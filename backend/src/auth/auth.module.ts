@@ -10,6 +10,7 @@ import { GoogleStrategy } from './google.strategy';
 import { SecurityResetModule } from '../security-reset/security-reset.module';
 import { User } from '../user/user.entity';
 import { SecurityAnswer } from '../security-reset/security-answer.entity';
+import { MailModule } from '../mail/mail.module'; // <- added import
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SecurityAnswer } from '../security-reset/security-answer.entity';
     SecurityResetModule,
     // Register repositories used by AuthService so they can be injected here
     TypeOrmModule.forFeature([User, SecurityAnswer]),
+    MailModule, // <- ensure MailService is provided/exported by MailModule
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

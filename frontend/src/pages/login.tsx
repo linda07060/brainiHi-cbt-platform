@@ -157,7 +157,11 @@ export default function Login(): JSX.Element {
               or
             </Divider>
 
-            <GoogleButton className={styles.googleBtn} />
+            {/* Wrap GoogleButton in a styled container instead of passing className prop,
+                because the GoogleButton component's props do not accept className. */}
+            <div className={styles.googleBtn}>
+              <GoogleButton />
+            </div>
 
             <Typography variant="body2" className={styles.footerText}>
               Don&apos;t have an account?{" "}

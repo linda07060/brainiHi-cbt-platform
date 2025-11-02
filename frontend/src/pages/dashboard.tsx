@@ -1,5 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Paper, List, ListItem, ListItemText, Divider, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Grid } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Button,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Grid,
+} from '@mui/material';
 import Link from 'next/link';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -19,12 +35,19 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Local user fields for display (fallbacks)
-  const userData = (user && (user.user || user)) || {};
+  // Normalize different auth shapes safely for TypeScript:
+  // - sometimes `user` is the user object directly
+  // - sometimes `user` is a wrapper { token, user: { ... } }
+  // Use `any` locally to avoid type errors while preserving runtime behavior.
+  const authAny = user as any;
+  const userData: Record<string, any> = (authAny?.user ?? authAny ?? {}) as Record<string, any>;
 
   // token retrieval (works with different auth shapes)
-  const token = (user && (user.token || user.access_token || user?.user?.token || user?.access_token)) || null;
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+  const token: string | null =
+    (authAny?.token ?? authAny?.access_token ?? authAny?.user?.token ?? authAny?.user?.access_token) || null;
+
+  // Build headers only when token exists
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : undefined;
 
   // Dialog state
   const [emailOpen, setEmailOpen] = useState(false);
@@ -39,31 +62,36 @@ export default function Dashboard() {
     // Handle OAuth token from query string (legacy flow)
     const { token: tokenQuery } = router.query;
     if (!user && typeof tokenQuery === 'string' && tokenQuery.length > 0) {
-      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${tokenQuery}` },
-      })
-      .then(res => {
-        const auth = { token: tokenQuery, user: res.data };
-        localStorage.setItem('auth', JSON.stringify(auth));
-        setUser(auth);
-        router.replace('/dashboard');
-      })
-      .catch(() => {
-        router.replace('/login');
-      });
+      axios
+        .get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${tokenQuery}` },
+        })
+        .then((res) => {
+          // build an auth wrapper { token, user } from the response
+          const auth = { token: tokenQuery, user: res.data };
+          if (typeof window !== 'undefined') localStorage.setItem('auth', JSON.stringify(auth));
+          // setUser expects AuthUser | null in types; cast to any to accept the wrapper shape
+          setUser(auth as any);
+          router.replace('/dashboard');
+        })
+        .catch(() => {
+          router.replace('/login');
+        });
     }
   }, [router.query, setUser, user, router]);
 
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tests/my`, {
-      headers: authHeader,
-    })
-      .then(res => setTests(res.data || []))
+    axios
+      .get(`${process.env.NEXT_PUBLIC_API_URL}/tests/my`, {
+        // only include headers object if token exists
+        ...(authHeader ? { headers: authHeader } : {}),
+      })
+      .then((res) => setTests(res.data || []))
       .catch(() => setTests([]))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user, token]); // include token in deps so requests update when auth changes
 
   useEffect(() => {
     if (!user) {
@@ -82,12 +110,18 @@ export default function Dashboard() {
     setChanging(true);
     try {
       // Backend must implement POST /auth/change-email to accept { newEmail } and use auth guard
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/change-email`, { newEmail }, { headers: authHeader });
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/change-email`,
+        { newEmail },
+        ...(authHeader ? [{ headers: authHeader }] : [{}])
+      );
       // update local user object
       const updated = { ...(userData), email: newEmail };
-      const auth = { ...user, user: updated };
-      localStorage.setItem('auth', JSON.stringify(auth));
-      setUser(auth);
+      // preserve wrapper shape if present
+      const newAuth = authAny?.user ? { ...authAny, user: updated } : { ...updated };
+      if (typeof window !== 'undefined') localStorage.setItem('auth', JSON.stringify(newAuth));
+      // ensure setUser accepts it by casting to any
+      setUser(newAuth as any);
       setStatusMsg('Email updated');
       setEmailOpen(false);
     } catch (err: any) {
@@ -110,7 +144,11 @@ export default function Dashboard() {
     }
     setChanging(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/change-password`, { oldPassword, newPassword }, { headers: authHeader });
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/change-password`,
+        { oldPassword, newPassword },
+        ...(authHeader ? [{ headers: authHeader }] : [{}])
+      );
       setStatusMsg('Password updated');
       setPassOpen(false);
     } catch (err: any) {
@@ -122,11 +160,24 @@ export default function Dashboard() {
 
   const planBadge = (plan: string) => <span className={styles.planBadge}>{plan}</span>;
 
+  const handleLogout = () => {
+    // Prefer provided logout helper if available, otherwise clear local state/storage
+    if (typeof logout === 'function') {
+      logout();
+    } else {
+      setUser(null);
+      if (typeof window !== 'undefined') localStorage.removeItem('auth');
+    }
+    router.push('/login');
+  };
+
   return (
     <Box className={styles.container}>
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Typography variant="h4" fontWeight="bold">Welcome, {userData.name || 'User'}</Typography>
+          <Typography variant="h4" fontWeight="bold">
+            Welcome, {userData.name || 'User'}
+          </Typography>
           <Typography variant="body2" color="text.secondary" mb={2}>
             Access your practice tests, progress and personalised study plans.
           </Typography>
@@ -135,7 +186,9 @@ export default function Dashboard() {
 
       <div className={styles.grid}>
         <div className={styles.profileCard}>
-          <Typography variant="h6" mb={1}>Profile</Typography>
+          <Typography variant="h6" mb={1}>
+            Profile
+          </Typography>
 
           <div className={styles.fieldRow}>
             <div>
@@ -157,7 +210,9 @@ export default function Dashboard() {
               <Typography className={styles.fieldValue}>{userData.email}</Typography>
             </div>
             <div>
-              <Button size="small" variant="outlined" onClick={handleOpenEmail}>Edit</Button>
+              <Button size="small" variant="outlined" onClick={handleOpenEmail}>
+                Edit
+              </Button>
             </div>
           </div>
 
@@ -178,29 +233,44 @@ export default function Dashboard() {
           <Divider sx={{ my: 1 }} />
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="contained" onClick={handleOpenPass}>Change password</Button>
-            <Button variant="text" color="error" onClick={() => { logout(); router.push('/login'); }}>Logout</Button>
+            <Button variant="contained" onClick={handleOpenPass}>
+              Change password
+            </Button>
+            <Button variant="text" color="error" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
 
-          {statusMsg && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>{statusMsg}</Typography>}
+          {statusMsg && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
+              {statusMsg}
+            </Typography>
+          )}
         </div>
 
         <div className={styles.testsCard}>
-          <Typography variant="h6" mb={1}>Past Test Attempts</Typography>
-          {loading ? <CircularProgress /> : (
+          <Typography variant="h6" mb={1}>
+            Past Test Attempts
+          </Typography>
+          {loading ? (
+            <CircularProgress />
+          ) : (
             <List>
-              {tests.length === 0 && <ListItem><ListItemText primary="No test attempts yet." /></ListItem>}
-              {tests.map(t => (
+              {tests.length === 0 && (
+                <ListItem>
+                  <ListItemText primary="No test attempts yet." />
+                </ListItem>
+              )}
+              {tests.map((t) => (
                 <React.Fragment key={t.id}>
                   <ListItem
                     secondaryAction={
-                      <Button component={Link} href={`/review?id=${t.id}`} size="small" variant="outlined">Review</Button>
+                      <Button component={Link} href={`/review?id=${t.id}`} size="small" variant="outlined">
+                        Review
+                      </Button>
                     }
                   >
-                    <ListItemText
-                      primary={t.title}
-                      secondary={`Score: ${t.score} | Taken: ${new Date(t.takenAt).toLocaleString()}`}
-                    />
+                    <ListItemText primary={t.title} secondary={`Score: ${t.score} | Taken: ${new Date(t.takenAt).toLocaleString()}`} />
                   </ListItem>
                   <Divider />
                 </React.Fragment>
@@ -218,7 +288,9 @@ export default function Dashboard() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEmailOpen(false)}>Cancel</Button>
-          <Button onClick={handleEmailSave} disabled={changing} variant="contained">Save</Button>
+          <Button onClick={handleEmailSave} disabled={changing} variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -226,12 +298,21 @@ export default function Dashboard() {
       <Dialog open={passOpen} onClose={() => setPassOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Change password</DialogTitle>
         <DialogContent>
-          <TextField label="Current password" type="password" fullWidth value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} sx={{ mb: 2 }} />
+          <TextField
+            label="Current password"
+            type="password"
+            fullWidth
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            sx={{ mb: 2 }}
+          />
           <TextField label="New password" type="password" fullWidth value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPassOpen(false)}>Cancel</Button>
-          <Button onClick={handlePassSave} disabled={changing} variant="contained">Save</Button>
+          <Button onClick={handlePassSave} disabled={changing} variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

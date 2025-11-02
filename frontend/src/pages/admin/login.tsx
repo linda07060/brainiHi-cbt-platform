@@ -57,8 +57,17 @@ export default function AdminLogin() {
         </form>
       </Box>
 
-      <Snackbar open={!!status} autoHideDuration={3000} onClose={() => setStatus(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        {status && <Alert severity={status.type} onClose={() => setStatus(null)}>{status.message}</Alert>}
+      <Snackbar
+        open={!!status}
+        autoHideDuration={3000}
+        onClose={() => setStatus(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        {status ? (
+          <Alert severity={status.type} onClose={() => setStatus(null)}>
+            {status.message}
+          </Alert>
+        ) : undefined}
       </Snackbar>
     </Container>
   );

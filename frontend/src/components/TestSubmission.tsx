@@ -23,9 +23,13 @@ interface QuestionFeedback {
 }
 
 /**
- * Submission runner component. Reads pendingTestSubmission or LAST_CREATED_TEST,
- * submits to /tests/submit and renders inline score & per-question explanations/feedback
- * if the backend returns them.
+ * Submission runner component.
+ * - Reads pendingTestSubmission or LAST_CREATED_TEST from sessionStorage
+ * - Submits to /tests/submit
+ * - Renders inline score & per-question explanations/feedback if returned
+ * - If backend returns an attempt/result id, navigates to /review?id=<id>
+ *
+ * This version is defensive about response shapes and result id extraction.
  */
 export default function TestSubmission(): JSX.Element {
   const router = useRouter();
@@ -55,7 +59,7 @@ export default function TestSubmission(): JSX.Element {
     } catch {
       parsed = null;
     }
-    if (!parsed?.token || !parsed?.payload) {
+    if (!parsed?.payload) {
       // nothing to submit automatically
       return;
     }
@@ -74,10 +78,20 @@ export default function TestSubmission(): JSX.Element {
       setSnack(null);
 
       try {
-        const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/tests/submit`, parsed.payload, {
-          headers: { Authorization: `Bearer ${parsed.token}` },
-          timeout: 120000,
-        });
+        // Build headers. If token wasn't stored in parsed, try to read one from sessionStorage (safe fallback).
+        const tokenFromParsed = parsed?.token ?? undefined;
+        const fallbackToken = typeof window !== 'undefined' ? sessionStorage.getItem('AUTH_TOKEN') : null;
+        const token = tokenFromParsed ?? (fallbackToken ?? undefined);
+
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        // Submit. Keep a generous timeout but avoid infinite hanging.
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/tests/submit`,
+          parsed.payload,
+          { headers, timeout: 120000 }
+        );
 
         const data = res?.data ?? {};
 
@@ -92,7 +106,7 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // Score / total mapping (support several shapes)
+        // Best-effort extraction of score & total (many possible shapes)
         const score = data?.score ?? data?.result?.score ?? data?.marks ?? null;
         const total = data?.total ?? data?.result?.total ?? data?.max ?? (originalQuestions ? originalQuestions.length : null);
 
@@ -112,7 +126,7 @@ export default function TestSubmission(): JSX.Element {
           }));
         }
 
-        // If server provides explanations object keyed by question id
+        // If server provides explanations keyed by id
         if (!feedback && data?.explanations && typeof data.explanations === 'object' && originalQuestions) {
           feedback = [];
           for (const q of originalQuestions || []) {
@@ -135,16 +149,42 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // If backend returned an id for a result record, redirect to review page
-        const resultId = data?.id ?? data?.resultId ?? data?.submissionId ?? null;
+        // Otherwise, attempt to obtain an id to navigate to review.
+        // Support many possible server shapes: { attempt: { id } }, { id }, { resultId }, { submissionId }, { attemptId }
+        let resultId: string | number | null = null;
+        if (data?.attempt && (data.attempt.id ?? data.attempt._id)) resultId = data.attempt.id ?? data.attempt._id;
+        else if (data?.id) resultId = data.id;
+        else if (data?.resultId) resultId = data.resultId;
+        else if (data?.submissionId) resultId = data.submissionId;
+        else if (data?.attemptId) resultId = data.attemptId;
+        else if (data?.attempt && typeof data.attempt === 'number') resultId = data.attempt;
+
+        // Notify other parts of app (dashboard) that tests changed; include id when available
+        try {
+          window.dispatchEvent(new CustomEvent('tests-changed', { detail: { id: resultId ?? null } }));
+        } catch (e) {
+          // ignore dispatch errors
+          // eslint-disable-next-line no-console
+          console.warn('Unable to dispatch tests-changed event', e);
+        }
+
+        // Remove pending submission marker and redirect if we have an id
         try { sessionStorage.removeItem('pendingTestSubmission'); } catch {}
         if (resultId) {
           setSnack({ severity: 'success', message: 'Submitted — opening results.' });
-          router.replace({ pathname: '/review', query: { id: resultId } });
+          // Use replace to avoid creating extra history entry
+          router.replace({ pathname: '/review', query: { id: String(resultId) } });
           return;
         }
 
-        // Nothing to show inline
+        // If the API indicated processing but didn't return an ID, show info and go to dashboard
+        if (data?.processing) {
+          setSnack({ severity: 'info', message: 'Submission accepted and is processing. Visit the dashboard to check results shortly.' });
+          router.replace('/dashboard');
+          return;
+        }
+
+        // Nothing useful returned
         setSnack({ severity: 'info', message: 'Submission complete — no inline result returned.' });
       } catch (err: any) {
         const serverMsg = err?.response?.data?.message ?? err?.response?.data?.error ?? null;

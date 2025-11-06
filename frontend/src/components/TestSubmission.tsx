@@ -29,7 +29,7 @@ interface QuestionFeedback {
  * - Renders inline score & per-question explanations/feedback if returned
  * - If backend returns an attempt/result id, navigates to /review?id=<id>
  *
- * This version is defensive about response shapes and result id extraction.
+ * Defensive: extracts result id safely and never references undefined vars.
  */
 export default function TestSubmission(): JSX.Element {
   const router = useRouter();
@@ -86,7 +86,6 @@ export default function TestSubmission(): JSX.Element {
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
 
-        // Submit. Keep a generous timeout but avoid infinite hanging.
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/tests/submit`,
           parsed.payload,
@@ -106,17 +105,16 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // Best-effort extraction of score & total (many possible shapes)
+        // Best-effort extraction of score & total
         const score = data?.score ?? data?.result?.score ?? data?.marks ?? null;
         const total = data?.total ?? data?.result?.total ?? data?.max ?? (originalQuestions ? originalQuestions.length : null);
 
-        // Extract per-question feedback in common shapes
+        // Extract per-question feedback
         let feedback: QuestionFeedback[] | null = null;
         if (Array.isArray(data?.feedback)) feedback = data.feedback;
         else if (Array.isArray(data?.results)) feedback = data.results;
         else if (Array.isArray(data?.perQuestion)) feedback = data.perQuestion;
         else if (Array.isArray(data?.questions)) {
-          // sometimes the response returns questions with correctness/explanation fields
           feedback = data.questions.map((q: any, idx: number) => ({
             questionId: q.id ?? q.questionId ?? idx,
             correct: q.correct ?? q.isCorrect,
@@ -138,7 +136,7 @@ export default function TestSubmission(): JSX.Element {
           }
         }
 
-        // If we have any inline result info, render it
+        // If we have inline info, render it
         if (score != null || feedback != null) {
           setResultScore(typeof score === 'number' ? score : null);
           setResultTotal(typeof total === 'number' ? total : (originalQuestions ? originalQuestions.length : null));
@@ -149,8 +147,7 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // Otherwise, attempt to obtain an id to navigate to review.
-        // Support many possible server shapes: { attempt: { id } }, { id }, { resultId }, { submissionId }, { attemptId }
+        // Safely extract a result/attempt id in many shapes
         let resultId: string | number | null = null;
         if (data?.attempt && (data.attempt.id ?? data.attempt._id)) resultId = data.attempt.id ?? data.attempt._id;
         else if (data?.id) resultId = data.id;
@@ -159,32 +156,28 @@ export default function TestSubmission(): JSX.Element {
         else if (data?.attemptId) resultId = data.attemptId;
         else if (data?.attempt && typeof data.attempt === 'number') resultId = data.attempt;
 
-        // Notify other parts of app (dashboard) that tests changed; include id when available
+        // Notify dashboard (safe)
         try {
           window.dispatchEvent(new CustomEvent('tests-changed', { detail: { id: resultId ?? null } }));
         } catch (e) {
-          // ignore dispatch errors
+          // ignore
           // eslint-disable-next-line no-console
           console.warn('Unable to dispatch tests-changed event', e);
         }
 
-        // Remove pending submission marker and redirect if we have an id
         try { sessionStorage.removeItem('pendingTestSubmission'); } catch {}
         if (resultId) {
           setSnack({ severity: 'success', message: 'Submitted — opening results.' });
-          // Use replace to avoid creating extra history entry
           router.replace({ pathname: '/review', query: { id: String(resultId) } });
           return;
         }
 
-        // If the API indicated processing but didn't return an ID, show info and go to dashboard
         if (data?.processing) {
           setSnack({ severity: 'info', message: 'Submission accepted and is processing. Visit the dashboard to check results shortly.' });
           router.replace('/dashboard');
           return;
         }
 
-        // Nothing useful returned
         setSnack({ severity: 'info', message: 'Submission complete — no inline result returned.' });
       } catch (err: any) {
         const serverMsg = err?.response?.data?.message ?? err?.response?.data?.error ?? null;

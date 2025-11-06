@@ -1,331 +1,333 @@
-:root {
-  --max-width: 1200px;
-  --brand: #f6b113;          /* golden accent used for numbers and CTA */
-  --accent-dark: #f0a800;
-  --muted: #6b6b6b;
-  --bg: #ffffff;
-  --card-radius: 14px;
-  --card-shadow: 0 20px 40px rgba(20,20,24,0.06);
-  --soft-shadow: 0 10px 28px rgba(20,20,24,0.04);
-  --border-light: rgba(0,0,0,0.04);
-  --gap: 28px;
-}
+/* Production-ready, minimalist CSS Module for ExamCenters component
+   - All selectors are local (no bare element selectors) for CSS Modules purity.
+   - Scoped tokens under .centers root for predictable theming.
+   - Minimal, neutral aesthetic with clear spacing and responsive layout.
+   - Accessible focus-visible styles and reduced-motion respect.
+*/
 
-/* Outer section */
 .centers {
-  padding: 36px 20px;
+  --bg: #f6f7f8;
+  --card: #ffffff;
+  --text: #0f1721;
+  --muted: #6b6b6b;
+  --brand: #f2a400;
+  --radius: 12px;
+  --shadow-sm: 0 10px 30px rgba(16,24,32,0.05);
+  --shadow-md: 0 20px 50px rgba(16,24,32,0.07);
+  --container-max: 1200px;
+
+  background: var(--bg);
+  padding: 56px 20px;
+  display: flex;
+  justify-content: center;
   box-sizing: border-box;
-  background: transparent;
 }
 
-/* Constrain the inner content */
+/* centered inner container */
 .container {
-  max-width: var(--max-width);
+  width: 100%;
+  max-width: var(--container-max);
   margin: 0 auto;
   box-sizing: border-box;
 }
 
-/* KPI / stats block */
+/* KPI row (numbers) */
 .numbersBlock {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
   text-align: center;
-  margin-bottom: 28px;
-  box-sizing: border-box;
-}
-.numbersTitle {
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #6b6b6b;
-  font-weight: 700;
-  margin: 0 0 18px;
+  margin-bottom: 22px;
+  align-items: center;
 }
 
-/* grid of the four stats */
+.numbersTitle {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px 0;
+}
+
+/* four-column stats on wide screens, stacked on small */
 .numbersGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 28px;
   align-items: start;
   justify-items: center;
-  margin: 0 0 6px;
-  padding: 0;
   list-style: none;
-  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 .numberItem {
-  text-align: center;
-  box-sizing: border-box;
-  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 220px;
 }
 
-/* big highlighted number */
 .bigNumber {
-  font-size: 1.6rem;
+  font-size: 20px;
   font-weight: 800;
   color: var(--brand);
-  margin: 0 0 6px;
-  line-height: 1;
-}
-
-/* small muted description under number */
-.numLabel {
-  font-size: 0.85rem;
-  color: var(--muted);
   margin: 0;
-  max-width: 160px;
+  text-align: center;
 }
 
-/* Top header + CTA bar */
+.numLabel {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+  text-align: center;
+  margin: 0;
+}
+
+/* header and CTA row */
 .topBar {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
+  gap: 24px;
+  margin: 28px 0;
   justify-content: space-between;
-  gap: 20px;
-  margin: 18px 0 26px;
-  box-sizing: border-box;
 }
 
 .headerBlock {
-  max-width: 68%;
-  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-/* main heading */
 .heading {
-  margin: 0;
-  font-size: 1.5rem;
+  margin: 0 0 10px 0;
+  font-size: 28px;
+  line-height: 1.04;
+  color: var(--text);
   font-weight: 800;
-  color: #231f20;
-  line-height: 1.06;
 }
+
 .italic {
   color: var(--brand);
   font-style: italic;
+  font-weight: 800;
 }
 
-/* underline accent under heading */
 .underline {
   width: 56px;
-  height: 4px;
+  height: 6px;
   background: var(--brand);
-  border-radius: 3px;
-  margin: 10px 0 14px 0;
+  border-radius: 6px;
+  margin: 12px 0;
 }
 
-/* descriptive paragraph */
 .desc {
-  margin: 0 0 10px;
+  margin: 0;
   color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.6;
-  max-width: 66ch;
-  box-sizing: border-box;
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 68ch;
 }
 
-/* CTA button on topBar */
+/* CTA link */
 .cta {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: var(--brand);
-  color: #111;
-  padding: 10px 16px;
+  color: #fff;
+  padding: 10px 18px;
   border-radius: 10px;
   text-decoration: none;
   font-weight: 700;
-  box-shadow: var(--soft-shadow);
-  border: 1px solid rgba(0,0,0,0.03);
+  box-shadow: var(--shadow-sm);
   white-space: nowrap;
-  transition: transform 160ms ease, box-shadow 160ms ease;
-}
-.cta:hover,
-.cta:focus {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 40px rgba(20,20,24,0.08);
-}
-.arrow {
-  font-weight: 900;
+  align-self: center;
 }
 
-/* Map + center card section */
+.cta:focus-visible {
+  outline: 3px solid rgba(242,164,0,0.18);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* map + card layout */
 .mapSection {
   display: grid;
-  grid-template-columns: 1fr 380px; /* left large map, right center card */
+  grid-template-columns: 1fr 360px;
   gap: 28px;
   align-items: start;
+  margin-top: 18px;
   box-sizing: border-box;
-  margin-top: 10px;
 }
 
-/* Map area: visual map container */
+/* map area */
 .mapArea {
   position: relative;
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 18px 40px rgba(20,20,24,0.04);
-  border: 1px solid var(--border-light);
-  background: #071226; /* fallback background similar to the dark map */
-  box-sizing: border-box;
+  background: #0b1220; /* fallback while map image loads */
+  box-shadow: var(--shadow-md);
+  min-height: 420px;
 }
 
-/* scoped map image */
+/* map image (scoped) */
 .mapImg {
-  display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: cover;
-  box-sizing: border-box;
-  border-radius: 8px;
+  display: block;
 }
 
-/* decorative markers positioned absolutely inside mapArea */
+/* marker images (decorative) */
 .marker {
   position: absolute;
-  width: 54px;
-  height: 54px;
-  pointer-events: none;
+  width: 48px;
+  height: 48px;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 8px 18px rgba(20,20,24,0.12));
-  box-sizing: border-box;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 18px rgba(16,24,32,0.12));
 }
-/* Example marker positions - adjust as needed to match the image coordinates */
-.marker1 { left: 72%; top: 46%; }  /* east coast */
-.marker2 { left: 12%; top: 70%; }  /* west coast */
-.marker3 { left: 44%; top: 34%; }  /* midwest */
 
-/* Center card (right column) */
+.marker1 { left: 34%; top: 40%; }
+.marker2 { left: 12%; top: 30%; }
+.marker3 { left: 58%; top: 52%; }
+
+/* center info card */
 .centerCard {
-  background: var(--bg);
+  background: var(--card);
   border-radius: 12px;
   padding: 18px;
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   box-sizing: border-box;
 }
 
-/* small pill label at top of card */
 .centerHeader {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
 .centerNamePill {
-  display: inline-block;
-  background: rgba(246,177,19,0.12);
-  color: #b16a14;
-  padding: 6px 12px;
+  background: rgba(242,164,0,0.12);
+  color: var(--brand);
+  padding: 6px 10px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 0.9rem;
-  box-sizing: border-box;
+  font-size: 13px;
 }
 
-/* description inside card */
 .centerDesc {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 14px;
   line-height: 1.6;
 }
 
-/* address block */
+/* address & hours */
 .centerAddress {
   font-style: normal;
-  color: #333;
-  font-size: 0.95rem;
-  margin: 0 0 12px;
-  line-height: 1.45;
-  box-sizing: border-box;
-}
-.centerHours {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 0.9rem;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  display: block;
 }
 
-/* actions area in card */
+.centerHours {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* actions row inside card */
 .centerActions {
   display: flex;
-  align-items: center;
   gap: 12px;
-  margin-top: 8px;
-  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 4px;
 }
 
-/* phone link */
 .centerPhone {
   color: var(--brand);
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 14px;
 }
 
-/* explore center CTA */
+.centerPhone:focus-visible,
+.centerCta:focus-visible {
+  outline: 3px solid rgba(242,164,0,0.14);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* small button inside card */
 .centerCta {
-  display: inline-block;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: var(--brand);
-  color: #111;
+  color: #fff;
   padding: 8px 12px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 700;
-  box-shadow: var(--soft-shadow);
-  border: 1px solid rgba(0,0,0,0.03);
-  transition: transform 120ms ease, box-shadow 120ms ease;
-}
-.centerCta:hover,
-.centerCta:focus {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px rgba(20,20,24,0.08);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Responsive adjustments */
-
-/* medium screens: stats reduce to two rows and card stacks under map if narrow */
-@media (max-width: 1100px) {
+/* responsive adjustments */
+@media (max-width: 1000px) {
   .numbersGrid {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .topBar {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 16px;
   }
-  .headerBlock {
-    max-width: 100%;
-  }
+
   .mapSection {
     grid-template-columns: 1fr;
   }
-  .centerCard {
-    margin-top: 18px;
-  }
-  .marker1, .marker2, .marker3 {
-    transform: translate(-50%, -50%) scale(0.9);
+
+  .centerCta {
+    margin-left: 0;
   }
 }
 
-/* small screens: stack everything vertically and tighten spacing */
-@media (max-width: 680px) {
+@media (max-width: 520px) {
   .numbersGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  .numbersTitle { font-size: 0.8rem; }
-  .bigNumber { font-size: 1.3rem; }
-  .topBar { margin: 12px 0; }
-  .heading { font-size: 1.25rem; }
-  .desc { font-size: 0.95rem; }
-  .mapSection {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  .mapArea { border-radius: 10px; }
-  .centerCard { padding: 12px; }
-  .centerCta { padding: 8px 10px; }
-  .marker { width: 42px; height: 42px; }
+
+  .heading {
+    font-size: 22px;
+  }
+
+  .mapArea {
+    min-height: 300px;
+  }
+
+  .container {
+    padding: 0 12px;
+  }
 }
 
-/* Small accessibility tweaks: avoid collapse */
-.container, .mapArea, .centerCard, .left, .visual {
-  min-width: 0;
+/* reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .mapArea,
+  .mapImg,
+  .marker,
+  .centerCard,
+  .cta {
+    transition: none !important;
+    animation: none !important;
+  }
 }

@@ -24,9 +24,23 @@ import styles from '../styles/ForgotPassword.module.css';
  *   and navigate to /verify-identity where the user answers questions + provides the recovery passphrase.
  * - If account not found (or no questions configured) we show a generic message to avoid enumeration.
  *
- * This file intentionally avoids promising an email will be sent when the server is not configured to send mail.
- * It reads /auth/config to choose copy that matches backend capability.
+ * The TypeScript errors were caused by accessing properties on res.data which TypeScript infers as {}.
+ * We fix that by introducing small response interfaces and casting res.data to them before use.
  */
+
+/* Response shapes used on this page */
+interface AuthConfigResponse {
+  mailEnabled?: boolean;
+  [k: string]: any;
+}
+
+interface SecurityResetInitiateResponse {
+  found?: boolean;
+  hasQuestions?: boolean;
+  questions?: any[];
+  message?: string;
+  [k: string]: any;
+}
 
 export default function ForgotPassword(): JSX.Element {
   const router = useRouter();
@@ -39,8 +53,9 @@ export default function ForgotPassword(): JSX.Element {
   useEffect(() => {
     // read backend config to adapt copy (safe global flag)
     axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/config`)
-      .then(res => {
-        setMailEnabled(Boolean(res.data?.mailEnabled));
+      .then((res) => {
+        const data = (res?.data ?? {}) as AuthConfigResponse;
+        setMailEnabled(Boolean(data.mailEnabled));
       })
       .catch(() => setMailEnabled(false));
   }, []);
@@ -58,23 +73,26 @@ export default function ForgotPassword(): JSX.Element {
     setLoading(true);
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/security-reset/initiate`, { identifier: identifier.trim() });
+      const data = (res?.data ?? {}) as SecurityResetInitiateResponse;
 
       // If backend found the account and returned questions -> proceed to verify page
-      if (res.data?.found && res.data?.hasQuestions && Array.isArray(res.data.questions) && res.data.questions.length > 0) {
-        // store identifier and questions for the next step (short-lived in sessionStorage)
-        sessionStorage.setItem('reset_identifier', identifier.trim());
-        sessionStorage.setItem('reset_questions', JSON.stringify(res.data.questions));
-        // navigate to verification step
+      if (data.found && data.hasQuestions && Array.isArray(data.questions) && data.questions.length > 0) {
+        try {
+          sessionStorage.setItem('reset_identifier', identifier.trim());
+          sessionStorage.setItem('reset_questions', JSON.stringify(data.questions));
+        } catch {
+          // ignore storage errors
+        }
         router.push('/verify-identity');
         return;
       }
 
       // Otherwise show a generic message (avoid account enumeration)
-      setStatus({ type: 'success', message: res.data?.message || 'If an account with that identifier exists, follow the next steps.' });
+      setStatus({ type: 'success', message: data.message ?? 'If an account with that identifier exists, follow the next steps.' });
     } catch (err: any) {
-      // Show friendly message but avoid leaking whether the account exists
-      const msg = err?.response?.data?.message || 'Unable to process request. Please try again later.';
-      setStatus({ type: 'error', message: msg });
+      const serverData = (err?.response?.data ?? {}) as SecurityResetInitiateResponse;
+      const msg = serverData.message ?? 'Unable to process request. Please try again later.';
+      setStatus({ type: 'error', message: String(msg) });
     } finally {
       setLoading(false);
     }

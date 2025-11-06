@@ -11,6 +11,15 @@ type Props = {
   onUpdated?: (u: any) => void;
 };
 
+/**
+ * Minimal response shapes for the admin endpoints used here.
+ */
+interface ResetResponse {
+  message?: string;
+  user?: any;
+  [k: string]: any;
+}
+
 export default function UserDetailModal({ open, onClose, userId, userData, onUpdated }: Props) {
   const [saving, setSaving] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -27,10 +36,14 @@ export default function UserDetailModal({ open, onClose, userId, userData, onUpd
     try {
       // API: POST /admin/users/:id/reset-password { newPassword } or returns generated token
       const res = await api.post(`/admin/users/${userId}/reset-password`, { newPassword });
-      setStatus(res.data?.message || 'Password reset');
-      if (onUpdated) onUpdated(res.data?.user || userData);
+      // Cast response to a permissive shape so TS allows .message and .user access
+      const data = (res?.data ?? {}) as ResetResponse;
+
+      setStatus(data.message ?? 'Password reset');
+      if (onUpdated) onUpdated(data.user ?? userData);
     } catch (err: any) {
-      setStatus(err?.response?.data?.message || 'Unable to reset password');
+      const serverMsg = (err?.response?.data as ResetResponse)?.message ?? 'Unable to reset password';
+      setStatus(String(serverMsg));
     } finally {
       setSaving(false);
       setShowResetConfirm(false);
@@ -43,10 +56,13 @@ export default function UserDetailModal({ open, onClose, userId, userData, onUpd
     try {
       // API: POST /admin/users/:id/reset-security (backend decides action)
       const res = await api.post(`/admin/users/${userId}/reset-security`, {});
-      setStatus(res.data?.message || 'Security reset');
-      if (onUpdated) onUpdated(res.data?.user || userData);
+      const data = (res?.data ?? {}) as ResetResponse;
+
+      setStatus(data.message ?? 'Security reset');
+      if (onUpdated) onUpdated(data.user ?? userData);
     } catch (err: any) {
-      setStatus(err?.response?.data?.message || 'Unable to reset security data');
+      const serverMsg = (err?.response?.data as ResetResponse)?.message ?? 'Unable to reset security data';
+      setStatus(String(serverMsg));
     } finally {
       setSaving(false);
     }

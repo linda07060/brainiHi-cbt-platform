@@ -17,13 +17,24 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import styles from "../styles/Login.module.css";
 
+// AI transparency / legal components
+import AITransparency from "../components/AITransparency";
+import LegalDisclaimer from "../components/LegalDisclaimer";
+
 /**
- * Login page with robust handler:
- * - normalizes token and user from common backend shapes
- * - immediately persists auth to localStorage
- * - sets axios.defaults.headers.common.Authorization before redirect
- * - updates AuthContext via setUser
+ * Minimal typings for the responses used on this page.
+ * Keep them permissive so we can safely access common fields returned by different backends.
  */
+interface LoginResponse {
+  access_token?: string;
+  token?: string;
+  accessToken?: string;
+  user?: any;
+  email?: string;
+  id?: string | number;
+  message?: string;
+  [k: string]: any;
+}
 
 export default function Login(): JSX.Element {
   const router = useRouter();
@@ -46,8 +57,10 @@ export default function Login(): JSX.Element {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
+          // Cast response payload so TS knows common fields may exist
+          const data = (res?.data ?? {}) as LoginResponse;
           // Backend returned user object
-          const auth = { token, user: res.data };
+          const auth = { token, user: data };
           try {
             if (typeof window !== "undefined") localStorage.setItem("auth", JSON.stringify(auth));
           } catch {}
@@ -59,8 +72,10 @@ export default function Login(): JSX.Element {
         })
         .catch((err) => {
           const status = err?.response?.status;
+          // Cast error response as LoginResponse to safely read .email if present
+          const errData = (err?.response?.data ?? {}) as LoginResponse;
           if (status === 404) {
-            const emailFromResp = err?.response?.data?.email || "";
+            const emailFromResp = errData.email || "";
             const pre = emailFromResp || "";
             router.replace(`/register?email=${encodeURIComponent(pre)}`);
           } else {
@@ -70,8 +85,10 @@ export default function Login(): JSX.Element {
             console.error("Google login error", err?.response || err);
           }
         })
-        .finally(() => setLoading(false));
+        // avoid relying on Promise.finally type in some environments; ensure loading is cleared in a then
+        .then(() => setLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.query, setUser, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,10 +103,13 @@ export default function Login(): JSX.Element {
         { email, password }
       );
 
+      // Cast response to a permissive shape so TypeScript allows reading common token/user fields
+      const data = (res?.data ?? {}) as LoginResponse;
+
       // Normalize response to { token, user }
       const token =
-        res.data?.access_token || res.data?.token || res.data?.accessToken || null;
-      const user = res.data?.user || (res.data && (res.data.email || res.data.id) ? res.data : null);
+        data.access_token ?? data.token ?? data.accessToken ?? null;
+      const user = data.user ?? (data && (data.email || data.id) ? data : null);
 
       if (!token || !user) {
         throw new Error("Invalid login response (missing token or user)");
@@ -114,8 +134,10 @@ export default function Login(): JSX.Element {
       setTimeout(() => router.push("/dashboard"), 800);
     } catch (error: any) {
       setSuccess(false);
+      // Cast error response to be safe when reading message
+      const serverData = (error?.response?.data ?? {}) as { message?: string; [k: string]: any };
       const message =
-        error?.response?.data?.message ||
+        serverData.message ||
         error?.message ||
         "Login failed. Please check your credentials and try again.";
       setMsg(message);
@@ -206,6 +228,10 @@ export default function Login(): JSX.Element {
           </form>
         </Paper>
       </Box>
+
+      {/* Transparency + legal blocks: show on auth pages so users see AI origin and disclaimer */}
+      <AITransparency />
+      <LegalDisclaimer />
 
       <Snackbar
         open={open}

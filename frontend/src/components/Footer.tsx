@@ -4,12 +4,11 @@ import { useRouter } from "next/router";
 import styles from "../styles/Footer.module.css";
 
 /**
- * Improved Footer with robust anchor scrolling:
- * - Uses MutationObserver + interval retries until target element appears.
- * - Honors sticky header offset (detects common header selectors).
- * - "Contact" links to /contact (page).
+ * Merged Footer
  *
- * Ensure your home page contains an element with id="testimonials".
+ * - Combines the main site footer and the small legal row into one component.
+ * - Replace your existing Footer component with this file.
+ * - Remove any other FooterLegal renders from _app.tsx or pages so the footer is not duplicated.
  */
 
 export default function Footer(): JSX.Element {
@@ -32,7 +31,7 @@ export default function Footer(): JSX.Element {
     { label: "Contact Us", href: "/contact", anchor: undefined },
   ];
 
-  // compute header height if present to offset the scroll
+  // scroll helpers used by in-page anchors
   function getHeaderOffset(): number {
     try {
       const header =
@@ -54,7 +53,7 @@ export default function Footer(): JSX.Element {
     const headerOffset = getHeaderOffset();
     const rect = el.getBoundingClientRect();
     const absoluteTop = rect.top + window.pageYOffset;
-    const targetY = Math.max(0, absoluteTop - headerOffset - 8); // 8px breathing room
+    const targetY = Math.max(0, absoluteTop - headerOffset - 8);
     window.scrollTo({ top: targetY, behavior: "smooth" });
   }
 
@@ -63,7 +62,6 @@ export default function Footer(): JSX.Element {
     const el = document.getElementById(id) || document.querySelector(`[data-section="${id}"]`);
     if (el) {
       scrollToElementWithOffset(el);
-      // update hash without creating extra history entry
       if (window && window.history) {
         window.history.replaceState({}, "", `#${id}`);
       }
@@ -72,11 +70,9 @@ export default function Footer(): JSX.Element {
     return false;
   }
 
-  // Wait until element appears using MutationObserver + interval fallback
   function waitForAndScroll(id: string, timeout = 6000): Promise<boolean> {
     return new Promise((resolve) => {
       if (!id) return resolve(false);
-
       if (tryScrollToId(id)) return resolve(true);
 
       let finished = false;
@@ -111,13 +107,10 @@ export default function Footer(): JSX.Element {
         } catch (e) {}
       }
 
-      // observe DOM for additions (subtree = true)
       obs.observe(document.body, { childList: true, subtree: true });
 
-      // also listen for a custom event that some components can emit when ready
       const onReady = (e: Event) => {
         try {
-          // if event detail matches our id, attempt immediate scroll
           const detail = (e as CustomEvent).detail;
           if (!detail || detail === id) {
             if (tryScrollToId(id)) {
@@ -133,27 +126,21 @@ export default function Footer(): JSX.Element {
   }
 
   async function handleAnchorClick(e: React.MouseEvent, anchorId?: string, href?: string) {
-    // If no anchor id, do nothing — let Link handle page navigation
     if (!anchorId) return;
-
     e.preventDefault();
 
-    // If already on homepage, try immediate scroll then wait if needed
     if (router.pathname === "/") {
       if (tryScrollToId(anchorId)) return;
       await waitForAndScroll(anchorId);
       return;
     }
 
-    // Not on home: navigate to home with hash, then wait and scroll when the element appears
     const onComplete = async () => {
-      // small allow time for the DOM to mount; waitForAndScroll will keep trying
       await waitForAndScroll(anchorId);
       router.events.off("routeChangeComplete", onComplete);
     };
 
     router.events.on("routeChangeComplete", onComplete);
-    // Use push to add entry to history; include hash so URL shows anchor
     router
       .push(href || `/#${anchorId}`)
       .catch(() => {

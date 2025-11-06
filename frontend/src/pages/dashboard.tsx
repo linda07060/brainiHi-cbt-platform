@@ -294,7 +294,26 @@ export default function Dashboard() {
     if (mountedRef.current) setLoading(true);
     try {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/tests/my`, { headers: { Authorization: `Bearer ${token}` } });
-      if (mountedRef.current) setTests(res.data || []);
+
+      // Normalize the response before passing to setTests so TypeScript always receives an array.
+      const raw = (res?.data ?? {}) as any;
+      if (Array.isArray(raw)) {
+        if (mountedRef.current) setTests(raw);
+      } else if (raw && typeof raw === 'object') {
+        // common shapes: { items: [...] } or { tests: [...] } or { data: [...] }
+        if (Array.isArray(raw.items)) {
+          if (mountedRef.current) setTests(raw.items);
+        } else if (Array.isArray(raw.tests)) {
+          if (mountedRef.current) setTests(raw.tests);
+        } else if (Array.isArray(raw.data)) {
+          if (mountedRef.current) setTests(raw.data);
+        } else {
+          // not an array-shaped response: coerce to empty array to avoid type errors and unexpected UI shapes
+          if (mountedRef.current) setTests([]);
+        }
+      } else {
+        if (mountedRef.current) setTests([]);
+      }
     } catch (err) {
       if (mountedRef.current) setTests([]);
     } finally {
@@ -321,7 +340,7 @@ export default function Dashboard() {
       if (!token) { if (mountedLocal) setUserData(null); return; }
       try {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
-        const fetchedUser = res.data;
+        const fetchedUser = (res?.data ?? {}) as any;
         let storedAuth: any = null;
         try { if (typeof window !== 'undefined') storedAuth = JSON.parse(localStorage.getItem('auth') || 'null'); } catch {}
         const prevUser = userData ?? storedAuth?.user ?? null;
@@ -351,7 +370,8 @@ export default function Dashboard() {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/ai/usage`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (mountedLocal) setUsage(res.data);
+        const u = (res?.data ?? null) as UsageResponse | null;
+        if (mountedLocal) setUsage(u);
       } catch {
         if (mountedLocal) setUsage(null);
       }
@@ -949,13 +969,15 @@ export default function Dashboard() {
       const createUrl = '/api/tests/create-from-ai';
 
       const res = await axios.post(createUrl, body, { headers: { 'Content-Type': 'application/json' }, timeout: 120000 });
-      const serverData = res?.data ?? {};
+      // Cast response to any to allow flexible access to sessionId/questions/items/etc.
+      const serverData = (res?.data ?? {}) as any;
       const sessionIdReturned = serverData?.sessionId ?? serverData?.id ?? null;
 
       // detect if server returned the questions payload directly
-      const hasQuestions = Array.isArray(serverData?.questions) && serverData.questions.length > 0
-        || Array.isArray(serverData?.items) && serverData.items.length > 0
-        || (serverData?.test && Array.isArray(serverData.test.questions) && serverData.test.questions.length > 0);
+      const hasQuestions =
+        (Array.isArray(serverData?.questions) && serverData.questions.length > 0) ||
+        (Array.isArray(serverData?.items) && serverData.items.length > 0) ||
+        (serverData?.test && Array.isArray(serverData.test.questions) && serverData.test.questions.length > 0);
 
       // Persist last created test payload so Review/Test pages can use it
       try {
@@ -999,7 +1021,7 @@ export default function Dashboard() {
       }
     } catch (err: any) {
       const dataErr = err?.response?.data;
-      setSnack({ severity: 'error', message: dataErr?.message || 'Unable to start test. Try again later.' });
+      setSnack({ severity: 'error', message: (dataErr && dataErr.message) || 'Unable to start test. Try again later.' });
       console.error('Start test error', err?.response ?? err);
     } finally {
       setStarting(false);

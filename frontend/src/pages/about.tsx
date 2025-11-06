@@ -1,6 +1,5 @@
 import Head from "next/head";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 import Testimonials from "../components/Testimonials";
 import FeatureGrid from "../components/About/FeatureGrid";
 import ResponsiveMotion from "../components/ResponsiveMotion";
@@ -91,8 +90,6 @@ export default function About() {
           </section>
         </div>
       </ResponsiveMotion>
-
-      <Footer />
     </>
   );
 }

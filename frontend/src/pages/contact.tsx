@@ -1,5 +1,4 @@
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 import ContactInfo from "../components/Contact/ContactInfo";
 import ContactForm from "../components/Contact/ContactForm";
 import ContactFAQ from "../components/Contact/ContactFAQ";
@@ -42,7 +41,6 @@ export default function Contact() {
           <ContactCTA />
         </div>
       </motion.main>
-      <Footer />
     </>
   );
 }

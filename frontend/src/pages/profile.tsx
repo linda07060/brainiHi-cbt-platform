@@ -27,6 +27,18 @@ import { useAuth } from '../context/AuthContext';
 const PROFILE_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/profile`;
 const CHANGE_PASSWORD_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/change-password`;
 
+/* --- Response shapes used on this page --- */
+interface ProfileUpdateResponse {
+  user?: any;
+  message?: string;
+  [k: string]: any;
+}
+
+interface ChangePasswordResponse {
+  message?: string;
+  [k: string]: any;
+}
+
 export default function ProfilePage(): JSX.Element {
   const { user, token: ctxToken, setUser } = useAuth() as any;
 
@@ -101,7 +113,9 @@ export default function ProfilePage(): JSX.Element {
       const body = { email: email.trim(), phone: phone.trim() };
       const res = await axios.patch(PROFILE_URL, body, { headers: { ...authHeaders } });
 
-      const updatedUser = res.data?.user ?? res.data ?? { ...initialUser, ...body };
+      // Cast response to ProfileUpdateResponse so TS knows .user may exist
+      const data = (res?.data ?? {}) as ProfileUpdateResponse;
+      const updatedUser = data.user ?? data ?? { ...initialUser, ...body };
 
       const newAuth = { token, user: updatedUser };
       try {
@@ -114,7 +128,8 @@ export default function ProfilePage(): JSX.Element {
       setSnack({ severity: 'success', message: 'Profile updated successfully.' });
       setEditingEmail(false);
     } catch (err: any) {
-      const message = err?.response?.data?.message || 'Unable to update profile. Try again.';
+      const serverData = (err?.response?.data ?? {}) as ProfileUpdateResponse;
+      const message = serverData.message || err?.response?.data?.error || 'Unable to update profile. Try again.';
       setSnack({ severity: 'error', message });
       // eslint-disable-next-line no-console
       console.error('Profile update error', err?.response ?? err);
@@ -144,11 +159,14 @@ export default function ProfilePage(): JSX.Element {
         { headers: { ...authHeaders } },
       );
 
+      const data = (res?.data ?? {}) as ChangePasswordResponse;
+
       setOldPassword('');
       setNewPassword('');
-      setSnack({ severity: 'success', message: res.data?.message || 'Password changed successfully.' });
+      setSnack({ severity: 'success', message: data.message ?? 'Password changed successfully.' });
     } catch (err: any) {
-      const message = err?.response?.data?.message || 'Failed to change password. Please check your current password.';
+      const serverData = (err?.response?.data ?? {}) as ChangePasswordResponse;
+      const message = serverData.message || err?.response?.data?.error || 'Failed to change password. Please check your current password.';
       setSnack({ severity: 'error', message });
       // eslint-disable-next-line no-console
       console.error('Change password error', err?.response ?? err);

@@ -15,6 +15,16 @@ export default function AdminLogin() {
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
+  // Minimal typing for the login response so TS knows these properties may exist
+  interface LoginResponse {
+    access_token?: string;
+    token?: string;
+    accessToken?: string;
+    admin?: any;
+    user?: any;
+    [k: string]: any;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -24,10 +34,13 @@ export default function AdminLogin() {
       // NOTE: call the admin login endpoint (not the user /auth/login)
       const res = await axios.post(`${apiBase}/admin/auth/login`, { email, password });
 
+      // Cast response to a permissive type so TypeScript knows these optional fields may exist
+      const data = (res?.data ?? {}) as LoginResponse;
+
       // Accept several possible token field names
-      const token = res.data?.access_token || res.data?.token || res.data?.accessToken;
+      const token = data.access_token ?? data.token ?? data.accessToken;
       // Admin endpoint returns { access_token, admin }
-      const admin = res.data?.admin || res.data?.user || res.data;
+      const admin = data.admin ?? data.user ?? data;
 
       if (!token) {
         setStatus({ type: 'error', message: 'Authentication token not returned by server' });
@@ -49,9 +62,10 @@ export default function AdminLogin() {
       router.push('/admin/dashboard');
     } catch (err: any) {
       // Prefer server-provided message, fall back to generic text
+      const serverData = (err?.response?.data ?? {}) as { message?: string; error?: string };
       const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
+        serverData.message ||
+        serverData.error ||
         err?.response?.statusText ||
         err?.message ||
         'Login failed';

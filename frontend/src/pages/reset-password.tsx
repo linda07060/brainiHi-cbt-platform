@@ -32,13 +32,20 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/security-reset/confirm`, { token, password });
-      setStatus({ type: 'success', message: res.data?.message || 'Password updated' });
-      sessionStorage.removeItem('reset_token');
-      sessionStorage.removeItem('reset_identifier');
-      sessionStorage.removeItem('reset_questions');
+
+      // Cast response to a permissive shape so TypeScript allows reading .message
+      const data = (res?.data ?? {}) as { message?: string; [k: string]: any };
+
+      setStatus({ type: 'success', message: data.message ?? 'Password updated' });
+      try {
+        sessionStorage.removeItem('reset_token');
+        sessionStorage.removeItem('reset_identifier');
+        sessionStorage.removeItem('reset_questions');
+      } catch {}
       setTimeout(() => router.push('/login'), 1200);
     } catch (err: any) {
-      setStatus({ type: 'error', message: err?.response?.data?.message || 'Unable to update password' });
+      const serverMsg = ((err?.response?.data ?? {}) as { message?: string })?.message ?? 'Unable to update password';
+      setStatus({ type: 'error', message: String(serverMsg) });
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,12 @@ import UserDetailModal from '../../components/admin/UserDetailModal';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 
+type AdminUsersResponse = {
+  items?: any[];
+  totalPages?: number;
+  [k: string]: any;
+};
+
 export default function AdminUsersPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -33,10 +39,21 @@ export default function AdminUsersPage() {
     setLoading(true);
     try {
       const res = await api.get('/admin/users', { params: { q: query, page, limit: 20 } });
-      setUsers(res.data?.items || res.data || []);
-      setTotalPages(res.data?.totalPages || 1);
+
+      // Normalize response so TypeScript knows available fields.
+      const raw = res?.data ?? {};
+      // If API returns a plain array, accept it directly.
+      if (Array.isArray(raw)) {
+        setUsers(raw);
+        setTotalPages(1);
+      } else {
+        const data = raw as AdminUsersResponse;
+        setUsers(data.items ?? []);
+        setTotalPages(data.totalPages ?? 1);
+      }
     } catch (err) {
       setUsers([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,132 @@
+/* Continuous right-to-left scrolling ticker suitable for short announcements.
+   - Measures content width and sets animation duration so movement speed is steady (pixels/sec)
+   - Pauses on hover/focus
+   - Respects prefers-reduced-motion (renders static text)
+   - Session-dismissible (sessionStorage)
+*/
+
+:root {
+  --ticker-bg: #ffffff;
+  --ticker-border: rgba(0,0,0,0.06);
+  --ticker-color: #111827;
+  --ticker-accent: #861f41;
+  --ticker-speed: 60; /* px/s fallback */
+}
+
+/* wrapper full width under header */
+.wrapper {
+  width: 100%;
+  background: var(--ticker-bg);
+  border-bottom: 1px solid var(--ticker-border);
+  box-sizing: border-box;
+  font-size: 0.95rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 16px;
+  box-sizing: border-box;
+}
+
+/* visually hidden accessible copy */
+.srOnly {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* viewport hides overflow */
+.viewport {
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* static mode (reduced motion) */
+.static .scroller {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* scroller contains two copies side-by-side for seamless loop */
+.scroller {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  /* CSS var --scroll-duration will be set inline by the component; fallback 20s */
+  animation: scroll-left var(--scroll-duration, 20s) linear infinite;
+  will-change: transform;
+}
+
+/* pause helper class (added on hover) */
+.paused {
+  animation-play-state: paused !important;
+}
+
+/* each itemsRow is one copy of the sequence */
+.itemsRow {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+/* item styling */
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 12px;
+}
+.itemText {
+  color: var(--ticker-color);
+}
+.itemLink {
+  color: var(--ticker-accent);
+  text-decoration: underline;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+.sep {
+  opacity: 0.45;
+  padding-left: 8px;
+}
+
+/* controls */
+.controls {
+  flex: 0 0 auto;
+}
+.dismiss {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: rgba(17,24,39,0.6);
+}
+
+/* keyframes: translate by half the scroller width (we duplicated content) */
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* responsive: slightly slower on mobile to improve legibility */
+@media (max-width: 640px) {
+  .container { padding: 8px 12px; gap: 8px; }
+  .itemText { font-size: 0.95rem; }
+  .itemLink { font-size: 0.95rem; }
+}
+
+/* Respect reduced motion: stop animation */
+@media (prefers-reduced-motion: reduce) {
+  .scroller { animation: none; transform: none; }
+}

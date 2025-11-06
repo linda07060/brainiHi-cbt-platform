@@ -1,12 +1,15 @@
 import Head from "next/head";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
 import Pricing from "../components/Pricing";
 import CTABanner from "../components/CTABanner";
 import ExamTrust from "../components/ExamTrust";
 import layout from "../styles/Layout.module.css";
+
+// AI transparency / legal components
+import LegalDisclaimer from "../components/LegalDisclaimer";
+import AITransparency from "../components/AITransparency";
 
 export default function ACTPage(): JSX.Element {
   return (
@@ -32,10 +35,6 @@ export default function ACTPage(): JSX.Element {
           {/* Core features block (Everything you need) */}
           <Features />
 
-          {/* NOTE: removed duplicated SampleSection here to avoid rendering the sample test & testimonials twice.
-              The sample/testimonials are displayed from the single canonical component (ExamTrust or SampleSection).
-              If you prefer them after Features instead, move the SampleSection import/use back here and remove from ExamTrust. */}
-
           <section style={{ marginTop: 36 }}>
             <h2>Recommended for ACT test-takers</h2>
             <p>
@@ -44,12 +43,14 @@ export default function ACTPage(): JSX.Element {
           </section>
 
           <Pricing />
+
+          {/* AI transparency and legal disclaimer — placed near pricing/signup to maximize visibility */}
+          <AITransparency />
+          <LegalDisclaimer />
         </div>
 
         <CTABanner />
       </main>
-
-      <Footer />
     </>
   );
 }

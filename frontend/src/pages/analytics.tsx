@@ -28,11 +28,24 @@ function sparklinePath(values: number[], width = 120, height = 28) {
   return `M${points.join(' L')}`;
 }
 
+/**
+ * Permissive server response typing for the analytics endpoints used here.
+ * Keep optional so many shapes are accepted.
+ */
+interface AnalyticsResponse {
+  warning?: string | null;
+  sessionId?: string | number;
+  id?: string | number;
+  attemptsCount?: number;
+  weakAreas?: Array<{ area: string; misses: number; recommendedPractice: number; history?: number[] }>;
+  [k: string]: any;
+}
+
 export default function AnalyticsPage() {
   const { token } = useAuth() as any;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [snack, setSnack] = useState<{ severity: 'success'|'info'|'warning'|'error'; message: string } | null>(null);
 
@@ -57,13 +70,17 @@ export default function AnalyticsPage() {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/ai/analytics`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (mounted) setData(res.data);
+        // Cast to AnalyticsResponse so accessing optional fields is allowed by TS
+        const payload = (res?.data ?? {}) as AnalyticsResponse;
+        if (mounted) setData(payload);
       } catch (err: any) {
         if (mounted) {
           if (err?.response?.status === 403) {
             setError('Analytics are available to Tutor plan users only. Upgrade to access full analytics.');
           } else {
-            setError(err?.response?.data?.message || 'Unable to load analytics.');
+            // Cast err.response?.data to any to avoid TS complaints
+            const serverMsg = (err?.response?.data as any)?.message ?? 'Unable to load analytics.';
+            setError(serverMsg);
           }
         }
       } finally {
@@ -104,12 +121,15 @@ export default function AnalyticsPage() {
         { headers: { Authorization: `Bearer ${token}` }, timeout: 120000 },
       );
 
+      // Cast response to AnalyticsResponse-like shape so TS allows .warning
+      const resp = (res?.data ?? {}) as AnalyticsResponse;
+
       // If server returns a warning (soft-limit on explanations), surface it inline here
-      if (res.data?.warning) {
-        setSnack({ severity: 'warning', message: res.data.warning });
+      if (resp.warning) {
+        setSnack({ severity: 'warning', message: String(resp.warning) });
       }
 
-      const sessionId = res.data?.sessionId || res.data?.id || null;
+      const sessionId = resp.sessionId ?? resp.id ?? null;
       if (sessionId) {
         // Refresh usage then navigate
         try {
@@ -120,7 +140,8 @@ export default function AnalyticsPage() {
         setSnack({ severity: 'info', message: 'Test created. Open Tests page to view your session.' });
       }
     } catch (err: any) {
-      setSnack({ severity: 'error', message: err?.response?.data?.message || 'Unable to create practice test.' });
+      const serverMsg = (err?.response?.data as any)?.message ?? 'Unable to create practice test.';
+      setSnack({ severity: 'error', message: String(serverMsg) });
     } finally {
       setCreating(false);
     }

@@ -23,6 +23,10 @@ import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Register.module.css';
 import Spinner from '../components/Spinner';
 
+// AI transparency / legal components
+import AITransparency from '../components/AITransparency';
+import LegalDisclaimer from '../components/LegalDisclaimer';
+
 const QUESTION_OPTIONS: { key: string; label: string }[] = [
   { key: 'mother_maiden', label: "What is your mother's maiden name?" },
   { key: 'first_school', label: 'What was the name of your first school?' },
@@ -44,6 +48,20 @@ const PLANS: {
   { key: 'Pro', label: 'PRO', monthlyPrice: '$12.99', yearlyPrice: '$79.99', recommended: true },
   { key: 'Tutor', label: 'TUTOR', monthlyPrice: '$24.99', yearlyPrice: '$149.99' },
 ];
+
+/**
+ * Permissive server response shape for register endpoint.
+ * Casting to this type before reading fields prevents TS errors like
+ * "Property 'access_token' does not exist on type '{}'."
+ */
+interface RegisterResponse {
+  access_token?: string;
+  token?: string;
+  accessToken?: string;
+  user?: any;
+  message?: string;
+  [k: string]: any;
+}
 
 export default function Register() {
   const router = useRouter();
@@ -137,9 +155,13 @@ export default function Register() {
       };
 
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, payload);
+
+      // Cast response to a permissive type so TypeScript knows optional fields may exist
+      const data = (res?.data ?? {}) as RegisterResponse;
+
       // Expect either { access_token, user } or { token, user } or full user + token fields
-      const token = res.data?.access_token || res.data?.token || res.data?.accessToken || null;
-      const user = res.data?.user || res.data;
+      const token = data.access_token ?? data.token ?? data.accessToken ?? null;
+      const user = data.user ?? data;
 
       // Store normalized auth { token, user } when possible and update context
       if (token || user) {
@@ -163,7 +185,9 @@ export default function Register() {
         router.push('/dashboard');
       }, 1200);
     } catch (error: any) {
-      setMsg(error?.response?.data?.message || 'Registration failed. Please try again.');
+      // Be defensive reading server error message (cast before reading)
+      const serverData = (error?.response?.data ?? {}) as RegisterResponse;
+      setMsg(serverData.message || error?.response?.data?.message || 'Registration failed. Please try again.');
       setSuccess(false);
       setOpen(true);
       // eslint-disable-next-line no-console
@@ -235,8 +259,8 @@ export default function Register() {
             <TextField label="Answer to question 3" required fullWidth value={a3} onChange={e => setA3(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
           </Box>
 
-          <TextField label="Recovery passphrase" required fullWidth type="password" value={recoveryPassphrase} onChange={e => setRecoveryPassphrase(e.target.value)} helperText="Keep this secret; used for account recovery" className={styles.field} />
-          <TextField label="Confirm recovery passphrase" required fullWidth type="password" value={recoveryConfirm} onChange={e => setRecoveryConfirm(e.target.value)} className={styles.field} />
+          <TextField label="Recovery passphrase" required fullWidth type="password" value={recoveryPassphrase} onChange={(e) => setRecoveryPassphrase(e.target.value)} helperText="Keep this secret; used for account recovery" className={styles.field} />
+          <TextField label="Confirm recovery passphrase" required fullWidth type="password" value={recoveryConfirm} onChange={(e) => setRecoveryConfirm(e.target.value)} className={styles.field} />
 
           {/* Billing period toggle */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
@@ -313,6 +337,10 @@ export default function Register() {
           Already have an account? <Link href="/login">Login</Link>
         </Typography>
       </Box>
+
+      {/* Transparency + legal blocks: show on auth pages so users see AI origin and disclaimer */}
+      <AITransparency />
+      <LegalDisclaimer />
 
       <Snackbar open={open} autoHideDuration={3000} onClose={() => setOpen(false)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         {success ? (

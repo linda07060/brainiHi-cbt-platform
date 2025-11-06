@@ -23,13 +23,47 @@ interface QuestionFeedback {
 }
 
 /**
+ * Server response typing: make fields optional and permissive so TS accepts all shapes.
+ */
+interface ServerResponse {
+  // common top-level fields
+  warning?: string;
+  error?: string;
+  message?: string;
+  processing?: boolean;
+
+  // score / result shapes
+  score?: number;
+  total?: number;
+  marks?: number;
+  max?: number;
+  result?: {
+    score?: number;
+    total?: number;
+    id?: number | string;
+    [k: string]: any;
+  };
+
+  // per-question / explanation shapes
+  feedback?: QuestionFeedback[];
+  results?: QuestionFeedback[];
+  perQuestion?: QuestionFeedback[];
+  questions?: any[];
+  explanations?: Record<string, string | null> | null;
+
+  // id shapes returned by different APIs
+  id?: number | string;
+  resultId?: number | string;
+  submissionId?: number | string;
+  attemptId?: number | string;
+  attempt?: any;
+
+  // fallback arbitrary fields
+  [k: string]: any;
+}
+
+/**
  * Submission runner component.
- * - Reads pendingTestSubmission or LAST_CREATED_TEST from sessionStorage
- * - Submits to /tests/submit
- * - Renders inline score & per-question explanations/feedback if returned
- * - If backend returns an attempt/result id, navigates to /review?id=<id>
- *
- * Defensive: extracts result id safely and never references undefined vars.
  */
 export default function TestSubmission(): JSX.Element {
   const router = useRouter();
@@ -92,29 +126,30 @@ export default function TestSubmission(): JSX.Element {
           { headers, timeout: 120000 }
         );
 
-        const data = res?.data ?? {};
+        // Cast to ServerResponse so TypeScript knows these fields may exist
+        const data = (res?.data ?? {}) as ServerResponse;
 
-        if (data?.warning) {
+        if (data.warning) {
           setInlineWarning(String(data.warning));
         }
 
-        if (data?.error || data?.message) {
+        if (data.error || data.message) {
           const msg = data.error ?? data.message;
           setSnack({ severity: 'error', message: String(msg) });
           setSubmitting(false);
           return;
         }
 
-        // Best-effort extraction of score & total
-        const score = data?.score ?? data?.result?.score ?? data?.marks ?? null;
-        const total = data?.total ?? data?.result?.total ?? data?.max ?? (originalQuestions ? originalQuestions.length : null);
+        // Best-effort extraction of score & total (support multiple shapes)
+        const score = data.score ?? data.result?.score ?? data.marks ?? null;
+        const total = data.total ?? data.result?.total ?? data.max ?? (originalQuestions ? originalQuestions.length : null);
 
-        // Extract per-question feedback
+        // Extract per-question feedback in common shapes
         let feedback: QuestionFeedback[] | null = null;
-        if (Array.isArray(data?.feedback)) feedback = data.feedback;
-        else if (Array.isArray(data?.results)) feedback = data.results;
-        else if (Array.isArray(data?.perQuestion)) feedback = data.perQuestion;
-        else if (Array.isArray(data?.questions)) {
+        if (Array.isArray(data.feedback)) feedback = data.feedback;
+        else if (Array.isArray(data.results)) feedback = data.results;
+        else if (Array.isArray(data.perQuestion)) feedback = data.perQuestion;
+        else if (Array.isArray(data.questions)) {
           feedback = data.questions.map((q: any, idx: number) => ({
             questionId: q.id ?? q.questionId ?? idx,
             correct: q.correct ?? q.isCorrect,
@@ -125,18 +160,18 @@ export default function TestSubmission(): JSX.Element {
         }
 
         // If server provides explanations keyed by id
-        if (!feedback && data?.explanations && typeof data.explanations === 'object' && originalQuestions) {
+        if (!feedback && data.explanations && typeof data.explanations === 'object' && originalQuestions) {
           feedback = [];
           for (const q of originalQuestions || []) {
-            const id = q.id ?? q.questionId;
+            const id = q.id ?? q.questionId ?? null;
             feedback.push({
               questionId: id,
-              explanation: data.explanations[id] ?? null,
+              explanation: (id != null ? data.explanations[id] : null) ?? null,
             });
           }
         }
 
-        // If we have inline info, render it
+        // If we have any inline result info, render it
         if (score != null || feedback != null) {
           setResultScore(typeof score === 'number' ? score : null);
           setResultTotal(typeof total === 'number' ? total : (originalQuestions ? originalQuestions.length : null));
@@ -147,20 +182,20 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // Safely extract a result/attempt id in many shapes
+        // Otherwise, attempt to obtain an id to navigate to review.
         let resultId: string | number | null = null;
-        if (data?.attempt && (data.attempt.id ?? data.attempt._id)) resultId = data.attempt.id ?? data.attempt._id;
-        else if (data?.id) resultId = data.id;
-        else if (data?.resultId) resultId = data.resultId;
-        else if (data?.submissionId) resultId = data.submissionId;
-        else if (data?.attemptId) resultId = data.attemptId;
-        else if (data?.attempt && typeof data.attempt === 'number') resultId = data.attempt;
+        if (data.attempt && (data.attempt.id ?? data.attempt._id)) resultId = data.attempt.id ?? data.attempt._id;
+        else if (data.id) resultId = data.id;
+        else if (data.resultId) resultId = data.resultId;
+        else if (data.submissionId) resultId = data.submissionId;
+        else if (data.attemptId) resultId = data.attemptId;
+        else if (data.attempt && typeof data.attempt === 'number') resultId = data.attempt;
 
-        // Notify dashboard (safe)
+        // Notify other parts of app (dashboard) that tests changed; include id when available
         try {
           window.dispatchEvent(new CustomEvent('tests-changed', { detail: { id: resultId ?? null } }));
         } catch (e) {
-          // ignore
+          // ignore dispatch errors
           // eslint-disable-next-line no-console
           console.warn('Unable to dispatch tests-changed event', e);
         }
@@ -172,7 +207,7 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        if (data?.processing) {
+        if (data.processing) {
           setSnack({ severity: 'info', message: 'Submission accepted and is processing. Visit the dashboard to check results shortly.' });
           router.replace('/dashboard');
           return;

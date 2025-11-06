@@ -1,83 +1,136 @@
 import React from 'react';
-import { Box, AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import PeopleIcon from '@mui/icons-material/People';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LogoutIcon from '@mui/icons-material/Logout';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useAuth } from '../../context/AuthContext';
-import styles from '../../styles/Admin.module.css';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemText,
+  IconButton,
+  Container,
+  useTheme,
+  CssBaseline,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 
-type Props = {
-  children: React.ReactNode;
+type AdminLayoutProps = {
+  children?: React.ReactNode;
+  title?: string;
 };
 
-export default function AdminLayout({ children }: Props) {
-  const router = useRouter();
-  const { logout, user } = useAuth();
+const drawerWidth = 220;
 
-  const handleLogout = () => {
-    logout();
-    router.push('/admin/login');
+export default function AdminLayout({ children, title }: AdminLayoutProps) {
+  const theme = useTheme();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
 
-  return (
-    <Box className={styles.adminRoot}>
-      <AppBar position="static" color="inherit" elevation={1}>
-        <Toolbar className={styles.toolbar}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton edge="start" color="inherit" aria-label="menu" size="large">
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 800 }}>
-              BrainiHi Admin
-            </Typography>
-          </Box>
+  const drawer = (
+    <Box role="presentation" sx={{ width: drawerWidth }}>
+      <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <Typography variant="h6">Admin</Typography>
+      </Box>
+      <List>
+        <Link href="/admin/ai-logs" passHref legacyBehavior>
+          <ListItemButton component="a">
+            <ListItemText primary="AI Logs" />
+          </ListItemButton>
+        </Link>
+        <Link href="/admin/prompts" passHref legacyBehavior>
+          <ListItemButton component="a">
+            <ListItemText primary="Prompts" />
+          </ListItemButton>
+        </Link>
+        <Link href="/admin/users" passHref legacyBehavior>
+          <ListItemButton component="a">
+            <ListItemText primary="Users" />
+          </ListItemButton>
+        </Link>
+        <Link href="/admin/settings" passHref legacyBehavior>
+          <ListItemButton component="a">
+            <ListItemText primary="Settings" />
+          </ListItemButton>
+        </Link>
+      </List>
+    </Box>
+  );
 
-          <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Typography variant="body2" color="text.secondary">
-              {user?.name || user?.email}
-            </Typography>
-            <IconButton color="inherit" onClick={handleLogout} title="Logout">
-              <LogoutIcon />
-            </IconButton>
-          </Box>
+  return (
+    <Box sx={{ display: 'flex' }}>
+      <CssBaseline />
+      <AppBar
+        position="fixed"
+        color="primary"
+        sx={{
+          zIndex: (t) => t.zIndex.drawer + 1,
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { sm: 'none' } }}
+            aria-label="open drawer"
+            size="large"
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div">
+            {title ? `${title} — Admin` : 'Admin Console'}
+          </Typography>
         </Toolbar>
       </AppBar>
 
-      <Box className={styles.container}>
+      {/* Permanent drawer on sm+ screens, temporary drawer on xs */}
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        aria-label="admin navigation"
+      >
         <Drawer
-          variant="permanent"
-          anchor="left"
-          className={styles.drawer}
-          PaperProps={{ className: styles.drawerPaper }}
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            display: { xs: 'block', sm: 'none' },
+            '& .MuiDrawer-paper': { width: drawerWidth },
+          }}
         >
-          <Toolbar />
-          <List>
-            <Link href="/admin/dashboard" passHref legacyBehavior>
-              <a className={styles.navLink}>
-                <ListItemButton selected={router.pathname === '/admin/dashboard'}>
-                  <ListItemIcon><DashboardIcon /></ListItemIcon>
-                  <ListItemText primary="Dashboard" />
-                </ListItemButton>
-              </a>
-            </Link>
-
-            <Link href="/admin/users" passHref legacyBehavior>
-              <a className={styles.navLink}>
-                <ListItemButton selected={router.pathname === '/admin/users'}>
-                  <ListItemIcon><PeopleIcon /></ListItemIcon>
-                  <ListItemText primary="Users" />
-                </ListItemButton>
-              </a>
-            </Link>
-          </List>
+          {drawer}
         </Drawer>
 
-        <Box component="main" className={styles.main}>
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', sm: 'block' },
+            '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' },
+          }}
+          open
+        >
+          {drawer}
+        </Drawer>
+      </Box>
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          mt: 8, // offset appbar height
+        }}
+      >
+        <Container maxWidth="lg">
           {children}
-        </Box>
+        </Container>
       </Box>
     </Box>
   );

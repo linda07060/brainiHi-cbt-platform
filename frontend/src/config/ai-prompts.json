@@ -1,0 +1,5 @@
+{
+  "default_question_prompt": "Generate a single multiple-choice practice question appropriate for a high-school Math exam. Output JSON only, using these fields: question_id, question_text, choices (array of strings), correct_answer (string exactly matching one choice), explanation, difficulty (one of: beginner, intermediate, advanced), topic, estimated_time_seconds (integer). Keep language concise. Do not include any extra commentary.",
+  "regenerate_prompt": "Regenerate the previous question ensuring the JSON schema is valid. Follow the same schema. If there was an error, correct it.",
+  "explanation_prompt": "Produce a concise explanation for the question. Return a JSON object with {\"explanation\": \"...\"}."
+}

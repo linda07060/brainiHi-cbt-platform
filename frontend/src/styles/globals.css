@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 /* CWU Brand Colors (and dark mode) */
 :root {
@@ -15,6 +15,9 @@
   --footer-bg: #861f41;
   --footer-text: #fff;
   --header-bg: #fff;
+
+  /* space reserved by the sticky notice (updated dynamically by the component) */
+  --sticky-space: 0px;
 }
 
 .dark {
@@ -42,6 +45,11 @@ html, body {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure main content leaves room for a visible sticky notice */
+main, .content, #__next {
+  padding-bottom: var(--sticky-space);
 }
 
 a {

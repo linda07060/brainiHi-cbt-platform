@@ -7,7 +7,6 @@ import ExamCenters from "../components/ExamCenters";
 import Testimonials from "../components/Testimonials";
 import Pricing from "../components/Pricing";
 import CTABanner from "../components/CTABanner";
-import Footer from "../components/Footer";
 import WelcomeModal from "../components/WelcomeModal";
 import ResponsiveMotion from "../components/ResponsiveMotion";
 import layout from "../styles/Layout.module.css";
@@ -29,7 +28,6 @@ export default function Home() {
           <CTABanner />
         </div>
       </ResponsiveMotion>
-      <Footer />
     </>
   );
 }

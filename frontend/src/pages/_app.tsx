@@ -12,6 +12,15 @@ import { useRouter } from "next/router";
 import CookieConsent from "../components/CookieConsent";
 import axios from 'axios';
 
+// Use the merged Footer component (Footer now includes the legal row)
+import Footer from "../components/Footer";
+
+// Site-wide sticky notice
+import StickyNotice from "../components/StickyNotice";
+
+// Site-wide compact legal bar that opens the full disclaimer modal
+import FooterLegalBar from "../components/FooterLegalBar";
+
 function tryInitAnalyticsFromGlobal() {
   try {
     const win = window as any;
@@ -62,7 +71,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   React.useEffect(() => {
     const id = axios.interceptors.response.use((resp) => {
       try {
-        const warning = resp?.data?.warning;
+        // Cast resp.data to a permissive shape so TS knows 'warning' may exist
+        const data = (resp?.data ?? {}) as { warning?: string | null };
+        const warning = data.warning;
         if (warning) {
           window.dispatchEvent(new CustomEvent('soft-limit-warning', { detail: warning }));
         }
@@ -98,6 +109,18 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     };
   }, []);
 
+  // Hide footer on specific routes (no footer on auth pages and selected app pages)
+  // Added routes: /dashboard, /analytics, /ai-tutor, /test (covers /test/submit as a prefix)
+  const NO_FOOTER_PREFIXES = ["/login", "/register", "/dashboard", "/analytics", "/ai-tutor", "/test", "/review"];
+  const showFooter = !NO_FOOTER_PREFIXES.some((p) => router.pathname.startsWith(p));
+
+  // Also hide sticky notice on auth pages (keeps auth screens uncluttered)
+  const NO_NOTICE_PREFIXES = ["/login", "/register"];
+  const showStickyNotice = !NO_NOTICE_PREFIXES.some((p) => router.pathname.startsWith(p));
+
+  const poweredText =
+    "Powered by OpenAI — our platform uses OpenAI technologies to generate questions, explanations, and performance analysis. OpenAI provides the underlying models; BrainiHi configures prompts, validation and quality controls to produce safe, educational content.";
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -125,6 +148,30 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
         {/* Cookie banner remains mounted globally */}
         <CookieConsent />
+
+        {/* Sticky notice site-wide (hidden on /login and /register).
+            persistMinutes=null => dismissal persists permanently */}
+        {showStickyNotice && (
+          <StickyNotice
+            text={poweredText}
+            storageKey="powered_notice_v1"
+            persistMinutes={null}
+            hideOnRoutes={NO_NOTICE_PREFIXES}
+            onDismiss={() => {
+              try {
+                // example dataLayer push; harmless if undefined
+                (window as any).dataLayer?.push?.({ event: "sticky_notice_dismissed", notice: "powered_by_openai" });
+              } catch {}
+            }}
+          />
+        )}
+
+        {/* Compact legal bar shown site-wide above the footer (always mounted so it's visible on page load). */}
+        <FooterLegalBar />
+
+        {/* Site-wide merged Footer (includes legal links / copyright row)
+            Conditionally hidden on routes such as /login, /register, /dashboard, /analytics, /review, /ai-tutor, and /test. */}
+        {showFooter && <Footer />}
       </AuthProvider>
     </ThemeProvider>
   );

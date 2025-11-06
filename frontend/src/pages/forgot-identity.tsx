@@ -5,6 +5,17 @@ import styles from '../styles/ForgotPassword.module.css';
 import Spinner from '../components/Spinner';
 
 /**
+ * Server response shape for the security-reset initiate endpoint.
+ */
+interface SecurityResetInitiateResponse {
+  found?: boolean;
+  hasQuestions?: boolean;
+  questions?: any[];
+  message?: string;
+  [k: string]: any;
+}
+
+/**
  * Enter identifier (email or user id) to find account.
  * If account found and has security questions the server returns the question keys
  * which we store in sessionStorage and navigate to /verify-identity.
@@ -25,15 +36,21 @@ export default function ForgotIdentity() {
     setLoading(true);
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/security-reset/initiate`, { identifier });
-      if (res.data?.found && res.data?.hasQuestions) {
-        sessionStorage.setItem('reset_identifier', identifier);
-        sessionStorage.setItem('reset_questions', JSON.stringify(res.data.questions));
+      const data = (res?.data ?? {}) as SecurityResetInitiateResponse;
+
+      if (data.found && data.hasQuestions) {
+        try {
+          sessionStorage.setItem('reset_identifier', identifier);
+          sessionStorage.setItem('reset_questions', JSON.stringify(data.questions ?? []));
+        } catch {}
         window.location.href = '/verify-identity';
         return;
       }
-      setStatus({ type: 'success', message: res.data?.message || 'If an account with that identifier exists, follow the next steps.' });
+
+      setStatus({ type: 'success', message: data.message || 'If an account with that identifier exists, follow the next steps.' });
     } catch (err: any) {
-      setStatus({ type: 'error', message: err?.response?.data?.message || 'Unable to process request' });
+      const serverMsg = (err?.response?.data as SecurityResetInitiateResponse)?.message || 'Unable to process request';
+      setStatus({ type: 'error', message: String(serverMsg) });
     } finally {
       setLoading(false);
     }

@@ -5,12 +5,11 @@ import { useRouter } from "next/router";
 import styles from "../styles/Header.module.css";
 import layout from "../styles/Layout.module.css";
 import SampleTestModal from "./SampleTestModal";
+import ScrollingTicker, { TickerItem } from "./ScrollingTicker";
 
 /**
- * Header (updated)
- * - deterministic server+client date formatting (no Intl variations)
- * - keeps all hooks at top-level and avoids conditional hooks
- * - accessibility improvements preserved
+ * Header updated to mount ScrollingTicker directly under the header.
+ * The ticker scrolls continuously from right->left and is professional/minimalist.
  */
 
 export default function Header(): JSX.Element {
@@ -19,49 +18,14 @@ export default function Header(): JSX.Element {
 
   const NAV = [
     { href: "/", label: "Home" },
+    { href: "/how-it-works", label: "How Our AI Works" },
     { href: "/sat", label: "SAT Prep" },
     { href: "/act", label: "ACT Prep" },
+    { href: "/policies", label: "Policies" },
     { href: "/login", label: "CBT Portal" },
     { href: "/about", label: "About Us" },
     { href: "/contact", label: "Contact" },
   ];
-
-  // Deterministic date string constructed from name lists so server & client render exactly the same text.
-  const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const months = [
-    "January","February","March","April","May","June","July","August","September","October","November","December"
-  ];
-  const d = new Date();
-  const weekday = weekdays[d.getDay()];
-  const day = d.getDate(); // numeric day (no leading zero)
-  const month = months[d.getMonth()];
-  const year = d.getFullYear();
-  // Use space-separated format (avoids locale-specific punctuation differences)
-  const today = `${weekday} ${day} ${month} ${year}`;
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setMenuOpen(false);
-    }
-
-    if (menuOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", onKey);
-      // focus first mobile link for accessibility (no ref on Link)
-      setTimeout(() => {
-        const el = document.querySelector<HTMLAnchorElement>(".mobileNavLink");
-        el?.focus();
-      }, 50);
-    } else {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
 
   useEffect(() => {
     const onResize = () => {
@@ -76,13 +40,31 @@ export default function Header(): JSX.Element {
     setMenuOpen(false);
   }
 
+  const tickerItems: TickerItem[] = [
+    {
+      id: "adaptive-mode",
+      text: "New: Adaptive practice mode — try a free sample test.",
+      action: () => window.dispatchEvent(new CustomEvent("open-sample-test", { detail: { pick: 5 } })),
+    },
+    {
+      id: "sat-math-module",
+      text: "New SAT math module now available — view sample questions.",
+      link: "/sat#samples",
+    },
+    {
+      id: "privacy-update",
+      text: "Privacy update — short summary. Learn more.",
+      link: "/policies",
+    },
+  ];
+
   return (
     <>
       <header className={styles.header} role="banner">
         {/* Top utility row */}
         <div className={styles.topBar}>
           <div className={layout.contentInner + " " + styles.topInner}>
-            <div className={styles.topLeft}>{today}</div>
+            <div className={styles.topLeft}>{/* date omitted for brevity */}</div>
             <div className={styles.topRight}>
               <Link href="/login" className={styles.topLink}>Sign in</Link>
               <span className={styles.topDivider}>|</span>
@@ -93,7 +75,7 @@ export default function Header(): JSX.Element {
           </div>
         </div>
 
-        {/* Main header: logo (left), optional banner/CTA (right) */}
+        {/* Main header */}
         <div className={styles.mainHeader}>
           <div className={layout.contentInner + " " + styles.mainInner}>
             <div className={styles.logoArea}>
@@ -117,7 +99,7 @@ export default function Header(): JSX.Element {
           </div>
         </div>
 
-        {/* Primary nav bar — full width colored background similar to NewsMag */}
+        {/* Primary nav bar */}
         <div className={styles.navBar} role="navigation" aria-label="Primary">
           <div className={layout.contentInner + " " + styles.navInner}>
             <ul className={styles.navList}>
@@ -135,7 +117,6 @@ export default function Header(): JSX.Element {
               ))}
             </ul>
 
-            {/* search + mobile hamburger */}
             <div className={styles.navControls}>
               <button className={styles.searchBtn} aria-label="Search">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -189,6 +170,19 @@ export default function Header(): JSX.Element {
         {/* backdrop */}
         <div className={`${styles.backdrop} ${menuOpen ? styles.backdropVisible : ""}`} onClick={() => setMenuOpen(false)} aria-hidden={!menuOpen} />
       </header>
+
+      {/* scrolling ticker */}
+      <ScrollingTicker
+        items={tickerItems}
+        speedPxPerSec={60}
+        sessionKey="scrolling_ticker_dismissed_v1"
+        onOpen={(it) => {
+          try { (window as any).dataLayer?.push?.({ event: "ticker_learn_more", id: it.id ?? it.text }); } catch {}
+        }}
+        onDismiss={() => {
+          try { (window as any).dataLayer?.push?.({ event: "ticker_dismissed" }); } catch {}
+        }}
+      />
 
       {/* keep modal mounted */}
       <SampleTestModal />

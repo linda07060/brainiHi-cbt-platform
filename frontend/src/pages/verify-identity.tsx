@@ -15,6 +15,12 @@ const QUESTION_MAP: Record<string, string> = {
   'favorite_teacher': "Who was your favorite teacher?",
 };
 
+interface VerifyResponse {
+  token?: string;
+  message?: string;
+  [k: string]: any;
+}
+
 export default function VerifyIdentityPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
@@ -32,7 +38,7 @@ export default function VerifyIdentityPage() {
       return;
     }
     setIdentifier(ident);
-    setQuestions(qs);
+    setQuestions(Array.isArray(qs) ? qs.map(String) : []);
   }, [router]);
 
   const handleChange = (key: string, value: string) => {
@@ -60,15 +66,18 @@ export default function VerifyIdentityPage() {
         recoveryPassphrase,
       };
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/security-reset/verify`, payload);
-      const token = res.data?.token;
+
+      const data = (res?.data ?? {}) as VerifyResponse;
+      const token = data.token;
       if (token) {
-        sessionStorage.setItem('reset_token', token);
+        try { sessionStorage.setItem('reset_token', token); } catch {}
         router.push('/reset-password');
         return;
       }
-      setStatus({ type: 'error', message: res.data?.message || 'Verification failed' });
+      setStatus({ type: 'error', message: data.message ?? 'Verification failed' });
     } catch (err: any) {
-      setStatus({ type: 'error', message: err?.response?.data?.message || 'Verification failed' });
+      const serverData = (err?.response?.data ?? {}) as VerifyResponse;
+      setStatus({ type: 'error', message: serverData.message ?? 'Verification failed' });
     } finally {
       setLoading(false);
     }

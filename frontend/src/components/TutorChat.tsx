@@ -3,10 +3,21 @@ import { Box, TextField, Button, Paper, Typography, List, ListItem, ListItemText
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
+type TutorMessage = { role: string; text: string; createdAt?: string; [k: string]: any };
+type Conversation = { id?: number | string; messages?: TutorMessage[]; [k: string]: any };
+type TutorHistoryResponse = Conversation | Conversation[];
+
+function toNumberOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? (v as number) : null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 export default function TutorChat({ conversationIdProp }: { conversationIdProp?: number }) {
   const { token } = useAuth() as any;
   const [conversationId, setConversationId] = useState<number | null>(conversationIdProp ?? null);
-  const [messages, setMessages] = useState<Array<{ role: string; text: string; createdAt: string }>>([]);
+  const [messages, setMessages] = useState<TutorMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -19,42 +30,74 @@ export default function TutorChat({ conversationIdProp }: { conversationIdProp?:
           headers: { Authorization: `Bearer ${token}` },
           params: { conversationId: conversationId ?? undefined },
         });
-        if (Array.isArray(res.data)) {
+
+        // Cast to a permissive type so TS knows it can be either a list or an object
+        const data = (res?.data ?? {}) as TutorHistoryResponse;
+
+        if (Array.isArray(data)) {
           // list returns recent convos
-          if (res.data.length > 0) {
-            setConversationId(res.data[0].id);
-            setMessages(res.data[0].messages || []);
+          if (data.length > 0) {
+            const first = data[0] as Conversation;
+            setConversationId(toNumberOrNull(first.id ?? conversationIdProp ?? null));
+            setMessages(first.messages ?? []);
           }
-        } else if (res.data?.messages) {
-          setMessages(res.data.messages || []);
-          setConversationId(res.data.id);
+        } else if ((data as Conversation).messages) {
+          const conv = data as Conversation;
+          setMessages(conv.messages ?? []);
+          setConversationId(toNumberOrNull(conv.id ?? conversationIdProp ?? null));
         }
       } catch (err) {
-        // ignore
+        // ignore load errors for now
+        // eslint-disable-next-line no-console
+        console.warn('Failed to load tutor history', err);
       }
     };
     load();
-  }, [token]);
+    // We intentionally don't include conversationId in deps so initial load can pick a default.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, conversationIdProp]);
 
   useEffect(() => {
-    listRef.current?.scrollTo?.({ top: 99999 });
+    // auto-scroll when messages change
+    try {
+      if (listRef.current) {
+        listRef.current.scrollTo?.({ top: 99999 });
+      }
+    } catch {}
   }, [messages]);
 
   const send = async () => {
     if (!input.trim() || !token) return;
     setLoading(true);
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/ai/tutor-chat`, {
-        message: input.trim(),
-        conversationId: conversationId ?? undefined,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setConversationId(res.data.conversationId || conversationId);
-      setMessages((m) => [...m, { role: 'user', text: input.trim(), createdAt: new Date().toISOString() }, { role: 'assistant', text: res.data.reply, createdAt: new Date().toISOString() }]);
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/ai/tutor-chat`,
+        {
+          message: input.trim(),
+          conversationId: conversationId ?? undefined,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // permissive typing for the reply shape
+      const data = (res?.data ?? {}) as { conversationId?: number | string; reply?: string; message?: string; [k: string]: any };
+
+      // update conversation id if returned (normalize to number|null)
+      const newConversationId = toNumberOrNull(data.conversationId ?? conversationId ?? null);
+      setConversationId(newConversationId);
+
+      // append user message and assistant reply (defensive)
+      setMessages((m) => [
+        ...m,
+        { role: 'user', text: input.trim(), createdAt: new Date().toISOString() },
+        { role: 'assistant', text: data.reply ?? String(data?.message ?? 'Sorry, no reply'), createdAt: new Date().toISOString() },
+      ]);
+
       setInput('');
     } catch (err) {
-      // show small error message inline (omitted for brevity)
+      // eslint-disable-next-line no-console
       console.error('Tutor chat send error', err);
     } finally {
       setLoading(false);
@@ -79,8 +122,21 @@ export default function TutorChat({ conversationIdProp }: { conversationIdProp?:
       </Box>
 
       <Box sx={{ display: 'flex', gap: 1 }}>
-        <TextField fullWidth placeholder="Ask your tutor a question..." value={input} onChange={(e) => setInput(e.target.value)} />
-        <Button variant="contained" disabled={loading} onClick={send}>{loading ? <CircularProgress size={20} /> : 'Send'}</Button>
+        <TextField
+          fullWidth
+          placeholder="Ask your tutor a question..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
+        />
+        <Button variant="contained" disabled={loading} onClick={send}>
+          {loading ? <CircularProgress size={20} /> : 'Send'}
+        </Button>
       </Box>
     </Paper>
   );

@@ -30,6 +30,12 @@ export default function ChangePassword(): JSX.Element {
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
+  // Minimal response shape for the change-password endpoint
+  interface ChangePasswordResponse {
+    message?: string;
+    [k: string]: any;
+  }
+
   // Helper to derive token: prefer context, fall back to localStorage
   const getToken = () => {
     if (ctxToken) return ctxToken;
@@ -144,15 +150,18 @@ export default function ChangePassword(): JSX.Element {
       };
       const res = await axios.post(`${apiBase}/auth/change-password`, payload, { headers });
 
+      // Cast response to a permissive shape so TypeScript knows 'message' may exist
+      const data = (res?.data ?? {}) as ChangePasswordResponse;
+
       setSuccess(true);
-      setMsg(res?.data?.message || 'Password changed successfully');
+      setMsg(data.message ?? 'Password changed successfully');
       setOpen(true);
       // Optionally clear local auth so user re-signs with new password:
       try { localStorage.removeItem('auth'); } catch {}
       setTimeout(() => router.push('/login'), 900);
     } catch (err: any) {
       const status = err?.response?.status;
-      const serverMessage = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      const serverMessage = (err?.response?.data as ChangePasswordResponse)?.message || (err?.response?.data as any)?.error || err?.message;
 
       if (status === 401) {
         setMsg('Current password is incorrect. If you forgot it, use "Forgot password" to reset.');

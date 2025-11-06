@@ -29,6 +29,12 @@ interface Explanation {
   explanation?: string | null;
 }
 
+interface ReviewResponse {
+  questions?: Explanation[] | any[];
+  score?: number;
+  [k: string]: any;
+}
+
 export default function ReviewPage(): JSX.Element {
   const router = useRouter();
   const { query } = router;
@@ -61,12 +67,13 @@ export default function ReviewPage(): JSX.Element {
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
         const res = await axios.get(url, { headers });
-        const data = res.data ?? {};
+        // Cast to a permissive shape so TypeScript knows these optional fields may exist
+        const data = (res.data ?? {}) as ReviewResponse;
 
         if (cancelled) return;
 
         // Keep explanation nullable to indicate "no explanation yet" if backend hasn't provided one
-        setDetails(Array.isArray(data.questions) ? data.questions : null);
+        setDetails(Array.isArray(data.questions) ? (data.questions as Explanation[]) : null);
         setScore(typeof data.score === 'number' ? data.score : null);
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? err?.response?.statusText ?? err?.message ?? 'Failed to load review';

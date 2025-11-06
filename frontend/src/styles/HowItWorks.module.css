@@ -1,166 +1,219 @@
-:root{
-  --bg: #fffaf3;            /* soft cream background */
-  --card: #ffffff;
-  --muted: #6b6b6b;
-  --accent: #861f41;        /* brand */
-  --radius: 12px;
-  --shadow-light: 0 8px 24px rgba(20,20,24,0.04);
-  --shadow-strong: 0 18px 50px rgba(20,20,24,0.06);
-  --max-width: 1100px;
-}
+/* Local css-module for HowItWorks.tsx
+   - All selectors are local (no bare element selectors) so this is compatible with CSS Modules & production builds.
+   - Uses CSS custom properties scoped to .howItWorks for safe theming inside the module.
+*/
 
-/* Section shell */
 .howItWorks {
-  background: var(--bg);
-  padding: 48px 20px;
-  border-radius: 14px;
-  margin: 0 auto 32px auto;
-  max-width: var(--max-width);
-  box-shadow: 0 6px 28px rgba(20,20,24,0.03);
-  overflow: visible;
+  --max-width: 1200px;
+  --brand: #f6b113;        /* golden heading color in design */
+  --muted: #6b6b6b;        /* muted body text */
+  --card-bg: #ffffff;
+  --card-radius: 14px;
+  --card-shadow: 0 20px 40px rgba(20,20,24,0.06);
+  --small-shadow: 0 8px 20px rgba(20,20,24,0.04);
+  --gap: 28px;
+
+  padding: 48px 20px 80px;
+  box-sizing: border-box;
+  background: transparent;
 }
 
-/* Inner layout container */
+/* Constrain content */
 .container {
-  max-width: 1000px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  text-align: center;
+  box-sizing: border-box;
 }
 
-/* Title */
+/* Section title */
 .title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--accent);
+  text-align: center;
+  color: var(--brand);
+  font-weight: 800;
+  font-size: 2rem;
   margin: 0 0 28px;
   letter-spacing: 0.01em;
 }
 
-/* Steps grid */
+/* Steps grid: three cards across on wide screens */
 .steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  gap: var(--gap);
   align-items: start;
-  margin-bottom: 28px;
+  margin: 0 0 40px;
+  list-style: none;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Individual step card */
+/* Each step card */
 .step {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 22px;
-  box-shadow: var(--shadow-light);
-  border: 1px solid rgba(0,0,0,0.04);
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 180px;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-  cursor: default;
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: 26px 26px 30px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid rgba(0,0,0,0.03);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  min-height: 170px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.step:hover,
+.step:focus-within {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 60px rgba(20,20,24,0.08);
   outline: none;
 }
-.step:focus,
-.step:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-strong);
-  border-color: rgba(134,31,65,0.06);
+
+/* faint numeric label top-right */
+.stepIndex {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-weight: 800;
+  font-size: 36px;
+  color: rgba(0,0,0,0.06);
+  pointer-events: none;
+  line-height: 1;
 }
 
-/* header row that holds icon and index */
+/* header of card contains icon and index area */
 .stepHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
-  justify-content: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
 }
 
-/* icon circle */
+/* small rounded icon container */
 .iconWrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: rgba(51,184,255,0.06);
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(246, 246, 248, 1); /* very light pale bg */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 48px;
-  box-shadow: inset 0 -6px 14px rgba(255,255,255,0.02);
+  box-shadow: var(--small-shadow);
+  flex: 0 0 auto;
+  box-sizing: border-box;
 }
+
+/* icon image inside container (scoped) */
 .icon {
-  width: 28px;
-  height: 28px;
-  display: block;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
+  display: block;
+  box-sizing: border-box;
 }
 
-/* step index badge */
-.stepIndex {
-  margin-left: auto;
-  font-weight: 800;
-  color: rgba(0,0,0,0.08);
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
-}
-
-/* step title & description */
+/* Step title and description */
 .stepTitle {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--accent);
-  font-weight: 700;
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  color: var(--brand);
+  font-weight: 800;
+  line-height: 1.05;
 }
+
 .stepDesc {
   margin: 0;
   color: var(--muted);
-  font-size: 0.98rem;
-  line-height: 1.55;
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 42ch;
+  box-sizing: border-box;
 }
 
-/* Demo/video area */
+/* Demo / video area below the cards */
 .demoWrap {
   display: flex;
   justify-content: center;
   margin-top: 12px;
+  box-sizing: border-box;
 }
+
+/* Demo card wrapper that matches design: rounded, large shadow, inner padding */
 .demoCard {
   width: 100%;
-  max-width: 560px;
-  background: var(--card);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: var(--shadow-light);
+  max-width: 920px;
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 28px 60px rgba(20,20,24,0.06);
   border: 1px solid rgba(0,0,0,0.03);
+  box-sizing: border-box;
+}
+
+/* Video frame container inside demoCard (rounded inner black area) */
+.videoFrame {
+  width: 100%;
+  height: 420px; /* matches screenshot proportion on desktop */
+  background: #000;
+  border-radius: 12px;
   overflow: hidden;
+  display: block;
+  box-sizing: border-box;
 }
 
-/* Responsive */
-@media (max-width: 980px) {
-  .steps { grid-template-columns: 1fr 1fr; gap: 16px; }
-  .demoCard { max-width: 480px; }
-}
-@media (max-width: 680px) {
-  .steps { grid-template-columns: 1fr; }
-  .container { padding: 0 8px; }
-  .title { font-size: 1.4rem; }
-  .demoCard { max-width: 92%; }
+/* Make the actual <video> or iframe (provided by DemoVideo) expand to the frame */
+.videoFrame > * {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
-/* Dark mode */
-.dark .howItWorks {
-  background: linear-gradient(180deg, #1b1819 0%, #0f0e0f 100%);
-  box-shadow: none;
+/* Responsive adjustments */
+/* medium screens: two columns */
+@media (max-width: 1100px) {
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .videoFrame {
+    height: 360px;
+  }
 }
-.dark .step {
-  background: #141414;
-  border: 1px solid rgba(255,255,255,0.03);
-  box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+
+/* small screens: one column stacked */
+@media (max-width: 700px) {
+  .title {
+    font-size: 1.6rem;
+    margin-bottom: 18px;
+  }
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .step {
+    padding: 20px;
+  }
+  .stepIndex {
+    font-size: 28px;
+    top: 12px;
+    right: 12px;
+  }
+  .demoCard {
+    padding: 16px;
+  }
+  .videoFrame {
+    height: 220px;
+    border-radius: 10px;
+  }
 }
-.dark .demoCard {
-  background: #141414;
-  border: 1px solid rgba(255,255,255,0.03);
+
+/* Accessibility / small tweaks */
+.step:focus {
+  box-shadow: 0 30px 60px rgba(20,20,24,0.09), 0 0 0 4px rgba(246,177,19,0.12);
+  outline: none;
+}
+
+/* Ensure focused text wraps properly */
+.stepTitle, .stepDesc {
+  min-width: 0;
 }

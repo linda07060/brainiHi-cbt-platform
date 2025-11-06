@@ -1,50 +1,66 @@
 :root{
   --max-width: 1200px;
   --brand: #861f41;       /* primary brand color */
-  --accent: #FDB913;      /* secondary accent (use sparingly) */
   --muted: #6b6b6b;
   --bg: #ffffff;
-  --radius: 12px;
-  --shadow: 0 10px 30px rgba(20,20,24,0.04);
-  --transition: 180ms;
+  --card-radius: 18px;
+  --card-shadow: 0 28px 60px rgba(20,20,24,0.06);
+  --small-shadow: 0 10px 30px rgba(20,20,24,0.04);
+  --gap: 28px;
+  --transition: 200ms;
 }
 
-/* Section shell */
+/* Section shell (rounded white card like screenshot) */
 .programs {
-  margin: 0 auto 3rem;
-  padding: 0;
-  background: transparent;
+  padding: 40px 28px;
+  box-sizing: border-box;
 }
 
-/* Constrained inner card for consistent alignment */
+/* Inner constrained content with white card look */
 .inner {
   max-width: var(--max-width);
   margin: 0 auto;
   background: var(--bg);
-  border-radius: calc(var(--radius) + 6px);
-  padding: 40px 28px;
-  box-shadow: var(--shadow);
+  border-radius: calc(var(--card-radius) + 6px);
+  padding: 40px 36px;
+  box-shadow: var(--card-shadow);
   display: grid;
-  grid-template-columns: 1fr 460px;
-  gap: 28px;
-  align-items: center;
+  grid-template-columns: 1fr 420px; /* left content + visual column */
+  gap: var(--gap);
+  align-items: start;
+  box-sizing: border-box;
 }
 
-/* Left column — copy and CTAs */
+/* Ensure children don't overflow grid cells */
+.inner > * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Left column */
 .left {
   padding-right: 6px;
+  order: 0;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
+
+/* Heading styles */
 .heading {
   margin: 0 0 10px 0;
-  font-size: 1.9rem;
+  font-size: 2.05rem;
   font-weight: 800;
   color: #231f20;
-  line-height: 1.06;
+  line-height: 1.02;
 }
 .italic {
+  display: inline-block;
   color: var(--brand);
   font-style: italic;
+  transform: translateY(-2px);
 }
+
+/* small underline accent */
 .underline {
   width: 56px;
   height: 4px;
@@ -52,18 +68,21 @@
   border-radius: 2px;
   margin: 12px 0 18px 0;
 }
+
+/* description text */
 .desc {
-  margin: 0 0 20px 0;
+  margin: 0 0 26px 0;
   color: var(--muted);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.7;
   max-width: 56ch;
+  min-width: 0;
 }
 
-/* Actions */
+/* Actions (primary CTA + link) */
 .actions {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   align-items: center;
   flex-wrap: wrap;
   margin-top: 6px;
@@ -71,17 +90,17 @@
 .primaryCta {
   background: var(--brand);
   color: #fff;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 16px 28px;
+  border-radius: 14px;
   text-decoration: none;
   font-weight: 800;
-  box-shadow: 0 10px 26px rgba(134,31,65,0.06);
+  box-shadow: 0 14px 40px rgba(134,31,65,0.06);
   transition: transform var(--transition), box-shadow var(--transition);
 }
 .primaryCta:hover,
 .primaryCta:focus {
   transform: translateY(-3px);
-  box-shadow: 0 18px 40px rgba(134,31,65,0.08);
+  box-shadow: 0 26px 60px rgba(134,31,65,0.08);
 }
 .link {
   color: var(--brand);
@@ -90,48 +109,59 @@
   padding: 8px 6px;
 }
 
-/* Visual grid on the right */
+/* Visual column */
 .visual {
   display: flex;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
+
+/* Right visual grid: two small stacked images at left of column and a tall image on the right */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 14px;
+  grid-template-columns: 1fr 160px; /* left small column, right tall image column */
+  grid-template-rows: 120px 120px;
+  gap: 18px 22px;
   width: 100%;
   max-width: 420px;
   align-items: center;
   justify-items: center;
+  box-sizing: border-box;
 }
 
 /* Small top-left image */
 .smallImg {
   grid-column: 1 / 2;
   grid-row: 1 / 2;
-  width: 180px;
-  height: 120px;
+  width: 160px;
+  height: 110px;
   object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(20,20,24,0.06);
+  border-radius: 12px;
+  box-shadow: var(--small-shadow);
   display: block;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-/* Stat card (middle-left) */
+/* Stat card (middle-left) with translucent overlay like screenshot */
 .statCard {
   grid-column: 1 / 2;
   grid-row: 2 / 3;
-  width: 180px;
-  height: 120px;
-  border-radius: 10px;
+  width: 220px;
+  height: 110px;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, rgba(134,31,65,0.08), rgba(134,31,65,0.06));
+  background: linear-gradient(180deg, rgba(134,31,65,0.06), rgba(134,31,65,0.04));
+  box-sizing: border-box;
+  flex-shrink: 0;
+  box-shadow: var(--small-shadow);
 }
 .statBg {
   position: absolute;
@@ -139,8 +169,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.22;
+  opacity: 0.18;
   z-index: 0;
+  display: block;
+  box-sizing: border-box;
 }
 .stat {
   position: relative;
@@ -150,62 +182,78 @@
 }
 .statNumber {
   display: block;
-  font-size: 2rem;
+  font-size: 1.9rem;
   font-weight: 900;
   color: #fff;
 }
 .statLabel {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: rgba(255,255,255,0.95);
   margin-top: 6px;
 }
 
-/* Large right image */
+/* Tall image on the right */
 .largeImg {
   grid-column: 2 / 3;
   grid-row: 1 / 3;
-  width: 100%;
-  height: 100%;
-  max-height: 420px;
+  width: 160px;
+  height: 340px;
   object-fit: cover;
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(20,20,24,0.06);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(20,20,24,0.08);
   display: block;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-/* Tablet */
+/* Responsive behavior */
+
+/* Tablet: stack into single column, center visuals below text */
 @media (max-width: 1000px) {
   .inner {
     grid-template-columns: 1fr;
     padding: 32px 20px;
   }
+
   .grid {
-    margin: 0 auto;
+    margin: 18px auto 0;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: auto;
     gap: 12px;
+    max-width: 420px;
+    width: 100%;
   }
+
   .smallImg, .statCard {
     width: 120px;
     height: 92px;
   }
   .largeImg {
-    max-height: 240px;
+    width: 220px;
+    height: 260px;
+    max-height: 260px;
   }
-  .left { order: 2; }
-  .visual { order: 1; }
+
+  /* explicitly set order to avoid production CSS ordering surprises */
+  .left { order: 0; flex-shrink: 0; width: 100%; min-width: 0; }
+  .visual { order: 0; flex-shrink: 0; width: 100%; }
 }
 
-/* Mobile */
+/* Mobile: tighten paddings and stack */
 @media (max-width: 680px) {
   .inner { padding: 22px 14px; }
   .heading { font-size: 1.25rem; }
   .desc { font-size: 0.95rem; max-width: 52ch; }
-  .primaryCta { padding: 10px 14px; }
+  .primaryCta { padding: 12px 18px; }
   .grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 10px; max-width: 100%; }
   .smallImg, .statCard { width: 140px; height: 92px; }
-  .largeImg { max-height: 220px; }
+  .largeImg { width: 140px; height: 240px; }
+}
+
+/* small accessibility tweaks */
+.heading, .desc, .actions {
+  min-width: 0;
 }

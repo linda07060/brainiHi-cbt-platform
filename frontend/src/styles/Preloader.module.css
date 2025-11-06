@@ -1,35 +1,70 @@
+/* Minimal / professional preloader styles */
+
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(21, 21, 25, 0.86);
-  z-index: 9999;
+  z-index: 1300; /* above content, adjust if needed */
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.8s cubic-bezier(.39,.58,.57,1);
+  background: rgba(16, 18, 20, 0.62); /* subtle dark veil */
+  transition: opacity 0.5s ease, visibility 0.5s ease;
   opacity: 1;
-  animation: overlayFadeIn 0.7s cubic-bezier(.39,.58,.57,1);
+  pointer-events: auto;
 }
 
-@keyframes overlayFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
+/* fade out state */
 .fadeOut {
   opacity: 0;
   pointer-events: none;
+  visibility: hidden;
 }
 
-.logo {
-  width: 110px;
-  animation: zoomInOut 1.2s cubic-bezier(.39,.58,.57,1) infinite;
-  filter: drop-shadow(0 2px 24px #0008);
+/* inner wrapper to center and size */
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  /* optional subtle backdrop to lift spinner */
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
-@keyframes zoomInOut {
-  0% { transform: scale(1);}
-  40% { transform: scale(1.25);}
-  60% { transform: scale(0.92);}
-  100% { transform: scale(1);}
+/* Classic ring spinner, understated */
+.spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.95); /* visible accent */
+  animation: preloader-spin 1s linear infinite;
+  box-sizing: border-box;
+  /* subtle inner glow */
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
 }
+
+/* Visually hidden text for screen readers */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Spinner animation */
+@keyframes preloader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Make sure the overlay doesn't show up above full-screen modals unintentionally.
+   Adjust z-index on your app if needed. */

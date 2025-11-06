@@ -14,9 +14,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Add this line for debugging
-    console.log('JwtStrategy.validate called with payload:', payload);
-    // You may customize this return value as needed
-    return { userId: payload.sub, email: payload.email, name: payload.name, role: payload.role, plan: payload.plan, level: payload.level, plan_expiry: payload.plan_expiry };
+    // Keep a small dev-only log, but avoid logging in production
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('JwtStrategy.validate called with payload:', payload);
+    }
+
+    // Return the original payload as-is so controllers/services can read payload.sub
+    // (or you can return a mapped object that still contains `sub`).
+    return payload;
   }
 }

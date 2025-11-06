@@ -12,11 +12,13 @@ api.interceptors.request.use(
     if (typeof window !== 'undefined') {
       const auth = localStorage.getItem('auth');
       if (auth) {
-        const { token } = JSON.parse(auth);
-        if (token) {
-          config.headers = config.headers || {};
-          config.headers['Authorization'] = `Bearer ${token}`;
-        }
+        try {
+          const { token } = JSON.parse(auth);
+          if (token) {
+            config.headers = config.headers || {};
+            config.headers['Authorization'] = `Bearer ${token}`;
+          }
+        } catch {}
       }
     }
     return config;
@@ -29,10 +31,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Example: Redirect to login if 401 Unauthorized
-    if (error.response && error.response.status === 401) {
-      // Optionally clear user/session and redirect
-      localStorage.removeItem('auth');
-      // window.location.href = "/login"; // Uncomment to force redirect
+    if (error && error.response && error.response.status === 401) {
+      try {
+        localStorage.removeItem('auth');
+        // Do NOT force redirect automatically in library code — let pages/components decide.
+        // window.location.href = "/login"; // Uncomment if you want automatic redirect behavior
+      } catch {}
     }
     return Promise.reject(error);
   }

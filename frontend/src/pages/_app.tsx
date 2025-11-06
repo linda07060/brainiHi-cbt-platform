@@ -10,6 +10,7 @@ import { useRouter } from "next/router";
 
 // Global cookie banner (keep)
 import CookieConsent from "../components/CookieConsent";
+import axios from 'axios';
 
 function tryInitAnalyticsFromGlobal() {
   try {
@@ -40,6 +41,46 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       // ignore
     }
 
+    const handler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail;
+        if (detail && detail.analytics) {
+          tryInitAnalyticsFromGlobal();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("cookie-consent", handler as EventListener);
+    return () => {
+      window.removeEventListener("cookie-consent", handler as EventListener);
+    };
+  }, []);
+
+  // Global axios response interceptor: dispatch 'soft-limit-warning' when server returns { warning: '...' }
+  React.useEffect(() => {
+    const id = axios.interceptors.response.use((resp) => {
+      try {
+        const warning = resp?.data?.warning;
+        if (warning) {
+          window.dispatchEvent(new CustomEvent('soft-limit-warning', { detail: warning }));
+        }
+      } catch (err) {
+        // ignore
+      }
+      return resp;
+    }, (error) => {
+      // pass through errors
+      return Promise.reject(error);
+    });
+
+    return () => {
+      axios.interceptors.response.eject(id);
+    };
+  }, []);
+
+  React.useEffect(() => {
     const handler = (e: Event) => {
       try {
         const detail = (e as CustomEvent).detail;

@@ -1,3 +1,8 @@
+// REPLACE your existing auth.service.ts with this updated content.
+// Changes:
+// - coerce id to number in changePassword lookup
+// - trim input passwords before compare/hash to avoid whitespace issues
+// - add small dev-only masked logging to help debug if issue persists
 import { Injectable, UnauthorizedException, BadRequestException, InternalServerErrorException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -49,6 +54,7 @@ export class AuthService {
       level: user.level,
       plan_expiry: user.plan_expiry,
       user_uid: user.user_uid,
+      phone: user.phone ?? null, // include phone in the payload so /auth/me provides it
     };
 
     return {
@@ -63,6 +69,7 @@ export class AuthService {
    * Register a new user:
    * - creates unique user_uid
    * - stores phone, plan
+   * - if billingPeriod provided and plan is not Free, sets plan_expiry (30d for monthly, 1y for yearly)
    * - hashes recoveryPassphrase with SECURITY_SECRET and saves it to user.recoveryPassphraseHash
    * - saves security answers in user_security_answer as HMAC hashed values
    * - returns login payload (access_token + user)
@@ -73,6 +80,7 @@ export class AuthService {
     phone?: string;
     password: string;
     plan?: string;
+    billingPeriod?: 'monthly' | 'yearly';
     recoveryPassphrase: string;
     securityAnswers: Array<{ questionKey: string; answer: string }>;
   }) {
@@ -97,6 +105,23 @@ export class AuthService {
 
     const recoveryHash = crypto.createHmac('sha256', securitySecret).update((payload.recoveryPassphrase || '').trim()).digest('hex');
 
+    // compute plan_expiry if billingPeriod provided and plan is paid
+    let planExpiry: Date | null = null;
+    const planRaw = (payload.plan || 'Free').toString().trim();
+    const planLower = planRaw.toLowerCase();
+    const billing = payload.billingPeriod;
+
+    if (planLower !== 'free' && billing) {
+      const now = new Date();
+      const expiry = new Date(now.getTime());
+      if (billing === 'monthly') {
+        expiry.setDate(expiry.getDate() + 30);
+      } else if (billing === 'yearly') {
+        expiry.setFullYear(expiry.getFullYear() + 1);
+      }
+      planExpiry = expiry;
+    }
+
     // create user entity
     const user = this.userRepo.create({
       email,
@@ -104,6 +129,7 @@ export class AuthService {
       name: payload.name,
       phone: payload.phone || null,
       plan: payload.plan || 'Free',
+      plan_expiry: planExpiry,
       user_uid: userUid,
       recoveryPassphraseHash: recoveryHash,
     });
@@ -130,14 +156,43 @@ export class AuthService {
 
   /**
    * Change password for authenticated user.
+   * - Coerces id to number (handles string sub from JWT)
+   * - Trims incoming passwords to avoid accidental whitespace mismatches
+   * - Small dev-only masked log to help debug without exposing full hashes
    */
-  public async changePassword(id: number, oldPassword: string, newPassword: string) {
-    const user = await this.userRepo.findOne({ where: { id } });
-    if (!user || !(await bcrypt.compare(oldPassword, user.password))) {
+  public async changePassword(id: number | string, oldPassword: string, newPassword: string) {
+    const userId = Number(id);
+    if (Number.isNaN(userId)) {
+      throw new BadRequestException('Invalid user id');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    const oldPwd = (oldPassword || '').trim();
+    const newPwd = (newPassword || '').trim();
+
+    // bcrypt.compare handles hashing comparison
+    const matches = await bcrypt.compare(oldPwd, user.password);
+
+    // Dev-only masked debug info — safe-ish (shows only small slices) and only in non-production
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const masked = (user.password || '').length > 12
+          ? `${(user.password || '').slice(0,6)}...${(user.password || '').slice(-6)}`
+          : user.password;
+        // eslint-disable-next-line no-console
+        console.log(`changePassword debug: userId=${userId} matches=${matches} storedHashPreview=${masked}`);
+      } catch {}
+    }
+
+    if (!matches) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    user.password = await bcrypt.hash(newPwd, 10);
     await this.userRepo.save(user);
     return { message: 'Password changed' };
   }
@@ -178,6 +233,7 @@ export class AuthService {
         name: googleProfile.name,
         googleId: googleProfile.googleId,
         password: '', // Not used for Google accounts
+        phone: googleProfile.phone || null,
       });
       await this.userRepo.save(user);
     }
@@ -191,6 +247,7 @@ export class AuthService {
       level: user.level,
       plan_expiry: user.plan_expiry,
       user_uid: user.user_uid,
+      phone: user.phone ?? null,
     };
 
     return {

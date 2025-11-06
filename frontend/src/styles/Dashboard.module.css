@@ -1,67 +1,130 @@
-:root {
-  --brand: #861f41;
-  --muted: #6b6b6b;
-  --card-bg: #fff;
-}
+/* Minimal reset / neutralization of legacy styles that conflict with MUI sx rules.
+   This file intentionally keeps rules small and scoped to classes used by the dashboard page.
+   It avoids heavy selectors so MUI sx props can take precedence.
+*/
 
+/* Container - keep max width in CSS but let MUI handle spacing */
 .container {
-  max-width: 980px;
-  margin: 24px auto;
-  padding: 18px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 auto;
+  max-width: 1100px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 20px;
-}
-
+/* Profile and tests cards - neutral baseline */
 .profileCard {
-  background: var(--card-bg);
-  padding: 16px;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(20,20,24,0.04);
-  border: 1px solid rgba(0,0,0,0.03);
+  /* let MUI Paper supply padding and elevation; ensure legacy margins removed */
+  margin: 0;
+  background: transparent;
 }
 
+/* Make the profile card "sticky" on larger screens so the right column can scroll */
+@media (min-width: 900px) {
+  .profileCard {
+    position: sticky;
+    top: 24px; /* matches typical app header spacing; tweak if you have a taller header */
+    align-self: start; /* make sure it doesn't stretch */
+    z-index: 1;
+  }
+}
+
+/* testsCard: keep a constrained height and make it scroll internally when content grows.
+   This prevents the right column from extending the whole page height and keeps the left column
+   visual height as the visible reference.
+*/
 .testsCard {
-  background: var(--card-bg);
-  padding: 16px;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(20,20,24,0.04);
-  border: 1px solid rgba(0,0,0,0.03);
+  margin: 0;
+  background: transparent;
+
+  /* On medium+ screens, limit height to viewport minus header area and allow internal scroll */
+  max-height: calc(100vh - 160px); /* adjust 160px if your header + top spacing differs */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* grid wrapper (if older styles used .grid) */
+.grid {
+  display: block;
+}
+
+/* field rows: ensure predictable spacing */
 .fieldRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
+/* labels and values: avoid overriding typography set by MUI */
 .fieldLabel {
-  color: var(--muted);
-  font-size: 0.9rem;
+  margin: 0;
+  padding: 0;
+  color: rgba(0,0,0,0.6);
+  font-size: 0.85rem;
 }
 
 .fieldValue {
+  margin: 0;
+  padding: 0;
   font-weight: 700;
-  color: #222;
 }
 
-/* plan badge */
+/* planBadge legacy fallback - keep it minimal */
 .planBadge {
   display: inline-block;
   padding: 6px 10px;
-  border-radius: 20px;
-  background: rgba(134,31,65,0.08);
-  color: var(--brand);
+  border-radius: 999px;
+  background-color: transparent;
   font-weight: 700;
 }
 
-/* responsive */
-@media (max-width: 820px) {
-  .grid {
-    grid-template-columns: 1fr;
+/* Scrollbar styling (subtle) - optional, improves UX on desktop */
+.testsCard::-webkit-scrollbar {
+  width: 10px;
+}
+.testsCard::-webkit-scrollbar-track {
+  background: transparent;
+}
+.testsCard::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.08);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 899px) {
+  /* On small screens the layout stacks; don't constrain height so user can scroll page normally */
+  .testsCard {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .profileCard {
+    position: static;
+  }
+}
+
+/* Slight spacing tweak for the tests list entries so scroll looks balanced */
+.testsCard .MuiList-root,
+.testsCard .MuiPaper-root > .MuiList-root {
+  padding-right: 12px; /* ensure content doesn't sit under scrollbar */
+}
+
+/* Ensure long content doesn't break layout */
+.testsCard pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Ensure responsive stacking doesn't get broken by legacy floats */
+@media (max-width: 600px) {
+  .fieldRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 }

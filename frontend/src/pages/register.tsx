@@ -1,8 +1,25 @@
-import React, { useState } from 'react';
-import { Box, Button, Container, TextField, Typography, Snackbar, Alert, MenuItem, Grid, InputLabel, Select, FormControl } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+  Box,
+  Button,
+  Container,
+  TextField,
+  Typography,
+  Snackbar,
+  Alert,
+  MenuItem,
+  Grid,
+  InputLabel,
+  Select,
+  FormControl,
+  ToggleButton,
+  ToggleButtonGroup,
+  Chip,
+} from '@mui/material';
 import Link from 'next/link';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Register.module.css';
 import Spinner from '../components/Spinner';
 
@@ -14,10 +31,24 @@ const QUESTION_OPTIONS: { key: string; label: string }[] = [
   { key: 'best_friend', label: 'What is the first name of your best friend?' },
 ];
 
-const PLANS = ['Free', 'Pro', 'Tutor'];
+// Plans with structured pricing for monthly/yearly
+const PLANS: {
+  key: string;
+  label: string;
+  monthlyPrice: string | null;
+  yearlyPrice: string | null;
+  caption?: string;
+  recommended?: boolean;
+}[] = [
+  { key: 'Free', label: 'FREE', monthlyPrice: null, yearlyPrice: null, caption: 'Try Mode — Free' },
+  { key: 'Pro', label: 'PRO', monthlyPrice: '$12.99', yearlyPrice: '$79.99', recommended: true },
+  { key: 'Tutor', label: 'TUTOR', monthlyPrice: '$24.99', yearlyPrice: '$149.99' },
+];
 
 export default function Register() {
   const router = useRouter();
+  const { setUser } = useAuth();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -25,6 +56,9 @@ export default function Register() {
   const [recoveryPassphrase, setRecoveryPassphrase] = useState('');
   const [recoveryConfirm, setRecoveryConfirm] = useState('');
   const [plan, setPlan] = useState('Free');
+
+  // Billing period toggle: 'monthly' or 'yearly'
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   // security questions: we store 3 selections and answers
   const [q1, setQ1] = useState(QUESTION_OPTIONS[0].key);
@@ -38,6 +72,26 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Prefill email from query param (used by Google onboarding flow)
+    if (router.isReady && router.query.email) {
+      setEmail(String(router.query.email));
+    }
+  }, [router.isReady, router.query]);
+
+  // Prefill plan from query param if present (case-insensitive)
+  useEffect(() => {
+    if (!router.isReady) return;
+    const p = router.query.plan;
+    if (!p) return;
+    const planParam = String(p).toLowerCase();
+    const found = PLANS.find((pl) => pl.key.toLowerCase() === planParam);
+    if (found) {
+      setPlan(found.key);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.plan]);
 
   function validateForm() {
     if (!name.trim()) return 'Full name is required';
@@ -73,6 +127,7 @@ export default function Register() {
         phone: phone.trim(),
         password,
         plan,
+        billingPeriod, // include billing preference so backend can show pricing context (server will still enforce)
         recoveryPassphrase,
         securityAnswers: [
           { questionKey: q1, answer: a1.trim() },
@@ -82,17 +137,22 @@ export default function Register() {
       };
 
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, payload);
-      // Expect: { access_token, user }
-      const token = res.data?.access_token || res.data?.token || null;
+      // Expect either { access_token, user } or { token, user } or full user + token fields
+      const token = res.data?.access_token || res.data?.token || res.data?.accessToken || null;
       const user = res.data?.user || res.data;
 
-      // Store auth (simple scheme)
-      if (token) {
+      // Store normalized auth { token, user } when possible and update context
+      if (token || user) {
         const auth = { token, user };
-        localStorage.setItem('auth', JSON.stringify(auth));
-      } else if (user) {
-        // fallback: some backends return full user and client must login; we redirect to login
-        localStorage.removeItem('auth');
+        try {
+          if (typeof window !== 'undefined') localStorage.setItem('auth', JSON.stringify(auth));
+        } catch {
+          // ignore storage errors
+        }
+        setUser(auth as any);
+      } else {
+        // No token returned: remove any stale auth and redirect to login
+        try { if (typeof window !== 'undefined') localStorage.removeItem('auth'); } catch {}
       }
 
       setSuccess(true);
@@ -101,19 +161,27 @@ export default function Register() {
 
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1400);
+      }, 1200);
     } catch (error: any) {
       setMsg(error?.response?.data?.message || 'Registration failed. Please try again.');
       setSuccess(false);
       setOpen(true);
+      // eslint-disable-next-line no-console
+      console.error('Registration error', error?.response || error);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // helper to avoid duplicate question selection
-  const availableOptions = (excludeKey: string) =>
-    QUESTION_OPTIONS.filter(q => q.key !== excludeKey);
+  const selectedPlan = PLANS.find(p => p.key === plan);
+
+  const getPriceLabel = (p: typeof PLANS[number]) => {
+    if (!p) return '';
+    if (p.key === 'Free') return p.caption || 'Try Mode — Free';
+    const price = billingPeriod === 'monthly' ? p.monthlyPrice : p.yearlyPrice;
+    if (!price) return p.caption || '';
+    return billingPeriod === 'monthly' ? `${price}/month` : `${price}/year`;
+  };
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
@@ -170,11 +238,69 @@ export default function Register() {
           <TextField label="Recovery passphrase" required fullWidth type="password" value={recoveryPassphrase} onChange={e => setRecoveryPassphrase(e.target.value)} helperText="Keep this secret; used for account recovery" className={styles.field} />
           <TextField label="Confirm recovery passphrase" required fullWidth type="password" value={recoveryConfirm} onChange={e => setRecoveryConfirm(e.target.value)} className={styles.field} />
 
-          <FormControl fullWidth size="small" className={styles.fieldSelect} sx={{ mt: 1 }}>
+          {/* Billing period toggle */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+            <Typography variant="subtitle2">Billing</Typography>
+            <ToggleButtonGroup
+              value={billingPeriod}
+              exclusive
+              size="small"
+              onChange={(_, value) => {
+                if (value === null) return;
+                setBillingPeriod(value);
+              }}
+              aria-label="billing period"
+            >
+              <ToggleButton value="monthly" aria-label="monthly billing">Monthly</ToggleButton>
+              <ToggleButton value="yearly" aria-label="yearly billing">Yearly</ToggleButton>
+            </ToggleButtonGroup>
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+              (selected applies to paid plans)
+            </Typography>
+          </Box>
+
+          <FormControl fullWidth size="small" className={styles.fieldSelect} sx={{ mt: 2 }}>
             <InputLabel id="plan-label">Select plan</InputLabel>
             <Select labelId="plan-label" label="Select plan" value={plan} onChange={(e) => setPlan(String(e.target.value))}>
-              {PLANS.map(p => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+              {PLANS.map(p => (
+                <MenuItem
+                  key={p.key}
+                  value={p.key}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    py: 1,
+                    ...(p.recommended ? {
+                      border: '1px solid',
+                      borderColor: 'primary.main',
+                      bgcolor: 'rgba(25,118,210,0.04)',
+                    } : {}),
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', width: '100%' }}>
+                    <Typography sx={{ fontWeight: 700 }}>{p.label}</Typography>
+                    {p.recommended && <Chip label="Recommended" color="primary" size="small" sx={{ ml: 1 }} />}
+                  </Box>
+
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {p.key === 'Free' ? (p.caption || 'Try Mode — Free') : getPriceLabel(p)}
+                  </Typography>
+
+                  {/* Show both prices for paid plans to provide context */}
+                  {p.key !== 'Free' && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>
+                      {p.monthlyPrice && p.yearlyPrice ? `${p.monthlyPrice}/month · ${p.yearlyPrice}/year` : ''}
+                    </Typography>
+                  )}
+                </MenuItem>
+              ))}
             </Select>
+
+            {/* Display selected plan pricing/details under the dropdown */}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {selectedPlan ? (selectedPlan.key === 'Free' ? selectedPlan.caption : getPriceLabel(selectedPlan)) : ''}
+            </Typography>
           </FormControl>
 
           <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 2, py: 1.5, fontWeight: '700' }} disabled={submitting} >

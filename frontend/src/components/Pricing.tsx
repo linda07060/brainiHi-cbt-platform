@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import styles from "../styles/Pricing.module.css";
 
 type Plan = {
@@ -8,7 +9,7 @@ type Plan = {
   priceLabel?: string;
   details: string[];
   cta: string;
-  link: string;
+  link?: string;
   highlight?: boolean;
   badge?: string;
 };
@@ -68,56 +69,61 @@ export default function Pricing(): JSX.Element {
       <h2 className={styles.heading}>Choose your plan</h2>
 
       <div className={styles.cards} role="list">
-        {plans.map((plan) => (
-          <article
-            key={plan.name}
-            role="listitem"
-            aria-labelledby={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`}
-            className={`${styles.card} ${plan.highlight ? styles.featured : ""}`}
-          >
-            <div className={styles.cardHeader}>
-              <div className={styles.planLeft}>
-                {plan.icon && (
-                  <span aria-hidden="true" style={{ fontSize: 20, marginRight: 6 }}>
-                    {plan.icon}
-                  </span>
-                )}
-                <div id={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`} className={styles.planName}>
-                  {plan.name}
+        {plans.map((plan) => {
+          const planQuery = encodeURIComponent(plan.name);
+          const href = `/register?plan=${planQuery}`;
+          return (
+            <article
+              key={plan.name}
+              role="listitem"
+              aria-labelledby={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`}
+              className={`${styles.card} ${plan.highlight ? styles.featured : ""}`}
+            >
+              <div className={styles.cardHeader}>
+                <div className={styles.planLeft}>
+                  {plan.icon && (
+                    <span aria-hidden="true" style={{ fontSize: 20, marginRight: 6 }}>
+                      {plan.icon}
+                    </span>
+                  )}
+                  <div id={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`} className={styles.planName}>
+                    {plan.name}
+                  </div>
                 </div>
+
+                {plan.badge && (
+                  <div className={styles.badge} aria-hidden="true">
+                    {plan.badge}
+                  </div>
+                )}
               </div>
 
-              {plan.badge && (
-                <div className={styles.badge} aria-hidden="true">
-                  {plan.badge}
-                </div>
-              )}
-            </div>
+              <div className={styles.priceWrap}>
+                <div className={styles.priceMain}>{plan.price}</div>
+                {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
+              </div>
 
-            <div className={styles.priceWrap}>
-              <div className={styles.priceMain}>{plan.price}</div>
-              {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
-            </div>
+              <ul className={styles.features} aria-label={`${plan.name} features`}>
+                {plan.details.map((d) => (
+                  <li key={d} className={styles.featureItem}>
+                    <span className={styles.featureDot} aria-hidden="true" />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
 
-            <ul className={styles.features} aria-label={`${plan.name} features`}>
-              {plan.details.map((d) => (
-                <li key={d} className={styles.featureItem}>
-                  <span className={styles.featureDot} aria-hidden="true" />
-                  <span>{d}</span>
-                </li>
-              ))}
-            </ul>
-
-            <a
-              href={plan.link}
-              className={`${styles.cta} ${plan.highlight ? " " + styles["primary"] : " " + styles["primary"]}`}
-              role="button"
-              aria-label={`${plan.cta} - ${plan.name}`}
-            >
-              {plan.cta}
-            </a>
-          </article>
-        ))}
+              <Link href={href} passHref legacyBehavior>
+                <a
+                  className={`${styles.cta} ${plan.highlight ? " " + styles["primary"] : " " + styles["primary"]}`}
+                  role="button"
+                  aria-label={`${plan.cta} - ${plan.name}`}
+                >
+                  {plan.cta}
+                </a>
+              </Link>
+            </article>
+          );
+        })}
       </div>
     </section>
   );

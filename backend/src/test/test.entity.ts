@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+
+export type TestStatus = 'started' | 'completed';
 
 @Entity()
 export class TestAttempt {
@@ -11,15 +13,24 @@ export class TestAttempt {
   @Column()
   title: string;
 
+  // questions: stored as JSON array of question objects (with tags)
   @Column('json')
-  questions: any;
+  questions: any[];
 
+  // answers: map of questionId -> answer provided by user
   @Column('json')
-  answers: any;
+  answers: Record<string, any>;
 
-  @Column()
+  @Column({ default: 0 })
   score: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', nullable: true })
   takenAt: Date;
+
+  // NEW: status indicates lifecycle, started or completed
+  @Column({ type: 'varchar', length: 20, default: 'started' })
+  status: TestStatus;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

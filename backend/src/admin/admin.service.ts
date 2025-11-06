@@ -105,6 +105,7 @@ export class AdminService {
       email: user.email,
       phone: (user as any).phone,
       plan: user.plan,
+      plan_expiry: user.plan_expiry || null,
       active: (user as any).active,
       createdAt: (user as any).createdAt || null,
       securityQuestions: questionKeys,

@@ -18,10 +18,11 @@ import axios from "axios";
 import styles from "../styles/Login.module.css";
 
 /**
- * Minimal, professional student login page.
- * - Uses MUI components but applies a small CSS module for layout.
- * - Includes "Forgot password" and "Register" links.
- * - Honors site theme colors via frontend/src/theme.ts
+ * Login page with robust handler:
+ * - normalizes token and user from common backend shapes
+ * - immediately persists auth to localStorage
+ * - sets axios.defaults.headers.common.Authorization before redirect
+ * - updates AuthContext via setUser
  */
 
 export default function Login(): JSX.Element {
@@ -45,18 +46,33 @@ export default function Login(): JSX.Element {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
-          const auth = { token, ...res.data };
-          localStorage.setItem("auth", JSON.stringify(auth));
-          setUser(auth);
+          // Backend returned user object
+          const auth = { token, user: res.data };
+          try {
+            if (typeof window !== "undefined") localStorage.setItem("auth", JSON.stringify(auth));
+          } catch {}
+          try {
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          } catch {}
+          setUser(auth as any);
           router.push("/dashboard");
         })
-        .catch(() => {
-          setMsg("Google login failed. Try again.");
-          setOpen(true);
+        .catch((err) => {
+          const status = err?.response?.status;
+          if (status === 404) {
+            const emailFromResp = err?.response?.data?.email || "";
+            const pre = emailFromResp || "";
+            router.replace(`/register?email=${encodeURIComponent(pre)}`);
+          } else {
+            setMsg("Google login failed. Try again.");
+            setOpen(true);
+            // eslint-disable-next-line no-console
+            console.error("Google login error", err?.response || err);
+          }
         })
         .finally(() => setLoading(false));
     }
-  }, [router.query.token, setUser, router]);
+  }, [router.query, setUser, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,26 +82,46 @@ export default function Login(): JSX.Element {
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/auth/login`,
         { email, password }
       );
 
-      const auth = { token: res.data.access_token, ...res.data.user };
-      localStorage.setItem("auth", JSON.stringify(auth));
-      setUser(auth);
+      // Normalize response to { token, user }
+      const token =
+        res.data?.access_token || res.data?.token || res.data?.accessToken || null;
+      const user = res.data?.user || (res.data && (res.data.email || res.data.id) ? res.data : null);
+
+      if (!token || !user) {
+        throw new Error("Invalid login response (missing token or user)");
+      }
+
+      const auth = { token, user };
+
+      // Persist immediately and set axios header so other hooks can use it
+      try {
+        if (typeof window !== "undefined") localStorage.setItem("auth", JSON.stringify(auth));
+      } catch {}
+      try {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      } catch {}
+
+      setUser(auth as any);
 
       setSuccess(true);
       setMsg("Login successful — redirecting...");
       setOpen(true);
 
-      setTimeout(() => router.push("/dashboard"), 900);
+      setTimeout(() => router.push("/dashboard"), 800);
     } catch (error: any) {
       setSuccess(false);
-      setMsg(
+      const message =
         error?.response?.data?.message ||
-          "Login failed. Please check your credentials and try again."
-      );
+        error?.message ||
+        "Login failed. Please check your credentials and try again.";
+      setMsg(message);
       setOpen(true);
+      // eslint-disable-next-line no-console
+      console.error("Login error", error?.response || error);
     } finally {
       setLoading(false);
     }
@@ -157,8 +193,6 @@ export default function Login(): JSX.Element {
               or
             </Divider>
 
-            {/* Wrap GoogleButton in a styled container instead of passing className prop,
-                because the GoogleButton component's props do not accept className. */}
             <div className={styles.googleBtn}>
               <GoogleButton />
             </div>

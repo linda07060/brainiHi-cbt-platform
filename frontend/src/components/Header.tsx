@@ -1,142 +1,196 @@
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useRouter } from "next/router";
 import styles from "../styles/Header.module.css";
 import layout from "../styles/Layout.module.css";
-// ensure modal is available globally
 import SampleTestModal from "./SampleTestModal";
 
+/**
+ * Header (updated)
+ * - deterministic server+client date formatting (no Intl variations)
+ * - keeps all hooks at top-level and avoids conditional hooks
+ * - accessibility improvements preserved
+ */
+
 export default function Header(): JSX.Element {
-  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const NAV = [
+    { href: "/", label: "Home" },
+    { href: "/sat", label: "SAT Prep" },
+    { href: "/act", label: "ACT Prep" },
+    { href: "/login", label: "CBT Portal" },
+    { href: "/about", label: "About Us" },
+    { href: "/contact", label: "Contact" },
+  ];
+
+  // Deterministic date string constructed from name lists so server & client render exactly the same text.
+  const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const months = [
+    "January","February","March","April","May","June","July","August","September","October","November","December"
+  ];
+  const d = new Date();
+  const weekday = weekdays[d.getDay()];
+  const day = d.getDate(); // numeric day (no leading zero)
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  // Use space-separated format (avoids locale-specific punctuation differences)
+  const today = `${weekday} ${day} ${month} ${year}`;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
 
-  // Close mobile menu on resize for UX
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", onKey);
+      // focus first mobile link for accessibility (no ref on Link)
+      setTimeout(() => {
+        const el = document.querySelector<HTMLAnchorElement>(".mobileNavLink");
+        el?.focus();
+      }, 50);
+    } else {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   useEffect(() => {
-    const onResize = () => setMenuOpen(false);
-    window.addEventListener("resize", onResize);
+    const onResize = () => {
+      if (window.innerWidth > 960 && menuOpen) setMenuOpen(false);
+    };
+    window.addEventListener("resize", onResize, { passive: true });
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [menuOpen]);
 
-  function openSampleModal(exam?: string) {
-    // if exam provided we open that exam directly, otherwise prompt selector
-    window.dispatchEvent(new CustomEvent("open-sample-test", { detail: { exam: exam ? exam.toUpperCase() : undefined, pick: 5 } }));
+  function openSampleModal() {
+    window.dispatchEvent(new CustomEvent("open-sample-test", { detail: { pick: 5 } }));
     setMenuOpen(false);
   }
 
   return (
     <>
-      <header
-        className={`${styles.header} ${scrolled ? styles.scrolled : ""}`}
-        role="banner"
-      >
-        <div className={layout.contentInner}>
-          <div className={styles.headerRow}>
-            {/* LEFT: Logo + Brand */}
-            <div className={styles.left}>
-              <Link href="/" className={styles.logoLink} aria-label="Brainihi home">
-                <img src="/images/logo.png" alt="Brainihi logo" className={styles.logo} />
+      <header className={styles.header} role="banner">
+        {/* Top utility row */}
+        <div className={styles.topBar}>
+          <div className={layout.contentInner + " " + styles.topInner}>
+            <div className={styles.topLeft}>{today}</div>
+            <div className={styles.topRight}>
+              <Link href="/login" className={styles.topLink}>Sign in</Link>
+              <span className={styles.topDivider}>|</span>
+              <Link href="/register" className={styles.topLink}>Join</Link>
+              <span className={styles.topDivider}>|</span>
+              <Link href="/contact" className={styles.topLink}>Advertise</Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Main header: logo (left), optional banner/CTA (right) */}
+        <div className={styles.mainHeader}>
+          <div className={layout.contentInner + " " + styles.mainInner}>
+            <div className={styles.logoArea}>
+              <Link href="/" className={styles.logoLink} aria-label="BrainiHi home">
+                <Image src="/images/logo.png" alt="BrainiHi" width={56} height={56} />
               </Link>
-              <div className={styles.brandWrap}>
-                <Link href="/" className={styles.brandLink}>
-                  <span className={styles.brandMain}>Prepare for exams faster</span>
-                  <span className={styles.brandSub}>with AI — BrainiHi</span>
+              <div className={styles.logoText}>
+                <Link href="/" className={styles.siteTitleLink}>
+                  <span className={styles.siteTitle}>BrainiHi</span>
+                  <span className={styles.siteTag}> with AI — Prepare for exams faster</span>
                 </Link>
               </div>
             </div>
 
-            {/* CENTER: Primary navigation (desktop) */}
-            <nav className={styles.center} role="navigation" aria-label="Primary">
-              <ul className={styles.navList}>
-                <li><Link href="/" className={styles.navItem}>Home</Link></li>
-                <li><Link href="/sat" className={styles.navItem}>SAT Prep</Link></li>
-                <li><Link href="/act" className={styles.navItem}>ACT Prep</Link></li>
-                <li><Link href="/login" className={styles.navItem}>CBT Portal</Link></li>
-                <li><Link href="/about" className={styles.navItem}>About Us</Link></li>
-                <li><Link href="/contact" className={styles.navItem}>Contact Us</Link></li>
-              </ul>
-            </nav>
+            <div className={styles.headerRight}>
+              <div className={styles.promo}>
+                <span className={styles.promoLabel}>Featured</span>
+                <button className={styles.promoCta} onClick={openSampleModal}>Try a free test</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* RIGHT: CTA + Hamburger */}
-            <div className={styles.right}>
-              {/* Primary CTA now triggers the sample-test modal */}
-              <button
-                className={styles.ctaBtn}
-                onClick={() => openSampleModal()} // no exam specified -> prompt exam selector in modal
-                aria-label="Take a free test"
-              >
-                Take a free test
+        {/* Primary nav bar — full width colored background similar to NewsMag */}
+        <div className={styles.navBar} role="navigation" aria-label="Primary">
+          <div className={layout.contentInner + " " + styles.navInner}>
+            <ul className={styles.navList}>
+              {NAV.map((item) => (
+                <li key={item.href} className={styles.navItem}>
+                  <Link
+                    href={item.href}
+                    className={styles.navLink}
+                    aria-current={router.pathname === item.href ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            {/* search + mobile hamburger */}
+            <div className={styles.navControls}>
+              <button className={styles.searchBtn} aria-label="Search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
 
               <button
-                className={`${styles.hamburger} ${menuOpen ? styles.isOpen : ""}`}
+                className={styles.mobileToggle}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
-                aria-controls="mobile-menu"
                 onClick={() => setMenuOpen((s) => !s)}
-                type="button"
               >
-                <span aria-hidden="true" />
-                <span aria-hidden="true" />
-                <span aria-hidden="true" />
+                <span className={styles.hamburgerBar} />
+                <span className={styles.hamburgerBar} />
+                <span className={styles.hamburgerBar} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile nav panel */}
-        <div
-          id="mobile-menu"
-          className={`${styles.mobileNav} ${menuOpen ? styles.mobileNavOpen : ""}`}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className={styles.mobileNavInner}>
-            {/* Close button (top-right) */}
-            <button
-              className={styles.mobileClose}
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-              type="button"
-            >
-              {/* simple X icon (SVG) */}
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M4 4L16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M16 4L4 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
+        {/* Mobile off-canvas panel (same links + actions) */}
+        <div className={`${styles.mobilePanel} ${menuOpen ? styles.open : ""}`} role="dialog" aria-modal="true" aria-hidden={!menuOpen}>
+          <div className={styles.mobileInner}>
+            <div className={styles.mobileHeader}>
+              <Link href="/" className={styles.mobileLogo} onClick={() => setMenuOpen(false)}>
+                <Image src="/images/logo.png" alt="BrainiHi" width={40} height={40} />
+              </Link>
+              <button className={styles.mobileClose} onClick={() => setMenuOpen(false)} aria-label="Close menu">×</button>
+            </div>
 
-            <ul className={styles.mobileNavList}>
-              <li><Link href="/" className={styles.mobileNavItem} onClick={() => setMenuOpen(false)}>Home</Link></li>
-              <li><Link href="/sat" className={styles.mobileNavItem} onClick={() => setMenuOpen(false)}>SAT Prep</Link></li>
-              <li><Link href="/act" className={styles.mobileNavItem} onClick={() => setMenuOpen(false)}>ACT Prep</Link></li>
-              <li><Link href="/login" className={styles.mobileNavItem} onClick={() => setMenuOpen(false)}>CBT Portal</Link></li>
-              <li><Link href="/about" className={styles.mobileNavItem} onClick={() => setMenuOpen(false)}>About Us</Link></li>
-              <li><Link href="/contact" className={styles.mobileNavItem} onClick={() => setMenuOpen(false)}>Contact Us</Link></li>
+            <ul className={styles.mobileNav}>
+              {NAV.map((n) => (
+                <li key={n.href}>
+                  <Link href={n.href} className={styles.mobileNavLink} onClick={() => setMenuOpen(false)}>
+                    {n.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
 
             <div className={styles.mobileActions}>
-              {/* Provide take-free-test button also in mobile panel */}
-              <button
-                className={styles.mobileRegister}
-                onClick={() => { openSampleModal(); }}
-                aria-label="Take a free test"
-              >
-                Take a free test
-              </button>
-
-              <Link href="/register" className={styles.mobileRegister} onClick={() => setMenuOpen(false)}>Create account</Link>
-              <Link href="/login" className={styles.mobileLogin} onClick={() => setMenuOpen(false)}>Sign in</Link>
+              <button className={styles.mobileCta} onClick={openSampleModal}>Take a free test</button>
+              <Link href="/register" className={styles.mobileSecondary} onClick={() => setMenuOpen(false)}>Create account</Link>
+              <Link href="/login" className={styles.mobileSecondary} onClick={() => setMenuOpen(false)}>Sign in</Link>
             </div>
           </div>
         </div>
+
+        {/* backdrop */}
+        <div className={`${styles.backdrop} ${menuOpen ? styles.backdropVisible : ""}`} onClick={() => setMenuOpen(false)} aria-hidden={!menuOpen} />
       </header>
 
-      {/* Mount the modal globally so header/hero CTAs work anywhere */}
+      {/* keep modal mounted */}
       <SampleTestModal />
     </>
   );

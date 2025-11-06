@@ -1,93 +1,123 @@
-import React, {
-  createContext,
-  useState,
-  ReactNode,
-  useContext,
-  Dispatch,
-  SetStateAction,
-  useEffect,
-} from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
 
-type AuthUser = {
-  token: string;
-  email: string;
-  name: string;
-  role?: string;
-  plan?: string;
-  level?: string;
-  plan_expiry?: string;
-  // ...other fields as needed
-};
+type AuthShape = { token?: string | null; user?: any } | null;
 
-type AuthContextType = {
-  user: AuthUser | null;
-  admin: any;
-  setUser: Dispatch<SetStateAction<AuthUser | null>>;
-  setAdmin: Dispatch<SetStateAction<any>>;
+interface AuthContextValue {
+  user: any | null;
+  token: string | null;
+  setUser: (u: AuthShape) => void;
   logout: () => void;
-};
+}
 
-const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextValue>({
   user: null,
-  admin: null,
+  token: null,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   setUser: () => {},
-  setAdmin: () => {},
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   logout: () => {},
 });
 
-type AuthProviderProps = {
-  children: ReactNode;
-};
+function normalizeAuth(input: any): { token: string | null; user: any | null } {
+  if (!input) return { token: null, user: null };
+  if (typeof input === "object" && (input.token || input.access_token || input.user)) {
+    const token = (input.token as string) || (input.access_token as string) || null;
+    const user = input.user ?? (() => {
+      const copy = { ...input };
+      delete (copy as any).token;
+      delete (copy as any).access_token;
+      return Object.keys(copy).length ? copy : null;
+    })();
+    return { token, user };
+  }
+  return { token: null, user: input };
+}
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [admin, setAdmin] = useState<any>(null);
-
-  // Load user/admin from localStorage on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('auth');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [auth, setAuth] = useState<{ token: string | null; user: any | null }>(() => {
+    try {
+      if (typeof window === "undefined") return { token: null, user: null };
+      const raw = localStorage.getItem("auth");
+      if (!raw) return { token: null, user: null };
+      return normalizeAuth(JSON.parse(raw));
+    } catch {
+      return { token: null, user: null };
     }
-    const storedAdmin = localStorage.getItem('admin');
-    if (storedAdmin) {
-      setAdmin(JSON.parse(storedAdmin));
-    }
-  }, []);
+  });
 
-  // Sync user to localStorage
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('auth', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('auth');
-    }
-  }, [user]);
+  const setUser = (incoming: AuthShape) => {
+    const normalized = normalizeAuth(incoming);
 
-  // Sync admin to localStorage
-  useEffect(() => {
-    if (admin) {
-      localStorage.setItem('admin', JSON.stringify(admin));
-    } else {
-      localStorage.removeItem('admin');
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("auth", JSON.stringify(normalized));
+      }
+    } catch {
+      // ignore storage errors
     }
-  }, [admin]);
 
-  // Logout function
-  const logout = () => {
-    setUser(null);
-    setAdmin(null);
-    localStorage.removeItem('auth');
-    localStorage.removeItem('admin');
+    // Immediately set axios default header to avoid a timing window where navigation occurs
+    try {
+      if (normalized?.token) {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${normalized.token}`;
+      } else {
+        delete axios.defaults.headers.common["Authorization"];
+      }
+    } catch {
+      // ignore axios errors
+    }
+
+    setAuth(normalized);
   };
 
+  const logout = () => {
+    try {
+      if (typeof window !== "undefined") localStorage.removeItem("auth");
+    } catch {
+      // ignore
+    }
+    setAuth({ token: null, user: null });
+    try {
+      delete axios.defaults.headers.common["Authorization"];
+    } catch {}
+  };
+
+  // Keep axios default header and localStorage in sync (still useful for other updates)
+  useEffect(() => {
+    if (auth?.token) {
+      try {
+        axios.defaults.headers.common["Authorization"] = `Bearer ${auth.token}`;
+      } catch {}
+    } else {
+      try {
+        delete axios.defaults.headers.common["Authorization"];
+      } catch {}
+    }
+  }, [auth]);
+
+  // Sync if other tabs change auth
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "auth") {
+        try {
+          const val = e.newValue ? normalizeAuth(JSON.parse(e.newValue)) : { token: null, user: null };
+          setAuth(val);
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, admin, setUser, setAdmin, logout }}>
+    <AuthContext.Provider value={{ user: auth.user, token: auth.token, setUser, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
-
 export default AuthContext;

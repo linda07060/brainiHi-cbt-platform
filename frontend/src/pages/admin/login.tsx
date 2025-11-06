@@ -13,30 +13,49 @@ export default function AdminLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setStatus(null);
 
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, { email, password });
-      // accept either { access_token, user } or { token, user } or { user, access_token }
-      const token = res.data?.access_token || res.data?.token || res.data?.accessToken;
-      const user = res.data?.user || res.data;
+      // NOTE: call the admin login endpoint (not the user /auth/login)
+      const res = await axios.post(`${apiBase}/admin/auth/login`, { email, password });
 
-      if (!user || user.role !== 'admin') {
+      // Accept several possible token field names
+      const token = res.data?.access_token || res.data?.token || res.data?.accessToken;
+      // Admin endpoint returns { access_token, admin }
+      const admin = res.data?.admin || res.data?.user || res.data;
+
+      if (!token) {
+        setStatus({ type: 'error', message: 'Authentication token not returned by server' });
+        setSubmitting(false);
+        return;
+      }
+
+      if (!admin || admin.role !== 'admin') {
         setStatus({ type: 'error', message: 'Not authorized as admin' });
         setSubmitting(false);
         return;
       }
 
-      // create a normalized auth object
-      const auth = { token, ...user };
+      // Normalized auth object — keep shape consistent with your AuthContext expectations
+      const auth = { token, ...admin };
       setUser(auth);
-      // store in localStorage handled by AuthContext effect
+
+      // navigate to admin dashboard
       router.push('/admin/dashboard');
     } catch (err: any) {
-      setStatus({ type: 'error', message: err?.response?.data?.message || 'Login failed' });
+      // Prefer server-provided message, fall back to generic text
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.response?.statusText ||
+        err?.message ||
+        'Login failed';
+      setStatus({ type: 'error', message });
     } finally {
       setSubmitting(false);
     }

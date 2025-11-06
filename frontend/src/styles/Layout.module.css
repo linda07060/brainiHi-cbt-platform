@@ -1,14 +1,41 @@
-/* Shared responsive container for consistent horizontal padding */
+/* Shared responsive container for consistent horizontal padding
+   Updated to use a stable vertical flex layout so each top-level
+   section inside the container occupies its own row and has a fixed
+   max-width. This prevents unpredictable wrapping/reflow on desktop
+   when images or other content load asynchronously. */
+
 .container {
+  /* keep a centered column layout so each section is positioned
+     consistently and does not float/wrap unexpectedly */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  /* limit the inner content width and center it */
+  width: 100%;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
+
+  /* horizontal padding (responsive) */
   padding-left: 1rem;   /* 16px mobile horizontal padding */
   padding-right: 1rem;
   box-sizing: border-box;
-  width: 100%;
+
+  /* vertical rhythm between children */
+  gap: 3rem;
 }
 
+/* Ensure each direct child section uses the full available width
+   up to the max-width. This prevents individual child nodes from
+   growing or shrinking independently and causing layout shifts. */
+.container > * {
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+/* Keep the original responsive padding adjustments */
 @media (min-width: 640px) {
   .container {
     padding-left: 1.5rem; /* 24px */

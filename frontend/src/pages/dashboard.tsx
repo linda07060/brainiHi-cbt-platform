@@ -228,6 +228,42 @@ function extractTopicFromTitle(title?: string) {
   return title.slice(0, idx).trim();
 }
 
+/* ---------- New helper: robust timestamp extraction for sorting ---------- */
+/* This does not change any submission or display logic — it only provides a consistent numeric timestamp used for sorting. */
+function getTestTimestamp(item: any): number {
+  if (!item) return 0;
+  const candidates = [
+    item.takenAt,
+    item.taken_at,
+    item.taken,
+    item.createdAt,
+    item.created_at,
+    item.takenOn,
+    item.taken_on,
+    item.date,
+    item.timestamp,
+  ];
+  for (const c of candidates) {
+    if (c === undefined || c === null || c === '') continue;
+    // numeric values
+    if (typeof c === 'number' && !Number.isNaN(c)) {
+      let n = c;
+      if (n < 1e12) n = n * 1000;
+      return Number(n);
+    }
+    // numeric string
+    if (typeof c === 'string' && /^\d+$/.test(c)) {
+      let n = Number(c);
+      if (n < 1e12) n = n * 1000;
+      return Number(n);
+    }
+    // try parse date string
+    const parsed = Date.parse(String(c));
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return 0;
+}
+
 /* ---------- Dashboard Component ---------- */
 
 export default function Dashboard() {
@@ -409,7 +445,8 @@ export default function Dashboard() {
 
   const filteredTests = useMemo(() => {
     const s = (searchText || '').trim().toLowerCase();
-    return tests.filter((t) => {
+    // collect matched items first, then sort by timestamp (newest first)
+    const results = tests.filter((t) => {
       // text search: title/topic/score
       if (s) {
         const title = String(t.title || '').toLowerCase();
@@ -446,6 +483,16 @@ export default function Dashboard() {
       }
       return true;
     });
+
+    // Sort by time descending so the latest attempts appear first.
+    // This only affects presentation order and does not modify any test data or logic.
+    results.sort((a, b) => {
+      const ta = getTestTimestamp(a);
+      const tb = getTestTimestamp(b);
+      return tb - ta;
+    });
+
+    return results;
   }, [tests, searchText, filterTopic, filterScore, filterFromDate, filterToDate]);
 
   /* ---------- UI Actions ---------- */

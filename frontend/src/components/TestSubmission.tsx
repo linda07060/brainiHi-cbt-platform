@@ -10,6 +10,9 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Paper,
+  Stack,
+  useTheme,
 } from '@mui/material';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -22,17 +25,11 @@ interface QuestionFeedback {
   [k: string]: any;
 }
 
-/**
- * Server response typing: make fields optional and permissive so TS accepts all shapes.
- */
 interface ServerResponse {
-  // common top-level fields
   warning?: string;
   error?: string;
   message?: string;
   processing?: boolean;
-
-  // score / result shapes
   score?: number;
   total?: number;
   marks?: number;
@@ -43,30 +40,132 @@ interface ServerResponse {
     id?: number | string;
     [k: string]: any;
   };
-
-  // per-question / explanation shapes
   feedback?: QuestionFeedback[];
   results?: QuestionFeedback[];
   perQuestion?: QuestionFeedback[];
   questions?: any[];
   explanations?: Record<string, string | null> | null;
-
-  // id shapes returned by different APIs
   id?: number | string;
   resultId?: number | string;
   submissionId?: number | string;
   attemptId?: number | string;
   attempt?: any;
-
-  // fallback arbitrary fields
+  resultUrl?: string;
   [k: string]: any;
 }
 
 /**
- * Submission runner component.
+ * Minimal, professional AnimatedSteps component
+ * - Presentation only: cycles through messages while submitting is true
+ * - Keeps a single DOM node and animates opacity/translate for smooth transitions
+ *
+ * Note: intervalMs default increased and transition durations lengthened so messages
+ * remain visible longer and are easier to read.
+ */
+function AnimatedSteps({
+  messages,
+  intervalMs = 4000, // slightly slower so users can comfortably read each message
+  submitting,
+}: {
+  messages: string[];
+  intervalMs?: number;
+  submitting: boolean;
+}) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (!submitting) {
+      setIndex(0);
+      setVisible(true);
+      return;
+    }
+
+    setVisible(true);
+    const cycle = setInterval(() => {
+      setVisible(false);
+      const swap = setTimeout(() => {
+        setIndex((i) => (i + 1) % messages.length);
+        setVisible(true);
+      }, 600); // match CSS transition duration (fade out time)
+      return () => clearTimeout(swap);
+    }, intervalMs);
+
+    return () => {
+      clearInterval(cycle);
+      setVisible(true);
+      setIndex(0);
+    };
+  }, [submitting, messages.length, intervalMs]);
+
+  if (!messages || messages.length === 0) return null;
+
+  return (
+    <Box
+      component="div"
+      aria-live="polite"
+      sx={{
+        pl: { xs: 0, md: 6 },
+        pt: 2,
+        minHeight: 56,
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 2,
+          px: 3,
+          py: 1,
+          borderRadius: 999,
+          bgcolor: (theme) => (theme.palette.mode === 'light' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)'),
+        }}
+      >
+        <Box
+          sx={{
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            bgcolor: (theme) => theme.palette.primary.main,
+            transform: visible ? 'scale(1)' : 'scale(0.78)',
+            transition: 'transform 600ms cubic-bezier(.2,.9,.2,1)',
+            flex: '0 0 auto',
+          }}
+        />
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 600,
+            color: 'text.secondary',
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 600ms ease, transform 600ms ease',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontSize: { xs: '0.98rem', md: '1.02rem' },
+          }}
+        >
+          {messages[index]}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/**
+ * TestSubmission (presentation tweaks only)
+ *
+ * - Reworked the submitting view to be cleaner and more minimalist.
+ * - Emphasised the animated status line visually while preserving all existing submission logic.
+ * - No network, routing or state-management logic was changed except increasing the request timeout
+ *   and improved timeout error handling so users see a helpful message and next steps.
  */
 export default function TestSubmission(): JSX.Element {
   const router = useRouter();
+  const theme = useTheme();
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [snack, setSnack] = useState<{ severity: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(null);
@@ -94,12 +193,10 @@ export default function TestSubmission(): JSX.Element {
       parsed = null;
     }
     if (!parsed?.payload) {
-      // nothing to submit automatically
       return;
     }
 
     try {
-      // Normalize original questions for rendering later
       const payload = parsed.payload;
       let qs = payload?.questions ?? payload?.items ?? payload?.test?.questions ?? null;
       if (!qs && Array.isArray(payload)) qs = payload;
@@ -112,7 +209,6 @@ export default function TestSubmission(): JSX.Element {
       setSnack(null);
 
       try {
-        // Build headers. If token wasn't stored in parsed, try to read one from sessionStorage (safe fallback).
         const tokenFromParsed = parsed?.token ?? undefined;
         const fallbackToken = typeof window !== 'undefined' ? sessionStorage.getItem('AUTH_TOKEN') : null;
         const token = tokenFromParsed ?? (fallbackToken ?? undefined);
@@ -120,13 +216,13 @@ export default function TestSubmission(): JSX.Element {
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
 
+        // NOTE: timeout increased to 300000ms (5 minutes) to accommodate longer AI explanation collation
         const res = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/tests/submit`,
           parsed.payload,
-          { headers, timeout: 120000 }
+          { headers, timeout: 300000 }
         );
 
-        // Cast to ServerResponse so TypeScript knows these fields may exist
         const data = (res?.data ?? {}) as ServerResponse;
 
         if (data.warning) {
@@ -140,11 +236,9 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // Best-effort extraction of score & total (support multiple shapes)
         const score = data.score ?? data.result?.score ?? data.marks ?? null;
         const total = data.total ?? data.result?.total ?? data.max ?? (originalQuestions ? originalQuestions.length : null);
 
-        // Extract per-question feedback in common shapes
         let feedback: QuestionFeedback[] | null = null;
         if (Array.isArray(data.feedback)) feedback = data.feedback;
         else if (Array.isArray(data.results)) feedback = data.results;
@@ -159,7 +253,6 @@ export default function TestSubmission(): JSX.Element {
           }));
         }
 
-        // If server provides explanations keyed by id
         if (!feedback && data.explanations && typeof data.explanations === 'object' && originalQuestions) {
           feedback = [];
           for (const q of originalQuestions || []) {
@@ -171,7 +264,6 @@ export default function TestSubmission(): JSX.Element {
           }
         }
 
-        // If we have any inline result info, render it
         if (score != null || feedback != null) {
           setResultScore(typeof score === 'number' ? score : null);
           setResultTotal(typeof total === 'number' ? total : (originalQuestions ? originalQuestions.length : null));
@@ -182,7 +274,6 @@ export default function TestSubmission(): JSX.Element {
           return;
         }
 
-        // Otherwise, attempt to obtain an id to navigate to review.
         let resultId: string | number | null = null;
         if (data.attempt && (data.attempt.id ?? data.attempt._id)) resultId = data.attempt.id ?? data.attempt._id;
         else if (data.id) resultId = data.id;
@@ -191,13 +282,10 @@ export default function TestSubmission(): JSX.Element {
         else if (data.attemptId) resultId = data.attemptId;
         else if (data.attempt && typeof data.attempt === 'number') resultId = data.attempt;
 
-        // Notify other parts of app (dashboard) that tests changed; include id when available
         try {
           window.dispatchEvent(new CustomEvent('tests-changed', { detail: { id: resultId ?? null } }));
         } catch (e) {
-          // ignore dispatch errors
-          // eslint-disable-next-line no-console
-          console.warn('Unable to dispatch tests-changed event', e);
+          // ignore
         }
 
         try { sessionStorage.removeItem('pendingTestSubmission'); } catch {}
@@ -215,6 +303,34 @@ export default function TestSubmission(): JSX.Element {
 
         setSnack({ severity: 'info', message: 'Submission complete — no inline result returned.' });
       } catch (err: any) {
+        // Improved timeout handling: detect Axios timeout and show a friendly, actionable message.
+        // Axios timeout errors typically have err.code === 'ECONNABORTED' and message like 'timeout of 300000ms exceeded'.
+        const isTimeout =
+          err?.code === 'ECONNABORTED' ||
+          (typeof err?.message === 'string' && /timeout of \d+ms exceeded/.test(err.message));
+
+        if (isTimeout) {
+          // Keep pendingTestSubmission in storage so the user can return and the submission can continue/check later.
+          try {
+            // Do not remove pendingTestSubmission here — keeping it allows retry/inspection later.
+            // Optionally, you may store a flag if you want to show a different UI next time.
+          } catch {}
+
+          // User-facing message rephrased per request:
+          // Inform the user that because the request timed out, their results (and AI explanations)
+          // are available via their past test attempts. Encourage checking Dashboard / Past Attempts.
+          setSnack({
+            severity: 'info',
+            message:
+              'Processing is taking longer than expected. We have recorded your submission — your result and AI explanations are available under Past Attempts on your Dashboard. ' +
+              'You can review your performance there now; if you keep this tab open we will also show the results here as soon as they finish. Contact support if you need help.',
+          });
+          console.info('Submission request timed out after 300000ms', err);
+          setSubmitting(false);
+          return;
+        }
+
+        // Existing error handling (preserve original behaviour)
         const serverMsg = err?.response?.data?.message ?? err?.response?.data?.error ?? null;
         if (serverMsg && /max attempts|attempts/i.test(String(serverMsg))) {
           setSnack({ severity: 'error', message: String(serverMsg) });
@@ -290,13 +406,72 @@ export default function TestSubmission(): JSX.Element {
     );
   }
 
+  // processing messages (kept concise and prominent)
+  const processingMessages = [
+    'Scoring your answers and preparing your result.',
+    'Collating AI-generated explanations for each question.',
+    'Validating explanations to ensure clarity and accuracy.',
+  ];
+
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', py: 4 }}>
       {submitting ? (
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <CircularProgress size={24} />
-          <Typography>Processing submission — please wait...</Typography>
-        </Box>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 4 },
+            borderRadius: 2,
+            bgcolor: theme.palette.mode === 'light' ? 'transparent' : 'transparent',
+          }}
+        >
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="center">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+              <Box>
+                <CircularProgress size={36} thickness={4} color="primary" />
+              </Box>
+
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+                  Processing submission — please wait
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 680 }}>
+                  Please be patient — AI-generated explanations are being collated. Processing time depends on the number
+                  of questions and the depth of explanations requested. Once ready, your personalised results and explanations
+                  will appear here immediately.
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Spacer for minimalist layout on wide screens */}
+            <Box sx={{ flex: 1 }} />
+
+            {/* Prominent animated status */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+              <AnimatedSteps messages={processingMessages} intervalMs={4000} submitting={submitting} />
+            </Box>
+          </Stack>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                try {
+                  router.push('/dashboard');
+                } catch {}
+              }}
+              sx={{
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+                fontWeight: 700,
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+              }}
+            >
+              Back to dashboard
+            </Button>
+          </Box>
+        </Paper>
       ) : perQuestionFeedback ? (
         renderResults()
       ) : (

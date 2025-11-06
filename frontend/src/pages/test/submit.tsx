@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
-import { Container, Box, Typography, Button, CircularProgress, Paper } from '@mui/material';
+import { Container, Box, Typography, Button, CircularProgress } from '@mui/material';
 import Link from 'next/link';
 
 // Load TestSubmission only on the client because it reads sessionStorage / window
@@ -35,7 +35,7 @@ export default function TestSubmitPage(): JSX.Element {
   return (
     <>
       <Head>
-        <title>Submitting your test — Test Runner</title>
+        <title>Submit Test — Test Runner</title>
         <meta name="robots" content="noindex" />
       </Head>
 
@@ -43,49 +43,19 @@ export default function TestSubmitPage(): JSX.Element {
         {checking ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 8 }}>
             <CircularProgress />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Preparing submission runner…
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 760, textAlign: 'center' }}>
-              We are checking your browser for a pending test submission. This should only take a moment.
-            </Typography>
+            <Typography>Preparing submission runner…</Typography>
           </Box>
         ) : hasPending ? (
           // Client-only component will handle the submission automatically
-          <Paper elevation={1} sx={{ p: { xs: 2, md: 3 }, borderRadius: 2 }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                Processing submission — please keep this tab open
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Our system is securely uploading and processing your answers. You will be automatically redirected to your
-                results and explanations as soon as they are ready. This may take a few minutes for longer tests.
-              </Typography>
-            </Box>
-
-            <Box>
-              <TestSubmission />
-            </Box>
-
-            <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button component={Link} href="/dashboard" variant="outlined">
-                Back to Dashboard
-              </Button>
-              <Button component={Link} href="/support" variant="text">
-                Contact support
-              </Button>
-            </Box>
-          </Paper>
+          <TestSubmission />
         ) : (
           // Helpful fallback UI when there's no pending submission to run
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
               No automatic submission in progress
             </Typography>
-            <Typography sx={{ mb: 3, color: 'text.secondary', maxWidth: 760, margin: '0 auto' }}>
-              There is no pending submission detected in this browser. If you recently completed a test on another device,
-              you may need to return to this device or recreate the test here. Keep in mind that closing this tab before a
-              submission completes can delay delivery of your personalised feedback.
+            <Typography sx={{ mb: 3 }}>
+              If you want to create a test here, use the Dashboard or the Start test form on the Test page.
             </Typography>
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 2 }}>
@@ -95,13 +65,6 @@ export default function TestSubmitPage(): JSX.Element {
               <Button component={Link} href="/test" variant="outlined">
                 Start a Test
               </Button>
-            </Box>
-
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="caption" color="text.secondary">
-                Tip: If you expected to see a submission here, check your browser's sessionStorage or try the device where you
-                started the test. For assistance, visit the support page.
-              </Typography>
             </Box>
           </Box>
         )}

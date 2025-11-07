@@ -21,6 +21,9 @@ import styles from "../styles/Login.module.css";
 import AITransparency from "../components/AITransparency";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
+// Header (imports SampleTestModal and mounts it)
+import Header from "../components/Header";
+
 /**
  * Minimal typings for the responses used on this page.
  * Keep them permissive so we can safely access common fields returned by different backends.
@@ -151,6 +154,9 @@ export default function Login(): JSX.Element {
 
   return (
     <>
+      {/* Header added so the header (and its SampleTestModal) is available on the login page */}
+      <Header />
+
       <Preloader />
       <Box className={styles.page}>
         <Paper elevation={1} className={styles.card} component="main" role="main" aria-labelledby="login-title">

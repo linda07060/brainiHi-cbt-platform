@@ -1,147 +1,101 @@
-/* Production-ready, minimalist CSS Module for ExamCenters component
-   - All selectors are local (no bare element selectors) for CSS Modules purity.
-   - Scoped tokens under .centers root for predictable theming.
-   - Minimal, neutral aesthetic with clear spacing and responsive layout.
-   - Accessible focus-visible styles and reduced-motion respect.
-*/
-
-.centers {
-  --bg: #f6f7f8;
-  --card: #ffffff;
+:root {
+  --bg: #ffffff;
   --text: #0f1721;
   --muted: #6b6b6b;
   --brand: #f2a400;
-  --radius: 12px;
-  --shadow-sm: 0 10px 30px rgba(16,24,32,0.05);
-  --shadow-md: 0 20px 50px rgba(16,24,32,0.07);
+  --gap: 28px;
   --container-max: 1200px;
+}
 
+.wrap {
   background: var(--bg);
   padding: 56px 20px;
-  display: flex;
-  justify-content: center;
+  color: var(--text);
   box-sizing: border-box;
 }
 
-/* centered inner container */
 .container {
-  width: 100%;
   max-width: var(--container-max);
   margin: 0 auto;
-  box-sizing: border-box;
-}
-
-/* KPI row (numbers) */
-.numbersBlock {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 22px;
-  text-align: center;
-  margin-bottom: 22px;
+  grid-template-columns: 1fr 480px;
+  gap: var(--gap);
   align-items: center;
+  box-sizing: border-box;
+  min-height: 260px;
 }
 
-.numbersTitle {
+/* Left column (content) */
+.content {
+  position: relative;
+  min-width: 0;
+  padding-right: 8px;
+  /* keep enough left space on wide screens */
+  padding-left: 0;
+}
+
+.accent {
+  position: absolute;
+  left: -18px;
+  top: 6px;
+  width: 8px;
+  height: 64px;
+  background: var(--brand);
+  border-radius: 4px;
+  box-shadow: 0 8px 20px rgba(242,164,0,0.08);
+}
+
+.kicker {
+  margin: 0 0 8px 0;
   font-size: 12px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 0 0 8px 0;
+  font-weight: 700;
 }
 
-/* four-column stats on wide screens, stacked on small */
-.numbersGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 28px;
-  align-items: start;
-  justify-items: center;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.numberItem {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 220px;
-}
-
-.bigNumber {
-  font-size: 20px;
+.title {
+  margin: 0 0 14px 0;
+  font-size: 44px;
+  line-height: 1.02;
   font-weight: 800;
-  color: var(--brand);
-  margin: 0;
-  text-align: center;
-}
-
-.numLabel {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.45;
-  text-align: center;
-  margin: 0;
-}
-
-/* header and CTA row */
-.topBar {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-  margin: 28px 0;
-  justify-content: space-between;
-}
-
-.headerBlock {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.heading {
-  margin: 0 0 10px 0;
-  font-size: 28px;
-  line-height: 1.04;
   color: var(--text);
-  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
-.italic {
-  color: var(--brand);
-  font-style: italic;
-  font-weight: 800;
+.highlight {
+  display: inline-block;
+  background: linear-gradient(transparent 70%, rgba(242,164,0,0.12) 70%);
+  padding-right: 2px;
 }
 
-.underline {
-  width: 56px;
-  height: 6px;
-  background: var(--brand);
-  border-radius: 6px;
-  margin: 12px 0;
-}
-
-.desc {
-  margin: 0;
+.lead {
+  margin: 0 0 16px 0;
   color: var(--muted);
-  font-size: 15px;
-  line-height: 1.8;
-  max-width: 68ch;
+  font-size: 17px;
+  line-height: 1.65;
+  max-width: 70ch;
 }
 
-/* CTA link */
+/* Actions */
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
 .cta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: var(--brand);
   color: #fff;
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: 10px;
   text-decoration: none;
   font-weight: 700;
-  box-shadow: var(--shadow-sm);
-  white-space: nowrap;
-  align-self: center;
+  box-shadow: 0 10px 30px rgba(16,24,32,0.06);
 }
 
 .cta:focus-visible {
@@ -150,183 +104,112 @@
   border-radius: 10px;
 }
 
-/* map + card layout */
-.mapSection {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 28px;
-  align-items: start;
-  margin-top: 18px;
-  box-sizing: border-box;
+.link {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
 }
 
-/* map area */
-.mapArea {
+/* Right column (image) */
+.media {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.imageFrame {
   position: relative;
   width: 100%;
-  border-radius: var(--radius);
+  border-radius: 8px;
   overflow: hidden;
-  background: #0b1220; /* fallback while map image loads */
-  box-shadow: var(--shadow-md);
-  min-height: 420px;
+  box-shadow: 0 20px 50px rgba(16,24,32,0.07);
+  background: #e9eef2;
+  aspect-ratio: 4 / 3;
+  min-height: 220px;
 }
 
-/* map image (scoped) */
-.mapImg {
+/* Fallback for browsers without aspect-ratio */
+.imageFrame::before {
+  content: "";
+  display: block;
+  padding-top: 75%; /* 4:3 fallback */
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+  height: 0;
+  visibility: hidden;
 }
 
-/* marker images (decorative) */
-.marker {
+@supports (aspect-ratio: 1/1) {
+  .imageFrame::before {
+    display: none;
+  }
+}
+
+.imageFrame::after {
+  content: "";
   position: absolute;
-  width: 48px;
-  height: 48px;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  filter: drop-shadow(0 8px 18px rgba(16,24,32,0.12));
-}
-
-.marker1 { left: 34%; top: 40%; }
-.marker2 { left: 12%; top: 30%; }
-.marker3 { left: 58%; top: 52%; }
-
-/* center info card */
-.centerCard {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 18px;
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  box-sizing: border-box;
-}
-
-.centerHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.centerNamePill {
-  background: rgba(242,164,0,0.12);
-  color: var(--brand);
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.centerDesc {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-/* address & hours */
-.centerAddress {
-  font-style: normal;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0;
-  display: block;
-}
-
-.centerHours {
-  color: var(--muted);
-  font-size: 13px;
-  margin-top: 6px;
-}
-
-/* actions row inside card */
-.centerActions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.centerPhone {
-  color: var(--brand);
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.centerPhone:focus-visible,
-.centerCta:focus-visible {
-  outline: 3px solid rgba(242,164,0,0.14);
-  outline-offset: 3px;
-  border-radius: 8px;
-}
-
-/* small button inside card */
-.centerCta {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  right: -10px;
+  bottom: -10px;
+  width: 56px;
+  height: 12px;
   background: var(--brand);
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 700;
-  box-shadow: var(--shadow-sm);
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(242,164,0,0.12);
+  z-index: 2;
 }
 
-/* responsive adjustments */
+/* Responsive */
 @media (max-width: 1000px) {
-  .numbersGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .topBar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .mapSection {
-    grid-template-columns: 1fr;
-  }
-
-  .centerCta {
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 520px) {
-  .numbersGrid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .heading {
-    font-size: 22px;
-  }
-
-  .mapArea {
-    min-height: 300px;
-  }
-
   .container {
-    padding: 0 12px;
+    grid-template-columns: 1fr 360px;
+  }
+  .title {
+    font-size: 36px;
+  }
+  .imageFrame {
+    aspect-ratio: 16 / 10;
+    min-height: 260px;
   }
 }
 
-/* reduced motion preference */
+/* Mobile adjustments: reposition and scale the accent to avoid overlapping content */
+@media (max-width: 720px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  /* Add left padding so accent sits outside the text block */
+  .content {
+    padding-right: 0;
+    padding-left: 20px;
+  }
+
+  /* Move the accent inside visible area but outside text flow, and reduce size */
+  .accent {
+    left: 6px;        /* nudge inward from the absolute left */
+    top: 6px;         /* align near the heading top */
+    width: 6px;       /* slightly slimmer on mobile */
+    height: 48px;     /* shorter so it doesn't run through lines */
+    border-radius: 6px;
+    box-shadow: 0 8px 18px rgba(242,164,0,0.10);
+  }
+
+  .title {
+    font-size: 28px;
+    margin-top: 2px;
+  }
+
+  .imageFrame {
+    width: 100%;
+    aspect-ratio: auto;
+    height: 260px;
+    margin-top: 18px;
+  }
+}
+
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .mapArea,
-  .mapImg,
-  .marker,
-  .centerCard,
-  .cta {
+  .wrap,
+  .imageFrame {
     transition: none !important;
     animation: none !important;
   }

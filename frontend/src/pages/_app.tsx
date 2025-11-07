@@ -111,7 +111,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   // Hide footer on specific routes (no footer on auth pages and selected app pages)
   // Added routes: /dashboard, /analytics, /ai-tutor, /test (covers /test/submit as a prefix)
-  const NO_FOOTER_PREFIXES = ["/login", "/register", "/dashboard", "/analytics", "/ai-tutor", "/test", "/review"];
+  const NO_FOOTER_PREFIXES = ["/login", "/register", "/dashboard", "/analytics", "/ai-tutor", "/test", "/review", "/admin/login"];
   const showFooter = !NO_FOOTER_PREFIXES.some((p) => router.pathname.startsWith(p));
 
   // Also hide sticky notice on auth pages (keeps auth screens uncluttered)

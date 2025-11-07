@@ -36,7 +36,7 @@ export default function HowItWorksPage(): JSX.Element {
                 How Our AI Works
               </Typography>
 
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+              {/* <Typography variant="body1" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
                 Our artificial intelligence analyzes your answers, identifies strong and weak areas, and automatically generates new questions at an appropriate difficulty level.
                 The system creates explanations, hints, and personalized recommendations to help you understand the material and prepare more efficiently.
               </Typography>
@@ -53,7 +53,7 @@ export default function HowItWorksPage(): JSX.Element {
                 <li>selects targeted training examples;</li>
                 <li>adjusts difficulty based on performance;</li>
                 <li>creates a personalized learning path.</li>
-              </ul>
+              </ul> */}
             </header>
 
             {/* Content Generation Policy (concise, professional) */}

@@ -5,6 +5,7 @@ import { TestAttempt } from './test.entity';
 import { AiService } from '../ai/ai.service';
 import { AiUsage } from '../ai/ai-usage.entity';
 import { planLimits } from '../plan/plan.constants';
+import { allowedTopics, mathKeywords } from './math-topics';
 
 @Injectable()
 export class TestService {
@@ -16,19 +17,86 @@ export class TestService {
     private readonly aiService: AiService,
   ) {}
 
+  /**
+   * Return the user's test attempts, ordered so the most recently taken (or created) appear first.
+   * Use a queryBuilder with COALESCE so attempts with null takenAt still sort by createdAt.
+   * Wrap in try/catch and log errors to make failures visible.
+   */
   async listUserTests(userId: number) {
-    return this.testRepo.find({ where: { userId }, order: { takenAt: 'DESC' } });
+    try {
+      // Use queryBuilder to order by COALESCE(takenAt, createdAt) DESC for robust ordering
+      const attempts = await this.testRepo
+        .createQueryBuilder('attempt')
+        .where('attempt.userId = :userId', { userId })
+        .orderBy('COALESCE(attempt."takenAt", attempt."createdAt")', 'DESC')
+        .getMany();
+
+      return Array.isArray(attempts) ? attempts : [];
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[TestService.listUserTests] DB query failed for userId=', userId, err?.message ?? err);
+      return [];
+    }
+  }
+
+  // -------------------------
+  // Topic validation helpers
+  // -------------------------
+  private normalize(s: string) {
+    return (s || '').trim().toLowerCase();
+  }
+
+  /**
+   * Deterministic check whether a provided topic appears mathematics-related.
+   * Strategy:
+   *  - direct canonical match against allowedTopics
+   *  - substring match against mathKeywords
+   *  - tokenized match (split by punctuation/whitespace) and check tokens
+   *
+   * This is intentionally conservative and deterministic (no external NLP calls).
+   * If you want fuzzy classification, add an OpenAI/ML fallback with a confidence threshold.
+   */
+  isMathTopic(topic: string | undefined | null): boolean {
+    if (!topic || typeof topic !== 'string') return false;
+    const norm = this.normalize(topic);
+
+    // canonical match
+    const canonicalSet = new Set(allowedTopics.map((t) => t.toLowerCase()));
+    if (canonicalSet.has(norm)) return true;
+
+    // substring keyword match
+    for (const kw of mathKeywords) {
+      if (norm.includes(kw.toLowerCase())) return true;
+    }
+
+    // tokenized match: covers inputs like "Algebra - solving equations"
+    const tokens = norm.split(/[\s,;/:\-()]+/).filter(Boolean);
+    for (const t of tokens) {
+      if (canonicalSet.has(t)) return true;
+      for (const kw of mathKeywords) {
+        if (t.includes(kw.toLowerCase())) return true;
+      }
+    }
+
+    return false;
   }
 
   /**
    * createFromAI generates a new test via AI, enforces plan limits, persists a TestAttempt (status 'started'), and increments usage.
-   * It attempts to run the critical reservation (increment testsTodayCount) inside a DB transaction when available.
+   * Validation: enforces that topic must be mathematics-related before any AI call is attempted.
    */
   async createFromAI(userId: number, topic: string, difficulty: string, plan?: string, requestedQuestionCount?: number) {
     // Ensure userId is present
     const uid = typeof userId === 'string' ? Number(userId) : userId;
     if (!uid || Number.isNaN(uid)) {
       throw new BadRequestException('Invalid user id');
+    }
+
+    // Authoritative topic validation: enforce math-only topics here
+    if (!this.isMathTopic(topic)) {
+      throw new BadRequestException(
+        'Topic must be mathematics-related (e.g. Algebra, Calculus, Probability). Please enter a math topic.'
+      );
     }
 
     const limits = planLimits(plan);

@@ -19,11 +19,17 @@ import { GenerateV2Service } from './generate-v2.service';
 import { GenerateV2Controller } from './generate-v2.controller';
 import { AiLoggerService } from './ai-logger.service';
 import { AiLogsAdminService } from './admin-ai-logs.service';
-import { AdminAiLogsController } from './admin-ai-logs.controller';
+// Import the merged controller (ai-logs.controller) which exports AdminAiLogsController
+import { AdminAiLogsController } from './ai-logs.controller';
 import { DuplicateCheckerService } from './duplicate-checker.service';
 import { EmbeddingsService } from './embeddings.service';
 import { PromptsService } from './prompts.service';
 import { PromptsController } from './prompts.controller';
+import { PromptsPreviewController } from './prompts-preview.controller';
+
+// New imports for settings/enforcement wiring (additive & opt-in)
+import { SettingsModule } from '../modules/settings/settings.module';
+import { PlanEnforcementService } from './plan-enforcement.service';
 
 @Module({
   imports: [
@@ -35,9 +41,11 @@ import { PromptsController } from './prompts.controller';
       AiLog,
       GeneratedQuestion,
       SessionPerformance,
-      AiPrompt, // added
+      AiPrompt,
     ]),
     forwardRef(() => UserModule),
+    // SettingsModule imported so SettingsService is available to AiModule and PlanEnforcementService
+    SettingsModule,
   ],
   providers: [
     AiService,
@@ -47,9 +55,18 @@ import { PromptsController } from './prompts.controller';
     AiLogsAdminService,
     DuplicateCheckerService,
     EmbeddingsService,
-    PromptsService, // added
+    PromptsService,
+    // Register PlanEnforcementService so it is available for opt-in enforcement.
+    PlanEnforcementService,
   ],
-  controllers: [AiController, AiTutorController, GenerateV2Controller, AdminAiLogsController, PromptsController],
-  exports: [AiService, AiTutorService, GenerateV2Service],
+  controllers: [
+    AiController,
+    AiTutorController,
+    GenerateV2Controller,
+    AdminAiLogsController, // merged controller
+    PromptsController,
+    PromptsPreviewController, // preview controller
+  ],
+  exports: [AiService, AiTutorService, GenerateV2Service, PlanEnforcementService],
 })
 export class AiModule {}

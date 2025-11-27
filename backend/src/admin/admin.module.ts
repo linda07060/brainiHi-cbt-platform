@@ -9,12 +9,18 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AdminAuthGuard } from './admin-auth.guard';
 import { User } from '../user/user.entity';
 import { SecurityAnswer } from '../security-reset/security-answer.entity';
+import { AdminDebugController } from './debug.controller';
+import { AdminUsersController } from './admin-users.controller';
+import { AdminUsersService } from './admin-users.service';
+
+// New: Admin stats controller and AiLog entity
+// import { AdminStatsController } from './admin-stats.controller';
+import { AiLog } from '../ai/entities/ai-log.entity';
 
 @Module({
   imports: [
     ConfigModule,
-    // Register repositories used by admin service
-    TypeOrmModule.forFeature([Admin, User, SecurityAnswer]),
+    TypeOrmModule.forFeature([Admin, User, SecurityAnswer, AiLog]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,8 +30,11 @@ import { SecurityAnswer } from '../security-reset/security-answer.entity';
       }),
     }),
   ],
-  providers: [AdminService, AdminJwtStrategy, AdminAuthGuard],
-  controllers: [AdminController],
-  exports: [AdminService],
+  providers: [AdminService, AdminJwtStrategy, AdminAuthGuard, AdminUsersService],
+  // NOTE: AdminUsersController is listed BEFORE AdminController so specific routes
+  // like /admin/users/activity-raw and /admin/users/activity-post are matched before
+  // the parameterized /admin/users/:id route.
+  controllers: [AdminUsersController, AdminController, AdminDebugController],
+  exports: [AdminService, AdminJwtStrategy, AdminAuthGuard, AdminUsersService],
 })
 export class AdminModule {}

@@ -2,10 +2,14 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as https from 'https';
+import { AiLoggerService } from './ai-logger.service';
 
 @Injectable()
 export class AiService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly aiLogger: AiLoggerService, // <-- injected logger
+  ) {}
 
   /**
    * Generate a test using OpenAI.
@@ -19,6 +23,18 @@ export class AiService {
     const OPENAI_API_KEY = this.configService.get<string>('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set!');
+      // Log the failed attempt as an ai log (non-sensitive)
+      try {
+        await this.aiLogger.log({
+          userId: null,
+          prompt: `Generate ${questionCount} ${difficulty} questions for "${topic}"`,
+          params: { topic, difficulty, questionCount },
+          model: null,
+          response: null,
+          success: false,
+          error: 'OpenAI API Key missing',
+        });
+      } catch {}
       throw new InternalServerErrorException('OpenAI API Key missing');
     }
 
@@ -74,6 +90,24 @@ Make the questions clear and self-contained.
       try {
         const parsed = JSON.parse(content);
         this._validateQuestions(parsed);
+
+        // Persist a success ai log
+        try {
+          await this.aiLogger.log({
+            userId: null,
+            prompt,
+            params: { topic, difficulty, questionCount },
+            model: process.env.OPENAI_API_KEY ? 'openai' : null,
+            response: parsed,
+            success: true,
+            error: null,
+          });
+        } catch (logErr) {
+          // Do not fail the request if logging fails; just warn
+          // eslint-disable-next-line no-console
+          console.warn('[AiService.generateTest] failed to persist ai log', logErr);
+        }
+
         return parsed;
       } catch (parseErr) {
         const start = content.indexOf('[');
@@ -83,15 +117,57 @@ Make the questions clear and self-contained.
             const substring = content.substring(start, end + 1);
             const parsed = JSON.parse(substring);
             this._validateQuestions(parsed);
+
+            try {
+              await this.aiLogger.log({
+                userId: null,
+                prompt,
+                params: { topic, difficulty, questionCount },
+                model: process.env.OPENAI_API_KEY ? 'openai' : null,
+                response: parsed,
+                success: true,
+                error: null,
+              });
+            } catch (logErr) {
+              console.warn('[AiService.generateTest] failed to persist ai log', logErr);
+            }
+
             return parsed;
           } catch {
             // Fall through to error
           }
         }
+
+        // Persist parse failure to ai_logs for debugging
+        try {
+          await this.aiLogger.log({
+            userId: null,
+            prompt,
+            params: { topic, difficulty, questionCount },
+            model: process.env.OPENAI_API_KEY ? 'openai' : null,
+            response: content,
+            success: false,
+            error: 'AI returned non-JSON response',
+          });
+        } catch {}
+
         console.error('AI response is not valid JSON:', content, parseErr);
         throw new InternalServerErrorException('AI did not return valid JSON. Please try again.');
       }
     } catch (err) {
+      // Persist the OpenAI request failure so admins can inspect it
+      try {
+        await this.aiLogger.log({
+          userId: null,
+          prompt,
+          params: { topic, difficulty, questionCount },
+          model: process.env.OPENAI_API_KEY ? 'openai' : null,
+          response: err?.response?.data ?? err?.message ?? String(err),
+          success: false,
+          error: 'OpenAI request failed',
+        });
+      } catch {}
+
       console.error('OpenAI request failed', err?.response?.data ?? err?.message ?? err);
       throw new InternalServerErrorException('Failed to call OpenAI for test generation');
     }
@@ -137,6 +213,17 @@ Make the questions clear and self-contained.
     const OPENAI_API_KEY = this.configService.get<string>('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not set!');
+      try {
+        await this.aiLogger.log({
+          userId: null,
+          prompt: `Explain answer for question: ${String(question).slice(0, 200)}`,
+          params: { userAnswer, correctAnswer },
+          model: null,
+          response: null,
+          success: false,
+          error: 'OpenAI API Key missing',
+        });
+      } catch {}
       throw new InternalServerErrorException('OpenAI API Key missing');
     }
 
@@ -174,9 +261,38 @@ Respond in plain text, do NOT wrap in markdown or code fences.
         response?.data?.choices?.[0]?.text ??
         '';
       content = content.replace(/^\s*```(?:json)?/i, '').replace(/```$/, '').trim();
+
+      // Persist explain logs (non-blocking on failures)
+      try {
+        await this.aiLogger.log({
+          userId: null,
+          prompt,
+          params: { userAnswer, correctAnswer },
+          model: process.env.OPENAI_API_KEY ? 'openai' : null,
+          response: content,
+          success: true,
+          error: null,
+        });
+      } catch (logErr) {
+        // do not fail the explanation if logging fails
+        // eslint-disable-next-line no-console
+        console.warn('[AiService.explainAnswer] failed to persist ai log', logErr);
+      }
+
       return content;
     } catch (err) {
       console.error('OpenAI explainAnswer failed', err?.response?.data ?? err?.message ?? err);
+      try {
+        await this.aiLogger.log({
+          userId: null,
+          prompt,
+          params: { userAnswer, correctAnswer },
+          model: process.env.OPENAI_API_KEY ? 'openai' : null,
+          response: err?.response?.data ?? err?.message ?? String(err),
+          success: false,
+          error: 'OpenAI explainError',
+        });
+      } catch {}
       throw new InternalServerErrorException('Failed to call OpenAI for explanation');
     }
   }

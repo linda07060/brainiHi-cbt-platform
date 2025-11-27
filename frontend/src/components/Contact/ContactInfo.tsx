@@ -27,14 +27,14 @@ export default function ContactInfo(): JSX.Element {
           </li>
 
           <li className={styles.item}>
-            <a href="tel:+15551234567" className={styles.link}>
+            <a href="tel:+77769222999" className={styles.link}>
               <span className={styles.iconWrap} aria-hidden="true">
                 <PhoneIcon className={styles.icon} />
               </span>
 
               <div className={styles.text}>
                 <div className={styles.heading}>Phone</div>
-                <div className={styles.value}>+1 (555) 123‑4567</div>
+                <div className={styles.value}>+77769222999</div>
               </div>
             </a>
           </li>

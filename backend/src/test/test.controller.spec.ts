@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TestController } from './test.controller';
 import { TestService } from './test.service';
 import { UserService } from '../user/user.service';
+import { BadRequestException } from '@nestjs/common';
 
 /**
  * Use ambient Jest globals so this file compiles even if the editor/TS server
@@ -18,12 +19,14 @@ describe('TestController', () => {
   let controller: TestController;
   let mockTestService: {
     submitTest: any;
+    createFromAI?: any;
   };
   let mockUserService: Partial<UserService>;
 
   beforeEach(async () => {
     mockTestService = {
       submitTest: jest.fn(),
+      createFromAI: jest.fn(),
     };
 
     mockUserService = {
@@ -64,7 +67,7 @@ describe('TestController', () => {
     };
 
     // Mock the TestService to return the { attempt, warning } shape the controller expects
-    mockTestService.submitTest.mockResolvedValue({ attempt, warning: 'soft limit exceeded' });
+    (mockTestService.submitTest as any).mockResolvedValue({ attempt, warning: 'soft limit exceeded' });
 
     const body = {
       answers: attempt.answers,
@@ -90,5 +93,24 @@ describe('TestController', () => {
     expect(res.total).toBe(attempt.questions.length);
     expect(res.questions).toBe(attempt.questions);
     expect(res.warning).toBe('soft limit exceeded');
+  });
+
+  it('createFromAi should propagate BadRequestException from service when topic invalid and forward args', async () => {
+    // Arrange: user exists
+    (mockUserService.findById as any).mockResolvedValue({ id: 42, plan: 'Free' });
+
+    // Arrange: service throws BadRequestException for invalid topic
+    const svcErr = new BadRequestException('Topic must be mathematics-related');
+    (mockTestService.createFromAI as any).mockRejectedValue(svcErr);
+
+    const fakeReq: any = { user: { sub: 42 } };
+    const body = { topic: 'World History', difficulty: 'beginner', questionCount: 5 };
+
+    // Act & Assert: controller.createFromAi should reject with the same BadRequestException
+    await expect(controller.createFromAi(fakeReq, body as any)).rejects.toBeInstanceOf(BadRequestException);
+
+    // Ensure service was called with expected arguments
+    expect(mockTestService.createFromAI).toHaveBeenCalledWith(42, body.topic, body.difficulty, 'Free', body.questionCount);
+    expect(mockUserService.findById).toHaveBeenCalledWith(42);
   });
 });

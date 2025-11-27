@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { Container, Box, TextField, Button, Typography, Snackbar, Alert } from '@mui/material';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/Admin.module.css';
 
 export default function AdminLogin() {
   const router = useRouter();
-  const { setUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +29,7 @@ export default function AdminLogin() {
     setStatus(null);
 
     try {
-      // NOTE: call the admin login endpoint (not the user /auth/login)
+      // Call the admin login endpoint (not the user /auth/login)
       const res = await axios.post(`${apiBase}/admin/auth/login`, { email, password });
 
       // Cast response to a permissive type so TypeScript knows these optional fields may exist
@@ -54,11 +52,16 @@ export default function AdminLogin() {
         return;
       }
 
-      // Normalized auth object — keep shape consistent with your AuthContext expectations
-      const auth = { token, ...admin };
-      setUser(auth);
+      // Store admin auth separately so admin login does NOT replace the regular user session.
+      try {
+        localStorage.setItem('adminAuth', JSON.stringify({ token, admin }));
+      } catch (err) {
+        // ignore localStorage errors but inform user
+        // eslint-disable-next-line no-console
+        console.warn('Failed to persist adminAuth in localStorage', err);
+      }
 
-      // navigate to admin dashboard
+      // Navigate to admin dashboard
       router.push('/admin/dashboard');
     } catch (err: any) {
       // Prefer server-provided message, fall back to generic text

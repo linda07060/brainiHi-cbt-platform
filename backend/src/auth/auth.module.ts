@@ -10,7 +10,14 @@ import { GoogleStrategy } from './google.strategy';
 import { SecurityResetModule } from '../security-reset/security-reset.module';
 import { User } from '../user/user.entity';
 import { SecurityAnswer } from '../security-reset/security-answer.entity';
-import { MailModule } from '../mail/mail.module'; // <- added import
+import { MailModule } from '../mail/mail.module';
+
+import { AdminJwtStrategy } from '../admin/admin-jwt.strategy';
+import { SetupPassphraseController } from './setup-passphrase.controller';
+
+// New setup-security controller/service
+import { SetupSecurityController } from './setup-security.controller';
+import { SetupSecurityService } from './setup-security.service';
 
 @Module({
   imports: [
@@ -19,7 +26,7 @@ import { MailModule } from '../mail/mail.module'; // <- added import
     SecurityResetModule,
     // Register repositories used by AuthService so they can be injected here
     TypeOrmModule.forFeature([User, SecurityAnswer]),
-    MailModule, // <- ensure MailService is provided/exported by MailModule
+    MailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -29,8 +36,20 @@ import { MailModule } from '../mail/mail.module'; // <- added import
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
-  controllers: [AuthController],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    AdminJwtStrategy,
+    // provide the setup-security service so controller can be injected
+    SetupSecurityService,
+  ],
+  controllers: [
+    AuthController,
+    SetupPassphraseController,
+    // register setup-security controller so POST /auth/setup-security is available
+    SetupSecurityController,
+  ],
   exports: [JwtModule],
 })
 export class AuthModule {}

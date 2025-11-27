@@ -15,6 +15,7 @@ declare const it: any;
 declare const expect: any;
 declare const jest: any;
 
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -34,6 +35,7 @@ function createMockRepo(): Record<string, any> {
     save: jest.fn(),
     find: jest.fn(),
     count: jest.fn(),
+    manager: { transaction: undefined },
   };
 }
 
@@ -61,6 +63,28 @@ describe('TestService', () => {
     }).compile();
 
     service = module.get<TestService>(TestService);
+  });
+
+  it('isMathTopic: returns true for canonical and keyword-containing math topics, false otherwise', async () => {
+    expect(service.isMathTopic('Algebra')).toBe(true);
+    expect(service.isMathTopic('calculus')).toBe(true);
+    expect(service.isMathTopic('Linear Algebra')).toBe(true);
+    expect(service.isMathTopic('Probability')).toBe(true);
+
+    expect(service.isMathTopic('solving algebraic equations')).toBe(true);
+    expect(service.isMathTopic('integration and integral calculus examples')).toBe(true);
+    expect(service.isMathTopic('matrix operations and vector spaces')).toBe(true);
+
+    expect(service.isMathTopic('World History')).toBe(false);
+    expect(service.isMathTopic('Biology: cell structure')).toBe(false);
+    expect(service.isMathTopic('English literature')).toBe(false);
+  });
+
+  it('createFromAI: rejects early for non-math topic (BadRequestException) without calling AiService', async () => {
+    const mockUserId = 1;
+    const nonMathTopic = 'Ancient History';
+    // AiService should not be called because validation fails early
+    await expect(service.createFromAI(mockUserId, nonMathTopic, 'beginner', 'Free', 5)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('createFromAI: calls AiService.generateTest, saves a started TestAttempt and increments usage', async () => {

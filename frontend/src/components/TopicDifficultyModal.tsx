@@ -15,6 +15,7 @@ import {
   FormControlLabel,
   Switch,
 } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
 
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -24,6 +25,79 @@ export type TopicDifficultyResult = {
   questionCount: number;
   useExplanations: boolean;
 } | null;
+
+/**
+ * Client-side math validator and suggestion data.
+ * Keep this list in sync with the backend's canonical list (backend/src/test/math-topics.ts).
+ */
+const allowedTopicsSet = new Set<string>([
+  'algebra',
+  'linear algebra',
+  'pre-algebra',
+  'geometry',
+  'trigonometry',
+  'calculus',
+  'differential calculus',
+  'integral calculus',
+  'multivariable calculus',
+  'differential equations',
+  'probability',
+  'statistics',
+  'combinatorics',
+  'number theory',
+  'discrete mathematics',
+  'optimization',
+  'real analysis',
+  'complex analysis',
+  'mathematical logic',
+  'set theory',
+  'graph theory',
+  'matrix algebra',
+  'vectors',
+  'measure theory',
+  'topology',
+  'linear programming',
+  'numerical analysis',
+]);
+
+const mathKeywords = [
+  'algebra', 'geometry', 'trigonometry', 'calculus', 'probability', 'statistics',
+  'combinator', 'number', 'matrix', 'vector', 'derivative', 'integral', 'limit',
+  'equation', 'function', 'sequence', 'series', 'discrete', 'graph', 'optimization',
+  'analysis', 'theorem', 'proof', 'linear', 'topology', 'measure',
+];
+
+// Build suggestion options: canonical topics first, followed by unique keywords
+const canonicalTopics = Array.from(allowedTopicsSet);
+const keywordOptions = Array.from(new Set(mathKeywords.filter((k) => !allowedTopicsSet.has(k))));
+const SUGGESTIONS = [...canonicalTopics, ...keywordOptions];
+
+function normalize(s: string) {
+  return (s || '').trim().toLowerCase();
+}
+
+/** Heuristic: direct canonical match OR contains a math keyword OR tokenized match */
+function looksLikeMath(topic: string): boolean {
+  const norm = normalize(topic);
+  if (!norm) return false;
+
+  if (allowedTopicsSet.has(norm)) return true;
+
+  for (const kw of mathKeywords) {
+    if (norm.includes(kw)) return true;
+  }
+
+  // Tokenize conservatively. Escape the forward slash and put hyphen at end of class to avoid "range out of order".
+  const tokens = norm.split(/[\s,;\/:()\-]+/);
+  for (const t of tokens) {
+    if (allowedTopicsSet.has(t)) return true;
+    for (const kw of mathKeywords) {
+      if (t.includes(kw)) return true;
+    }
+  }
+
+  return false;
+}
 
 export default function TopicDifficultyModal(props: {
   open: boolean;
@@ -39,7 +113,7 @@ export default function TopicDifficultyModal(props: {
   const [topic, setTopic] = useState<string>(initialTopic);
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [topicError, setTopicError] = useState<string | null>(null);
-  const [questionCount, setQuestionCount] = useState<number>(Math.min(maxQuestions,  Math.max(1,  Math.floor(maxQuestions / 2) || 5 )));
+  const [questionCount, setQuestionCount] = useState<number>(Math.min(maxQuestions, Math.max(1, Math.floor(maxQuestions / 2) || 5)));
   const [useExplanations, setUseExplanations] = useState<boolean>(!!explanationsAllowed);
 
   useEffect(() => {
@@ -53,11 +127,20 @@ export default function TopicDifficultyModal(props: {
   }, [open, initialTopic, initialDifficulty, maxQuestions, explanationsAllowed]);
 
   function handleStart() {
-    if (!topic || topic.trim().length < 2) {
+    const trimmed = topic?.trim() ?? '';
+    if (!trimmed || trimmed.length < 2) {
       setTopicError('Please enter a topic (e.g. Algebra, Geometry)');
       return;
     }
-    onClose({ topic: topic.trim(), difficulty, questionCount, useExplanations });
+
+    // Client-side math-only validation (mirrors backend)
+    if (!looksLikeMath(trimmed)) {
+      setTopicError('Topic must be mathematics-related (e.g. Algebra, Calculus, Probability).');
+      return;
+    }
+
+    setTopicError(null);
+    onClose({ topic: trimmed, difficulty, questionCount, useExplanations });
   }
 
   function handleCancel() {
@@ -65,7 +148,7 @@ export default function TopicDifficultyModal(props: {
   }
 
   // build question count options up to maxQuestions (1..maxQuestions)
-  const options = [];
+  const options: number[] = [];
   const maxOpt = Math.max(1, Math.floor(maxQuestions));
   for (let i = 1; i <= maxOpt; i++) {
     options.push(i);
@@ -76,14 +159,36 @@ export default function TopicDifficultyModal(props: {
       <DialogTitle>Start a new AI-generated test</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="Topic"
+          <Autocomplete
+            freeSolo
+            options={SUGGESTIONS}
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            helperText={topicError || 'Enter a subject or topic, e.g. Algebra, Calculus, Probability'}
-            error={!!topicError}
-            fullWidth
-            autoFocus
+            onChange={(_, value) => {
+              if (typeof value === 'string') {
+                setTopic(value);
+                setTopicError(null);
+              } else if (value && typeof value === 'object' && 'inputValue' in value) {
+                setTopic(String((value as any).inputValue));
+                setTopicError(null);
+              } else {
+                setTopic(String(value ?? ''));
+                setTopicError(null);
+              }
+            }}
+            onInputChange={(_, inputValue) => {
+              setTopic(inputValue);
+              if (topicError) setTopicError(null);
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Topic"
+                helperText={topicError || 'Enter a subject or topic, e.g. Algebra, Calculus, Probability'}
+                error={!!topicError}
+                fullWidth
+                autoFocus
+              />
+            )}
           />
 
           <FormControl fullWidth>

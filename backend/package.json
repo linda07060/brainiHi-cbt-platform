@@ -6,7 +6,9 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "build": "nest build",
-    "start:prod": "node dist/main.js"
+    "start:prod": "node dist/main.js",
+    "migrate": "node ./scripts/run-migrations.js",
+    "migrate:ts": "ts-node ./scripts/run-migrations.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -35,6 +37,7 @@
     "jest": "^30.2.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.1"
   }
 }

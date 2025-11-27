@@ -1,10 +1,14 @@
 import { Controller, Post, Body, Get, UseGuards, Req, Query, Param, ParseIntPipe, Put, BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminAuthGuard } from './admin-auth.guard';
+import { AdminUsersService } from './admin-users.service';
 
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly adminUsersService: AdminUsersService,
+  ) {}
 
   // Admin login (kept for backward compatibility)
   @Post('auth/login')
@@ -24,6 +28,43 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   async getStats() {
     return this.adminService.getStats();
+  }
+
+  // Activity endpoints (placed before the parameterized user routes to avoid route collisions)
+
+  // GET /admin/users/activity-raw?email=... or ?user_id=...
+  @Get('users/activity-raw')
+  @UseGuards(AdminAuthGuard)
+  async getActivityRaw(@Query('email') email?: string, @Query('user_id') userId?: string) {
+    // Prefer numeric user_id when provided
+    if (userId !== undefined && userId !== null && String(userId).trim() !== '') {
+      const idNum = Number(userId);
+      if (!Number.isFinite(idNum)) {
+        // return empty array for invalid id rather than throwing ParseIntPipe error
+        return [];
+      }
+      return this.adminUsersService.getActivityByUserId(idNum);
+    }
+    if (email && String(email).trim() !== '') {
+      return this.adminUsersService.getActivityByEmail(String(email).trim());
+    }
+    return [];
+  }
+
+  // POST /admin/users/activity-post
+  // body: { email?: string, user_id?: number }
+  @Post('users/activity-post')
+  @UseGuards(AdminAuthGuard)
+  async postActivity(@Body() body: { email?: string; user_id?: number }) {
+    if (body?.user_id !== undefined && body?.user_id !== null) {
+      const idNum = Number(body.user_id);
+      if (!Number.isFinite(idNum)) return [];
+      return this.adminUsersService.getActivityByUserId(idNum);
+    }
+    if (body?.email && String(body.email).trim() !== '') {
+      return this.adminUsersService.getActivityByEmail(String(body.email).trim());
+    }
+    return [];
   }
 
   // List users with optional q, page, limit

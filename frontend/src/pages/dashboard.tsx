@@ -31,7 +31,6 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import axios from 'axios';
@@ -64,7 +63,7 @@ interface UsageResponse {
   };
 }
 
-/* ---------- Helpers (unchanged) ---------- */
+/* ---------- Helpers (unchanged + small safe JWT helpers) ---------- */
 
 function getLocalAuthTokenFromStorage(): string | null {
   if (typeof window === 'undefined') return null;
@@ -229,7 +228,6 @@ function extractTopicFromTitle(title?: string) {
 }
 
 /* ---------- New helper: robust timestamp extraction for sorting ---------- */
-/* This does not change any submission or display logic — it only provides a consistent numeric timestamp used for sorting. */
 function getTestTimestamp(item: any): number {
   if (!item) return 0;
   const candidates = [
@@ -264,6 +262,98 @@ function getTestTimestamp(item: any): number {
   return 0;
 }
 
+/* ---------- New helper to map admin settings -> UsageResponse (display only) ---------- */
+function usageFromAdminSettings(planName: string | null | undefined, adminSettings: any, currentUsage: UsageResponse | null): UsageResponse | null {
+  if (!adminSettings || !adminSettings.limits || !adminSettings.limits.perPlan) return null;
+  const lookup = String(planName || 'free').toLowerCase();
+  const planObj = adminSettings.limits.perPlan?.[lookup];
+  if (!planObj) return null;
+
+  const appDefaults = defaultLimitsForPlan(planName);
+
+  const testsPerDay = planObj.testsPerDay !== undefined ? planObj.testsPerDay : appDefaults.limits.testsPerDay;
+  const questionCount = planObj.questionCountMax !== undefined ? planObj.questionCountMax : appDefaults.limits.questionCount;
+  const attemptsPerTest = planObj.attemptsPerTest !== undefined ? planObj.attemptsPerTest : appDefaults.limits.attemptsPerTest;
+  const explanationsPerMonth = planObj.explanationsPerMonth !== undefined ? planObj.explanationsPerMonth : appDefaults.limits.explanationsPerMonth;
+
+  const usageCounts = {
+    testsTodayCount: currentUsage?.usage?.testsTodayCount ?? 0,
+    testsTodayDate: currentUsage?.usage?.testsTodayDate ?? null,
+    explanationsCount: currentUsage?.usage?.explanationsCount ?? 0,
+    explanationsMonth: currentUsage?.usage?.explanationsMonth ?? null,
+  };
+
+  const testsRemaining = testsPerDay === Infinity ? Infinity : Math.max(0, (testsPerDay ?? 0) - (usageCounts.testsTodayCount ?? 0));
+  const explanationsRemaining = explanationsPerMonth === Infinity ? Infinity : Math.max(0, (explanationsPerMonth ?? 0) - (usageCounts.explanationsCount ?? 0));
+
+  return {
+    plan: (planName || 'Free'),
+    limits: {
+      testsPerDay: typeof testsPerDay === 'number' ? testsPerDay : (testsPerDay === Infinity ? Infinity : null),
+      questionCount,
+      attemptsPerTest,
+      explanationsPerMonth,
+    },
+    usage: {
+      testsTodayDate: usageCounts.testsTodayDate,
+      testsTodayCount: usageCounts.testsTodayCount,
+      explanationsMonth: usageCounts.explanationsMonth,
+      explanationsCount: usageCounts.explanationsCount,
+    },
+    remaining: {
+      testsRemaining,
+      explanationsRemaining,
+    },
+  } as UsageResponse;
+}
+
+/* ---------- Small JWT helpers (non-invasive) ---------- */
+function parseJwtPayload(token?: string | null): any | null {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1];
+    // base64url -> base64
+    const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64.padEnd(Math.ceil(b64.length / 4) * 4, '=');
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeExpiryValue(val: any): string | null {
+  if (val === undefined || val === null) return null;
+  // numeric (seconds or milliseconds)
+  if (typeof val === 'number') {
+    let n = val;
+    if (n < 1e12) n = n * 1000;
+    try {
+      const d = new Date(n);
+      if (!isNaN(d.getTime())) return d.toISOString();
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  // numeric string
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (/^\d+$/.test(s)) {
+      let n = Number(s);
+      if (n < 1e12) n = n * 1000;
+      const d = new Date(n);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    // try parse ISO/date string
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  return null;
+}
+
 /* ---------- Dashboard Component ---------- */
 
 export default function Dashboard() {
@@ -274,6 +364,7 @@ export default function Dashboard() {
   const [starting, setStarting] = useState<boolean>(false);
   const [snack, setSnack] = useState<{ severity: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(null);
   const [usage, setUsage] = useState<UsageResponse | null>(null);
+  const [adminSettings, setAdminSettings] = useState<any | null>(null);
   const router = useRouter();
 
   // filters state (use mobile-style filter UI everywhere)
@@ -307,9 +398,6 @@ export default function Dashboard() {
     (authAny?.user?.token as string) ||
     (authAny?.user?.access_token as string) ||
     getLocalAuthTokenFromStorage();
-
-  const expiryString = userData?.plan_expiry ? new Date(userData.plan_expiry).toISOString() : null;
-  const countdown = useCountdown(expiryString);
 
   // mountedRef used by fetchTests to avoid setting state on unmounted component
   const mountedRef = useRef(true);
@@ -369,7 +457,7 @@ export default function Dashboard() {
     return () => window.removeEventListener('tests-changed', handler as EventListener);
   }, [fetchTests]);
 
-  // load profile
+  // load profile (normalized): ensure phone + plan_expiry are populated from common variants
   useEffect(() => {
     let mountedLocal = true;
     const fetchProfile = async () => {
@@ -377,16 +465,82 @@ export default function Dashboard() {
       try {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
         const fetchedUser = (res?.data ?? {}) as any;
+
+        // try to preserve previously-stored auth user so we can fall back to fields the server may omit
         let storedAuth: any = null;
         try { if (typeof window !== 'undefined') storedAuth = JSON.parse(localStorage.getItem('auth') || 'null'); } catch {}
         const prevUser = userData ?? storedAuth?.user ?? null;
+
+        // decode token claims (non-invasive) and use as a last-resort fallback for some fields
+        const tokenClaims = parseJwtPayload(token) ?? {};
+
+        // Robust phone normalization: prefer server-provided fields but fall back to previously-known values and token claims.
+        const normalizedPhone =
+          fetchedUser?.phone ??
+          fetchedUser?.phone_number ??
+          fetchedUser?.phoneNumber ??
+          fetchedUser?.mobile ??
+          fetchedUser?.msisdn ??
+          fetchedUser?.telephone ??
+          fetchedUser?.tel ??
+          fetchedUser?.contact?.phone ??
+          fetchedUser?.profile?.phone ??
+          fetchedUser?.data?.phone ??
+          prevUser?.phone ??
+          prevUser?.phone_number ??
+          prevUser?.phoneNumber ??
+          tokenClaims?.phone ??
+          tokenClaims?.mobile ??
+          tokenClaims?.msisdn ??
+          null;
+
+        // Robust plan expiry normalization: accept many common names and nested/ subscription shapes and token claims
+        const normalizedPlanExpiry =
+          fetchedUser?.plan_expiry ??
+          fetchedUser?.planExpiry ??
+          fetchedUser?.plan_expires_at ??
+          fetchedUser?.plan_expires ??
+          fetchedUser?.planExpiresAt ??
+          fetchedUser?.subscription?.ends_at ??
+          fetchedUser?.subscription?.expires_at ??
+          fetchedUser?.subscription?.current_period_end ??
+          fetchedUser?.subscription?.current_period_end_timestamp ??
+          fetchedUser?.meta?.planExpiry ??
+          prevUser?.plan_expiry ??
+          prevUser?.planExpiry ??
+          prevUser?.plan_expires_at ??
+          normalizeExpiryValue(tokenClaims?.plan_expiry) ??
+          normalizeExpiryValue(tokenClaims?.planExpiresAt) ??
+          normalizeExpiryValue(tokenClaims?.plan_expires_at) ??
+          normalizeExpiryValue(tokenClaims?.current_period_end) ??
+          null;
+
+        // Ensure a canonical user id is present for display
+        const normalizedUid =
+          fetchedUser?.user_uid ??
+          prevUser?.user_uid ??
+          fetchedUser?.userId ??
+          prevUser?.userId ??
+          fetchedUser?.id ??
+          prevUser?.id ??
+          tokenClaims?.user_uid ??
+          tokenClaims?.userId ??
+          null;
+
         const mergedUser = {
           ...fetchedUser,
-          user_uid: fetchedUser?.user_uid ?? prevUser?.user_uid ?? fetchedUser?.userId ?? prevUser?.userId ?? null,
-          phone: fetchedUser?.phone ?? prevUser?.phone ?? fetchedUser?.phone_number ?? prevUser?.phone_number ?? null,
+          user_uid: normalizedUid,
+          phone: normalizedPhone,
+          // keep alias for other code that may read phone_number
+          phone_number: fetchedUser?.phone_number ?? normalizedPhone,
+          // canonical expiry field used across the dashboard (keep as ISO when possible)
+          plan_expiry: normalizedPlanExpiry,
+          planExpiry: fetchedUser?.planExpiry ?? normalizedPlanExpiry,
         };
+
         const normalizedAuth = { token, user: mergedUser };
         try { if (typeof window !== 'undefined') localStorage.setItem('auth', JSON.stringify(normalizedAuth)); } catch {}
+
         setUser(normalizedAuth as any);
         if (mountedLocal) setUserData(mergedUser);
       } catch {
@@ -395,6 +549,7 @@ export default function Dashboard() {
     };
     fetchProfile();
     return () => { mountedLocal = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // load usage
@@ -413,6 +568,23 @@ export default function Dashboard() {
       }
     };
     loadUsage();
+    return () => { mountedLocal = false; };
+  }, [token, userData]);
+
+  // load admin persisted settings for display overrides (display-only)
+  useEffect(() => {
+    let mountedLocal = true;
+    const loadAdminSettings = async () => {
+      if (!token) { setAdminSettings(null); return; }
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/settings`, { headers: { Authorization: `Bearer ${token}` } });
+        const s = (res?.data as any)?.settings ?? null;
+        if (mountedLocal) setAdminSettings(s);
+      } catch {
+        if (mountedLocal) setAdminSettings(null);
+      }
+    };
+    loadAdminSettings();
     return () => { mountedLocal = false; };
   }, [token, userData]);
 
@@ -485,7 +657,6 @@ export default function Dashboard() {
     });
 
     // Sort by time descending so the latest attempts appear first.
-    // This only affects presentation order and does not modify any test data or logic.
     results.sort((a, b) => {
       const ta = getTestTimestamp(a);
       const tb = getTestTimestamp(b);
@@ -513,6 +684,30 @@ export default function Dashboard() {
 
   const openPicker = () => setPickerOpen(true);
 
+  // helper used earlier in the file scope (keeps code organized)
+  function showRemaining(
+    remainingVal: number | null | undefined,
+    planLimit?: number | null,
+    planName?: string | null,
+    kind: 'tests' | 'explanations' = 'tests'
+  ) {
+    if (remainingVal === Infinity) return 'Unlimited';
+    if (planLimit === Infinity && kind === 'tests') return 'Unlimited';
+    if (kind === 'tests' && planName && /(pro|tutor|premium|enterprise)/i.test(String(planName))) return 'Unlimited';
+    if (remainingVal == null) {
+      if (kind === 'explanations') {
+        if (planLimit === Infinity) return 'Unlimited';
+        if (planLimit != null) return String(planLimit);
+      }
+      return '—';
+    }
+    return String(remainingVal);
+  }
+
+  // Countdown and expiry derived values (safe read from normalized userData)
+  const expiryString = userData?.plan_expiry ? new Date(userData.plan_expiry).toISOString() : null;
+  const countdown = useCountdown(expiryString);
+
   /* ---------- Render ---------- */
 
   if (!mounted) {
@@ -526,7 +721,19 @@ export default function Dashboard() {
   }
 
   const displayName = userData?.name || userData?.full_name || userData?.firstName || userData?.email?.split?.('@')?.[0] || 'User';
-  const effectiveUsage = getEffectiveUsage(usage, userData?.plan);
+
+  // use server usage if present; otherwise, if adminSettings exist, derive usage for display only
+  const serverOrAdminUsage = (() => {
+    if (usage) return usage;
+    if (adminSettings) {
+      const adminDerived = usageFromAdminSettings(userData?.plan, adminSettings, usage);
+      if (adminDerived) return adminDerived;
+    }
+    return null;
+  })();
+
+  const effectiveUsage = getEffectiveUsage(serverOrAdminUsage, userData?.plan);
+
   const expiryDisplay = userData?.plan_expiry ? new Date(userData.plan_expiry).toLocaleString() : 'No expiry';
 
   const headerPlanLabel = (userData?.plan || effectiveUsage.plan || 'Free');
@@ -575,8 +782,6 @@ export default function Dashboard() {
 
         <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
           <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
-            {/* Removed duplicate filter icon here (as requested) */}
-
             <Tooltip title={testAvailability.status === 'C' ? 'Blocked' : 'Start a new test'}>
               <span>
                 <Button
@@ -935,26 +1140,6 @@ export default function Dashboard() {
       </Snackbar>
     </Box>
   );
-
-  // helper used earlier in the file scope (keeps code organized)
-  function showRemaining(
-    remainingVal: number | null | undefined,
-    planLimit?: number | null,
-    planName?: string | null,
-    kind: 'tests' | 'explanations' = 'tests'
-  ) {
-    if (remainingVal === Infinity) return 'Unlimited';
-    if (planLimit === Infinity && kind === 'tests') return 'Unlimited';
-    if (kind === 'tests' && planName && /(pro|tutor|premium|enterprise)/i.test(String(planName))) return 'Unlimited';
-    if (remainingVal == null) {
-      if (kind === 'explanations') {
-        if (planLimit === Infinity) return 'Unlimited';
-        if (planLimit != null) return String(planLimit);
-      }
-      return '—';
-    }
-    return String(remainingVal);
-  }
 
   // keep/create modal handlers (copied/adapted from your previous implementation)
   async function handleModalStart(payloadOrSelection?: any) {

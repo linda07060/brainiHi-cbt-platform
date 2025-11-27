@@ -1,18 +1,14 @@
-// REPLACE your existing auth.service.ts with this updated content.
-// Changes:
-// - coerce id to number in changePassword lookup
-// - trim input passwords before compare/hash to avoid whitespace issues
-// - add small dev-only masked logging to help debug if issue persists
 import { Injectable, UnauthorizedException, BadRequestException, InternalServerErrorException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { User } from '../user/user.entity';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { SecurityAnswer } from '../security-reset/security-answer.entity';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +19,8 @@ export class AuthService {
     private readonly answerRepo: Repository<SecurityAnswer>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly mailService: MailService,
+    // Inject TypeORM DataSource so we can write login activity
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -31,7 +28,8 @@ export class AuthService {
    * Returns the user entity when valid, otherwise null.
    */
   public async validateUser(email: string, password: string) {
-    const user = await this.userRepo.findOne({ where: { email } });
+    const emailNorm = (email || '').toString().trim().toLowerCase();
+    const user = await this.userRepo.findOne({ where: { email: emailNorm } });
     if (!user) return null;
     const matches = await bcrypt.compare(password, user.password);
     if (!matches) return null;
@@ -42,7 +40,10 @@ export class AuthService {
    * Login: validate credentials and return JWT + user payload.
    */
   public async login({ email, password }: { email: string; password: string }) {
-    const user = await this.validateUser(email, password);
+    // normalize email before validation to avoid case/whitespace mismatches
+    const emailNorm = (email || '').toString().trim().toLowerCase();
+
+    const user = await this.validateUser(emailNorm, password);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const payload = {
@@ -54,7 +55,7 @@ export class AuthService {
       level: user.level,
       plan_expiry: user.plan_expiry,
       user_uid: user.user_uid,
-      phone: user.phone ?? null, // include phone in the payload so /auth/me provides it
+      phone: user.phone ?? null,
     };
 
     return {
@@ -66,13 +67,59 @@ export class AuthService {
   }
 
   /**
+   * Record a login row in user_login_activity table using the JWT payload (sub/email).
+   * Defensive: returns quickly and swallows DB errors so it can't break login.
+   * This method is intended to be called fire-and-forget from the controller after successful authentication.
+   */
+  public async recordLoginFromPayload(payload: any, req?: Request) {
+    // TEMP debug: log invocation (safe in non-production; remove or lower verbosity for prod)
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.debug('[recordLoginFromPayload] called with payload.sub=', payload?.sub, 'email=', payload?.email);
+    }
+
+    if (!payload || !payload.sub || !payload.email) {
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.debug('[recordLoginFromPayload] missing sub/email; nothing to record');
+      }
+      return;
+    }
+
+    // determine IP: prefer X-Forwarded-For (proxy) then req.ip
+    const forwarded = req ? ((req.headers['x-forwarded-for'] as string) || '') : '';
+    const ip = forwarded ? forwarded.split(',')[0].trim() : (req ? (req.ip || null) : null);
+
+    const ua = req ? ((req.headers['user-agent'] as string) || null) : null;
+
+    try {
+      await this.dataSource.query(
+        `INSERT INTO user_login_activity (user_id, email, ip, user_agent, created_at)
+         VALUES ($1, $2, $3, $4, now())`,
+        [payload.sub ?? null, payload.email, ip, ua],
+      );
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.debug('[recordLoginFromPayload] insert succeeded for user=', payload.sub);
+      }
+    } catch (err) {
+      // Do not surface DB errors to the user; swallow silently but log in dev for visibility.
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.error('[recordLoginFromPayload] failed to write user_login_activity', err);
+      }
+      // swallow
+    }
+  }
+
+  /**
    * Register a new user:
    * - creates unique user_uid
    * - stores phone, plan
    * - if billingPeriod provided and plan is not Free, sets plan_expiry (30d for monthly, 1y for yearly)
    * - hashes recoveryPassphrase with SECURITY_SECRET and saves it to user.recoveryPassphraseHash
    * - saves security answers in user_security_answer as HMAC hashed values
-   * - returns login payload (access_token + user)
+   * - returns login payload (access_token + user).
    */
   public async register(payload: {
     name: string;
@@ -156,9 +203,6 @@ export class AuthService {
 
   /**
    * Change password for authenticated user.
-   * - Coerces id to number (handles string sub from JWT)
-   * - Trims incoming passwords to avoid accidental whitespace mismatches
-   * - Small dev-only masked log to help debug without exposing full hashes
    */
   public async changePassword(id: number | string, oldPassword: string, newPassword: string) {
     const userId = Number(id);
@@ -174,10 +218,8 @@ export class AuthService {
     const oldPwd = (oldPassword || '').trim();
     const newPwd = (newPassword || '').trim();
 
-    // bcrypt.compare handles hashing comparison
     const matches = await bcrypt.compare(oldPwd, user.password);
 
-    // Dev-only masked debug info — safe-ish (shows only small slices) and only in non-production
     if (process.env.NODE_ENV !== 'production') {
       try {
         const masked = (user.password || '').length > 12
@@ -198,7 +240,7 @@ export class AuthService {
   }
 
   /**
-   * Change email for authenticated user (protected endpoint)
+   * Change email for authenticated user (protected)
    */
   public async changeEmail(id: number, newEmail: string) {
     if (!newEmail || !/\S+@\S+\.\S+/.test(newEmail)) throw new BadRequestException('Invalid email');

@@ -14,15 +14,55 @@ export class AiLogsAdminService {
     private readonly qRepo: Repository<GeneratedQuestion>,
   ) {}
 
+  /**
+   * List logs using a raw SQL fallback to avoid entity/column naming mismatch issues.
+   * Returns the same shape as before: { items, total, page, totalPages }.
+   */
   async list(filters: { userId?: number; model?: string; success?: boolean; page?: number; limit?: number }) {
-    const qb = this.logRepo.createQueryBuilder('l').orderBy('l.createdAt', 'DESC');
-    if (filters.userId) qb.andWhere('l.userId = :userId', { userId: filters.userId });
-    if (filters.model) qb.andWhere('l.model = :model', { model: filters.model });
-    if (typeof filters.success === 'boolean') qb.andWhere('l.success = :success', { success: filters.success });
-    const page = filters.page ?? 1;
+    const page = Math.max(1, filters.page ?? 1);
     const limit = Math.min(500, filters.limit ?? 50);
-    qb.take(limit).skip((page - 1) * limit);
-    const [items, total] = await qb.getManyAndCount();
+    const offset = (page - 1) * limit;
+
+    // Build WHERE clause and parameters (use positional $1, $2.. for parameterized query)
+    const whereParts: string[] = [];
+    const params: any[] = [];
+
+    if (typeof filters.userId === 'number') {
+      params.push(filters.userId);
+      whereParts.push(`"userId" = $${params.length}`);
+    }
+    if (filters.model) {
+      params.push(filters.model);
+      whereParts.push(`"model" = $${params.length}`);
+    }
+    if (typeof filters.success === 'boolean') {
+      params.push(filters.success);
+      whereParts.push(`"success" = $${params.length}`);
+    }
+
+    const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+
+    // items query
+    const itemsSql = `
+      SELECT *
+      FROM ai_logs
+      ${whereClause}
+      ORDER BY "createdAt" DESC
+      LIMIT $${params.length + 1}
+      OFFSET $${params.length + 2}
+    `;
+    const itemsParams = params.concat([limit, offset]);
+    const items = await this.logRepo.query(itemsSql, itemsParams);
+
+    // total count query
+    const countSql = `
+      SELECT count(*)::int AS cnt
+      FROM ai_logs
+      ${whereClause}
+    `;
+    const countResult = await this.logRepo.query(countSql, params);
+    const total = (countResult && countResult[0] && typeof countResult[0].cnt === 'number') ? countResult[0].cnt : Number(countResult[0]?.cnt) || 0;
+
     return { items, total, page, totalPages: Math.ceil(total / limit) || 1 };
   }
 

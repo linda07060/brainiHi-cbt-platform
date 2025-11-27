@@ -5,19 +5,29 @@ import {
   Body,
   Req,
   UseGuards,
-  Query,
   Param,
   BadRequestException,
   InternalServerErrorException,
   UnauthorizedException,
+  HttpException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { TestService } from './test.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from '../user/user.service';
 
+// NOTE: use an import path that resolves correctly in your project.
+import { EnforcementService } from 'src/modules/enforcement/enforcement.service';
+// Alternative relative import (uncomment if you prefer relative paths):
+// import { EnforcementService } from '../enforcement/enforcement.service';
+
 @Controller('tests')
 export class TestController {
-  constructor(private readonly testService: TestService, private readonly userService: UserService) {}
+  constructor(
+    private readonly testService: TestService,
+    private readonly userService: UserService,
+    private readonly enforcementService: EnforcementService,
+  ) {}
 
   @Get('my')
   @UseGuards(JwtAuthGuard)
@@ -30,8 +40,7 @@ export class TestController {
   /**
    * Submit a completed test.
    * Expects body: { answers, questions, topic, difficulty }
-   * Ensures authoritative user plan is passed to the service and maps the service response
-   * into a top-level shape expected by the frontend (id, score, total, questions, warning?).
+   * We run a conservative enforcement check (questionCountMax) before accepting the submission.
    */
   @Post('submit')
   @UseGuards(JwtAuthGuard)
@@ -42,7 +51,7 @@ export class TestController {
     const userId = extractUserId(req);
     if (!userId) throw new UnauthorizedException('Invalid user');
 
-    // load authoritative user record to obtain plan (ensures proper plan rules applied)
+    // load authoritative user record to obtain plan
     let plan: string | undefined;
     try {
       const user = await this.userService.findById(userId);
@@ -51,7 +60,18 @@ export class TestController {
       plan = undefined;
     }
 
-    // Call service with plan so it can apply plan-specific logic (Tutor soft-limits, etc.)
+    // Conservative enforcement check: ensure questionCountMax (if enforcement enabled) is not exceeded.
+    try {
+      const questionCount = Array.isArray(body?.questions) ? body.questions.length : 0;
+      // Call the enforcement method with numeric userId and questionCount
+      await this.enforcementService.checkCreateTest(userId, questionCount);
+    } catch (err: any) {
+      // If enforcement fails, respond with Forbidden (propagate HttpException)
+      if (err instanceof HttpException) throw err;
+      throw new ForbiddenException('Submission blocked by plan limits');
+    }
+
+    // Call service with plan so it can apply plan-specific logic
     const svcRes = await this.testService.submitTest(
       userId,
       `${body.topic} (${body.difficulty})`,
@@ -60,8 +80,7 @@ export class TestController {
       plan,
     );
 
-    // Normalise service response to top-level shape expected by frontend TestSubmission.
-    // Service returns { attempt, warning? } (attempt contains id/score/questions).
+    // Normalize service response to top-level shape expected by frontend
     if (svcRes && typeof svcRes === 'object' && 'attempt' in svcRes && svcRes.attempt) {
       const attempt: any = (svcRes as any).attempt;
       const responseBody: any = {
@@ -74,7 +93,6 @@ export class TestController {
       return responseBody;
     }
 
-    // Backwards-compatibility: if service returned top-level fields directly (older shape)
     if (svcRes && typeof svcRes === 'object' && ('id' in svcRes || 'score' in svcRes || 'questions' in svcRes)) {
       const asAny: any = svcRes as any;
       return {
@@ -85,14 +103,9 @@ export class TestController {
       };
     }
 
-    // Fallback: return whatever the service returned
     return svcRes;
   }
 
-  /**
-   * Review endpoint: return a saved attempt by numeric id.
-   * Route: GET /tests/:id/review
-   */
   @Get(':id/review')
   @UseGuards(JwtAuthGuard)
   async review(@Req() req: any, @Param('id') id: string) {
@@ -132,6 +145,16 @@ export class TestController {
     else if (typeof rawCount === 'string' && rawCount.trim() !== '') {
       const n = Number(rawCount);
       if (!Number.isNaN(n)) questionCount = Math.max(1, Math.floor(n));
+    }
+
+    // Enforcement: check create-test limits (throws HttpException if blocked)
+    try {
+      await this.enforcementService.checkCreateTest(userId, questionCount ?? 0);
+    } catch (err: any) {
+      if (err instanceof HttpException) throw err;
+      // eslint-disable-next-line no-console
+      console.error('Enforcement check failed', err);
+      throw new InternalServerErrorException('Enforcement check failed');
     }
 
     try {

@@ -5,10 +5,15 @@
   --admin-shadow: 0 8px 24px rgba(6,6,8,0.06);
 }
 
-/* root layout */
+/* root layout - admin pages should use this class on the top-level container */
 .adminRoot {
   min-height: 100vh;
   background: var(--background);
+}
+
+/* hide any page footer while inside admin pages */
+.adminRoot footer {
+  display: none !important;
 }
 
 /* toolbar */
@@ -75,11 +80,17 @@
   color: var(--admin-muted);
   font-size: 0.9rem;
 }
+/* Slightly reduced & consistent value sizing so text doesn't explode out of cards */
 .kvValue {
   font-weight: 700;
   color: #222;
   margin-top: 6px;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  word-break: break-word;
 }
+
+/* planBadge */
 .planBadge {
   display: inline-block;
   padding: 6px 10px;
@@ -89,9 +100,35 @@
   font-weight: 700;
 }
 
+/* Recent signups specific styling */
+.recentList {
+  max-height: 160px;      /* constrain vertical size */
+  overflow-y: auto;       /* scroll if too long */
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.recentItem {
+  font-size: 0.95rem;
+  color: #222;
+  white-space: normal;    /* allow wrapping */
+  word-break: break-word; /* break long tokens (emails) */
+  line-height: 1.25;
+  margin: 0;
+}
+
 /* responsive */
 @media (max-width: 900px) {
   .drawerPaper { display: none; }
   .container { padding-left: 12px; }
   .main { padding: 18px; }
+}
+
+/* Add near other helpers */
+.activityTableCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 520px;
 }

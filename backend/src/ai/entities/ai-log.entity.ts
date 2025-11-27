@@ -1,32 +1,34 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
 
 @Entity({ name: 'ai_logs' })
 export class AiLog {
-  @PrimaryGeneratedColumn('increment')
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
   id: number;
 
   @Index()
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'integer', name: 'userId', nullable: true })
   userId?: number | null;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', name: 'prompt' })
   prompt: string;
 
-  @Column({ type: 'json', nullable: true })
+  // Use jsonb to match the DB jsonb type
+  @Column({ type: 'jsonb', name: 'params', nullable: true })
   params?: any | null;
 
-  @Column({ type: 'varchar', length: 128, nullable: true })
+  @Column({ type: 'character varying', length: 128, name: 'model', nullable: true })
   model?: string | null;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', name: 'response', nullable: true })
   response?: any | null;
 
-  @Column({ type: 'boolean', default: true })
-  success: boolean;
+  @Column({ type: 'boolean', name: 'success', nullable: true, default: true })
+  success?: boolean | null;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', name: 'error', nullable: true })
   error?: string | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  // Map createdAt explicitly to DB column (timestamptz)
+  @Column({ type: 'timestamptz', name: 'createdAt', nullable: true })
+  createdAt?: Date | null;
 }

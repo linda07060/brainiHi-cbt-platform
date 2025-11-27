@@ -73,7 +73,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     try {
-      if (typeof window !== "undefined") localStorage.removeItem("auth");
+      if (typeof window !== "undefined") {
+        // remove both normal auth and adminAuth (ensure admin session is cleared)
+        localStorage.removeItem("auth");
+        localStorage.removeItem("adminAuth");
+      }
     } catch {
       // ignore
     }
@@ -96,12 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [auth]);
 
-  // Sync if other tabs change auth
+  // Sync if other tabs change auth or adminAuth
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "auth") {
+      if (e.key === "auth" || e.key === "adminAuth") {
         try {
-          const val = e.newValue ? normalizeAuth(JSON.parse(e.newValue)) : { token: null, user: null };
+          const raw = typeof window !== "undefined" ? localStorage.getItem("auth") : null;
+          const val = raw ? normalizeAuth(JSON.parse(raw)) : { token: null, user: null };
           setAuth(val);
         } catch {
           // ignore

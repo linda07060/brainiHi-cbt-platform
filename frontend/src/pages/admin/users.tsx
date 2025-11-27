@@ -26,8 +26,24 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  // Hide the main site footer while this admin page is mounted.
+  // This is a safe, client-side-only change that restores the footer when the user leaves the page.
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
+    if (typeof document === 'undefined') return;
+    const footer = document.querySelector('footer') as HTMLElement | null;
+    if (!footer) return;
+    const previousDisplay = footer.style.display;
+    footer.style.display = 'none';
+    return () => {
+      footer.style.display = previousDisplay || '';
+    };
+  }, []);
+
+  useEffect(() => {
+    // allow admin session either from user context OR from adminAuth in localStorage
+    const rawAdmin = typeof window !== 'undefined' ? localStorage.getItem('adminAuth') : null;
+    const adminStored = rawAdmin ? JSON.parse(rawAdmin) : null;
+    if ((!user || user.role !== 'admin') && !adminStored) {
       router.push('/admin/login');
       return;
     }
@@ -40,9 +56,7 @@ export default function AdminUsersPage() {
     try {
       const res = await api.get('/admin/users', { params: { q: query, page, limit: 20 } });
 
-      // Normalize response so TypeScript knows available fields.
       const raw = res?.data ?? {};
-      // If API returns a plain array, accept it directly.
       if (Array.isArray(raw)) {
         setUsers(raw);
         setTotalPages(1);
@@ -70,7 +84,6 @@ export default function AdminUsersPage() {
   };
 
   const handleEdit = (u: any) => {
-    // For now, open detail modal (you can implement a dedicated edit screen)
     setSelectedUser(u);
     setDetailOpen(true);
   };

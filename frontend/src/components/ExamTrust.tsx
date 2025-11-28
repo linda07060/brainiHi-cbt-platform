@@ -3,7 +3,7 @@ import layout from "../styles/Layout.module.css";
 import styles from "../styles/ExamLanding.module.css";
 import DemoVideo from "./DemoVideo";
 import SampleTest from "./SampleTest";
-import Testimonials from "./Testimonials";
+// import Testimonials from "./Testimonials";
 
 type Props = {
   exam?: "SAT" | "ACT" | string;
@@ -256,14 +256,14 @@ export default function ExamTrust({ exam = "" }: Props) {
       </section>
 
       {/* canonical testimonials section (rendered once, below sample test) */}
-      <section style={{ paddingTop: 8, paddingBottom: 36 }}>
+      {/* <section style={{ paddingTop: 8, paddingBottom: 36 }}>
         <div className={layout.container}>
           <h3 className={styles.sectionTitle}>Student testimonials</h3>
           <div style={{ marginTop: 12 }}>
             <Testimonials />
           </div>
         </div>
-      </section>
+      </section> */}
     </>
   );
 }

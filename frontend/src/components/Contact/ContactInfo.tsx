@@ -26,7 +26,7 @@ export default function ContactInfo(): JSX.Element {
             </a>
           </li>
 
-          <li className={styles.item}>
+          {/* <li className={styles.item}>
             <a href="tel:+77769222999" className={styles.link}>
               <span className={styles.iconWrap} aria-hidden="true">
                 <PhoneIcon className={styles.icon} />
@@ -37,7 +37,7 @@ export default function ContactInfo(): JSX.Element {
                 <div className={styles.value}>+77769222999</div>
               </div>
             </a>
-          </li>
+          </li> */}
 
           <li className={styles.item}>
             <a
@@ -53,9 +53,9 @@ export default function ContactInfo(): JSX.Element {
               <div className={styles.text}>
                 <div className={styles.heading}>Address</div>
                 <div className={styles.value}>
-                  123 Innovation Drive
+                  Imanbaeva Street 2
                   <br />
-                  Palo Alto, CA, USA
+                  Astana, Kazakhstan
                 </div>
               </div>
             </a>

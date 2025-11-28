@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Header from "../components/Header";
-import Testimonials from "../components/Testimonials";
+// import Testimonials from "../components/Testimonials";
 import FeatureGrid from "../components/About/FeatureGrid";
 import ResponsiveMotion from "../components/ResponsiveMotion";
 import styles from "../styles/AboutPage.module.css";
@@ -86,7 +86,7 @@ export default function About() {
           {/* Testimonials Section */}
           <section className={styles.testimonialSection} aria-labelledby="testimonials-heading">
             {/* <h2 id="testimonials-heading" className={styles.sectionTitle}>Loved by Students Everywhere</h2> */}
-            <Testimonials />
+            {/* <Testimonials /> */}
           </section>
         </div>
       </ResponsiveMotion>

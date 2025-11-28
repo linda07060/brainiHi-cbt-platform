@@ -4,7 +4,7 @@ import Features from "../components/Features";
 import ForwardThinkingPrograms from "../components/ForwardThinkingPrograms";
 import HowItWorks from "../components/HowItWorks";
 import ExamCenters from "../components/ExamCenters";
-import Testimonials from "../components/Testimonials";
+// import Testimonials from "../components/Testimonials";
 import Pricing from "../components/Pricing";
 import CTABanner from "../components/CTABanner";
 import WelcomeModal from "../components/WelcomeModal";
@@ -23,7 +23,7 @@ export default function Home() {
           <ForwardThinkingPrograms />
           <HowItWorks />
           <ExamCenters />
-          <Testimonials />
+          {/* <Testimonials /> */}
           <Pricing />
           <CTABanner />
         </div>

@@ -19,13 +19,13 @@ export default function Footer(): JSX.Element {
     { label: "ACT Prep", href: "/act" },
     { label: "CBT Portal", href: "/login" },
     { label: "Register", href: "/register" },
-    { label: "Pricing", href: "/pricing" },
+    // { label: "Pricing", href: "/pricing" },
   ];
 
   const resources = [
     { label: "How it works", href: "/#how-it-works", anchor: "how-it-works" },
     { label: "Features", href: "/#features", anchor: "features" },
-    { label: "Testimonials", href: "/#testimonials", anchor: "testimonials" },
+    // { label: "Testimonials", href: "/#testimonials", anchor: "testimonials" },
     { label: "FAQ", href: "/#faq", anchor: "faq" },
     { label: "Contact Us", href: "/contact", anchor: undefined },
   ];
@@ -200,9 +200,9 @@ export default function Footer(): JSX.Element {
                 <h4 id="footer-brand-heading" className={styles.brandTitle}>BrainiHi</h4>
                 <p className={styles.address}>
                   BrainiHi • AI Exam Preparation<br />
-                  123 Learning Ave, Suite 100<br />
-                  Your City, State 12345<br />
-                  <a href="tel:+1234567890" className={styles.contactLink}>+777 69222‑999</a><br />
+                  Imanbaeva Street 2, <br />
+                  Astana, Kazakhstan<br />
+                  {/* <a href="tel:+1234567890" className={styles.contactLink}>+777 69222‑999</a><br /> */}
                   <a href="mailto:support@brainihi.com" className={styles.contactLink}>support@brainihi.com</a>
                 </p>
 

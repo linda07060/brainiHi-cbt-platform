@@ -6,9 +6,8 @@ import styles from "../styles/Footer.module.css";
 /**
  * Merged Footer
  *
- * - Combines the main site footer and the small legal row into one component.
- * - Replace your existing Footer component with this file.
- * - Remove any other FooterLegal renders from _app.tsx or pages so the footer is not duplicated.
+ * - Adds links to Terms, Refund & Cancellation, Cookie Policy and Privacy.
+ * - Ensure support email is visible in the footer.
  */
 
 export default function Footer(): JSX.Element {
@@ -31,7 +30,6 @@ export default function Footer(): JSX.Element {
     { label: "Contact Us", href: "/contact", anchor: undefined },
   ];
 
-  // scroll helpers used by in-page anchors
   function getHeaderOffset(): number {
     try {
       const header =
@@ -183,6 +181,15 @@ export default function Footer(): JSX.Element {
                   )}
                 </li>
               ))}
+              <li>
+                <Link href="/terms" className={styles.link}>Terms of Service</Link>
+              </li>
+              <li>
+                <Link href="/refund-policy" className={styles.link}>Refund &amp; Cancellation Policy</Link>
+              </li>
+              <li>
+                <Link href="/cookie-policy" className={styles.link}>Cookie Policy</Link>
+              </li>
             </ul>
           </div>
 

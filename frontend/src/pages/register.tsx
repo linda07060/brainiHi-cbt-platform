@@ -327,11 +327,44 @@ export default function Register() {
             </Typography>
           </FormControl>
 
+          {/* ---------- Paddle / Subscription transparency section ---------- */}
+          <Box sx={{ mt: 2, mb: 1, p: 2, borderRadius: 1, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+            {selectedPlan && selectedPlan.key !== 'Free' ? (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Subscription details</Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  This is an <strong>auto‑renewing</strong> subscription. Price: <strong>{getPriceLabel(selectedPlan)}</strong>.
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  Cancellation: <strong>Cancel anytime</strong>. Cancelling prevents future renewals but does not automatically refund past periods — see our Refund Policy.
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  Payments are securely processed by Paddle. VAT/GST may apply based on your location.
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="body2">Free plan — no recurring charges. You can upgrade anytime from your account.</Typography>
+            )}
+          </Box>
+
+          {/* Terms + privacy acknowledgement required by Paddle (placed near the submit button) */}
+          <Box sx={{ mt: 1, mb: 1, fontSize: 13, color: 'text.secondary' }}>
+            By continuing, you agree to our{' '}
+            <Link href="/terms" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</Link>{' '}
+            and{' '}
+            <Link href="/privacy" style={{ color: 'inherit', textDecoration: 'underline' }}>Privacy Policy</Link>.
+          </Box>
+
           <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 2, py: 1.5, fontWeight: '700' }} disabled={submitting} >
             {submitting ? <><Spinner /> Creating account…</> : 'Register'}
           </Button>
 
         </form>
+
+        {/* Support & help visibility (Paddle requirement) */}
+        <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>
+          Need help? Contact: <a href="mailto:support@brainihi.com">support@brainihi.com</a>
+        </Typography>
 
         <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }}>
           Already have an account? <Link href="/login">Login</Link>

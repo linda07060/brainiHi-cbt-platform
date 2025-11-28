@@ -101,6 +101,10 @@ export default function Pricing(): JSX.Element {
               <div className={styles.priceWrap}>
                 <div className={styles.priceMain}>{plan.price}</div>
                 {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
+                {/* SUBSCRIPTION TRANSPARENCY FOR PADDLE */}
+                <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
+                  <strong>Auto‑renewing subscription</strong> · Cancel anytime
+                </div>
               </div>
 
               <ul className={styles.features} aria-label={`${plan.name} features`}>
@@ -121,6 +125,29 @@ export default function Pricing(): JSX.Element {
                   {plan.cta}
                 </a>
               </Link>
+
+              {/* Terms + privacy consent near payment */}
+              <div style={{ marginTop: 10, fontSize: 13, color: "#666" }}>
+                By continuing, you agree to our{" "}
+                <Link href="/terms" className={styles.link}>
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className={styles.link}>
+                  Privacy Policy
+                </Link>
+                .
+              </div>
+
+              {/* Paddle legal hint */}
+              <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
+                Payments are securely processed by Paddle. VAT/GST may apply based on your location.
+              </div>
+
+              {/* Support hint */}
+              <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
+                Need help? Contact: <a href="mailto:support@brainihi.com">support@brainihi.com</a>
+              </div>
             </article>
           );
         })}

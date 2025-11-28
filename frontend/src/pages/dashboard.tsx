@@ -773,6 +773,10 @@ export default function Dashboard() {
                 }}
                 aria-label={`Open ${headerPlanLabel} plan details`}
               />
+              {/* NEW: quick link to subscription management */}
+              <Button component={Link} href="/subscription" size={isCompact ? 'small' : 'small'} variant="outlined" sx={{ ml: 1, textTransform: 'none' }}>
+                Subscription
+              </Button>
               <Typography variant="caption" color="text.secondary" sx={{ display: { xs: isCompact ? 'block' : 'none', md: 'block' }, mt: 0.5 }}>
                 {userData?.plan_expiry ? `Expires: ${expiryDisplay}` : 'No expiry'}
               </Typography>
@@ -865,10 +869,17 @@ export default function Dashboard() {
               {isTutorPlan ? (
                 <TutorUxSnippet effectiveUsage={effectiveUsage} />
               ) : (
-                <Button component={Link} href="/pricing" variant="outlined" size="small" sx={{ textTransform: 'none' }}>
+                <Button component={Link} href="/subscription" variant="outlined" size="small" sx={{ textTransform: 'none' }}>
                   Upgrade to Tutor
                 </Button>
               )}
+            </Box>
+
+            {/* NEW: Manage subscription link placed near upgrade controls (does not alter existing logic) */}
+            <Box sx={{ mt: 1 }}>
+              <Button component={Link} href="/subscription" variant="text" size="small" sx={{ textTransform: 'none' }}>
+                Manage subscription
+              </Button>
             </Box>
 
             <Divider sx={{ my: 2 }} />

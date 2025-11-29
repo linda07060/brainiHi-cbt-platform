@@ -26,29 +26,29 @@ export default function ContactInfo(): JSX.Element {
             </a>
           </li>
 
-          {/* <li className={styles.item}>
-            <a href="tel:+77769222999" className={styles.link}>
-              <span className={styles.iconWrap} aria-hidden="true">
-                <PhoneIcon className={styles.icon} />
-              </span>
+          <li className={styles.item}>
+            {/* <a href="tel:+77769222999" className={styles.link}> */}
+              {/* <span className={styles.iconWrap} aria-hidden="true"> */}
+                {/* <PhoneIcon className={styles.icon} /> */}
+              {/* </span> */}
 
               <div className={styles.text}>
-                <div className={styles.heading}>Phone</div>
-                <div className={styles.value}>+77769222999</div>
+                {/* <div className={styles.heading}>Phone</div>
+                <div className={styles.value}>+77769222999</div> */}
               </div>
-            </a>
-          </li> */}
+            {/* </a> */}
+          </li>
 
           <li className={styles.item}>
-            {/* <a
-              href="https://www.google.com/maps/search/?api=1&query=123+Innovation+Drive+Palo+Alto+CA"
-              target="_blank"
+            <a
+              // href="https://www.google.com/maps/search/?api=1&query=123+Innovation+Drive+Palo+Alto+CA"
+              // target="_blank"
               rel="noopener noreferrer"
               className={styles.link}
             >
               <span className={styles.iconWrap} aria-hidden="true">
                 <LocationOnIcon className={styles.icon} />
-              </span> */}
+              </span>
 
               <div className={styles.text}>
                 <div className={styles.heading}>Address</div>
@@ -58,7 +58,7 @@ export default function ContactInfo(): JSX.Element {
                   Astana, Kazakhstan
                 </div>
               </div>
-            {/* </a> */}
+            </a>
           </li>
         </ul>
       </div>

@@ -8,6 +8,7 @@
   --shadow: 0 8px 28px rgba(20,20,24,0.04);
   --hover-shadow: 0 14px 36px rgba(20,20,24,0.06);
   --transition: 180ms;
+  --card-min-height: 86px;
 }
 
 /* Outer shell */
@@ -24,6 +25,8 @@
   width: 100%;
   padding: 0 12px;
   margin: 0 auto;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Grid: keeps cards aligned and responsive */
@@ -44,7 +47,7 @@
 /* Link wrapper makes the whole card clickable */
 .link {
   display: flex;
-  align-items: center;
+  align-items: center;           /* vertical centering of icon + text */
   gap: 14px;
   background: var(--card-bg);
   border-radius: var(--radius);
@@ -56,6 +59,9 @@
   box-shadow: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  min-height: var(--card-min-height); /* enforce consistent height across environments */
+  box-sizing: border-box;
+  align-items: center;
 }
 
 /* subtle hover / focus */
@@ -89,12 +95,17 @@
   font-size: 28px !important;
 }
 
-/* Text block */
+/* Text block
+   - Added subtle max-width so icon + text spacing matches local layout across environments.
+   - Uses flex: 1 to take remaining space but cap width to avoid very long lines on large screens.
+*/
 .text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   min-width: 0; /* allow truncation if needed */
+  flex: 1 1 auto;
+  max-width: calc(100% - 96px); /* account for icon width + gaps + padding; tweak if needed */
 }
 
 /* Heading and value */
@@ -113,13 +124,22 @@
   line-height: 1.35;
   word-break: normal;
   overflow-wrap: anywhere;
+  /* Ensure production/global CSS cannot unexpectedly break words */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  -webkit-hyphens: none;
+  hyphens: none;
 }
 
-/* Prevent breaking of email addresses: use this class only for email values */
-.noWrap {
+/* Prevent breaking of email addresses on wide screens; allow wrap on very small screens */
+.value.noWrap {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* defensive resets to override aggressive global rules */
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
 }
 
 /* small utility for accessibility-only heading */
@@ -131,7 +151,7 @@
   white-space: nowrap;
 }
 
-/* Responsive: collapse to two/one column on smaller screens */
+/* Responsive: collapse to two/one column on smaller screens and relax noWrap */
 @media (max-width: 880px) {
   .grid {
     grid-template-columns: repeat(2, minmax(200px, 1fr));
@@ -144,9 +164,18 @@
   .link {
     gap: 12px;
     padding: 14px 16px;
+    min-height: 72px;
   }
   .iconWrap { width: 48px; height: 48px; }
   .icon { font-size: 24px !important; }
+  /* On small screens allow email to wrap instead of ellipsing */
+  .value.noWrap {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
 }
 
 /* Print-safe */

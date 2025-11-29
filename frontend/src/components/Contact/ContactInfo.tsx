@@ -7,7 +7,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
  * ContactInfo: simplified visual contact cards.
  * - Phone entry removed per request.
  * - Address is a non-clickable card (no external link).
- * - Email remains a mailto: link.
+ * - Email remains a mailto: link and will not break onto multiple lines in production.
  */
 
 export default function ContactInfo(): JSX.Element {
@@ -27,7 +27,8 @@ export default function ContactInfo(): JSX.Element {
 
               <div className={styles.text}>
                 <div className={styles.heading}>Email</div>
-                <div className={styles.value}>support@brainihi.com</div>
+                {/* Use a dedicated no-wrap class for email to avoid mid-word wrapping in production */}
+                <div className={`${styles.value} ${styles.noWrap}`}>support@brainihi.com</div>
               </div>
             </a>
           </li>

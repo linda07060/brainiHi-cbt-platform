@@ -111,7 +111,15 @@
   color: #222;
   font-weight: 600;
   line-height: 1.35;
-  word-break: break-word;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Prevent breaking of email addresses: use this class only for email values */
+.noWrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* small utility for accessibility-only heading */

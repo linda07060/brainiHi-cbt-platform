@@ -40,7 +40,7 @@ export default function ContactInfo(): JSX.Element {
           </li> */}
 
           <li className={styles.item}>
-            <a
+            {/* <a
               href="https://www.google.com/maps/search/?api=1&query=123+Innovation+Drive+Palo+Alto+CA"
               target="_blank"
               rel="noopener noreferrer"
@@ -48,7 +48,7 @@ export default function ContactInfo(): JSX.Element {
             >
               <span className={styles.iconWrap} aria-hidden="true">
                 <LocationOnIcon className={styles.icon} />
-              </span>
+              </span> */}
 
               <div className={styles.text}>
                 <div className={styles.heading}>Address</div>
@@ -58,7 +58,7 @@ export default function ContactInfo(): JSX.Element {
                   Astana, Kazakhstan
                 </div>
               </div>
-            </a>
+            {/* </a> */}
           </li>
         </ul>
       </div>

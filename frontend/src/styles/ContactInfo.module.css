@@ -19,15 +19,15 @@
 /* Constraining container */
 .container {
   max-width: var(--max-width);
-  width: 100%;
+  width: 50%;
   padding: 0 6px;
 }
 
 /* Grid: keeps cards aligned and responsive */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(420px, 1fr));
-  gap: 80px;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 50px;
   list-style: none;
   margin: 0;
   padding: 0;

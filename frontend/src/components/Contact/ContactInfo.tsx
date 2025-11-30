@@ -25,6 +25,28 @@ export default function ContactInfo(): JSX.Element {
               </div>
             </a>
           </li>
+          
+            <li className={styles.item}>
+            <a
+              // href="https://www.google.com/maps/search/?api=1&query=123+Innovation+Drive+Palo+Alto+CA"
+              // target="_blank"
+              rel="noopener noreferrer"
+              className={styles.link}
+            >
+              <span className={styles.iconWrap} aria-hidden="true">
+                <LocationOnIcon className={styles.icon} />
+              </span>
+
+              <div className={styles.text}>
+                <div className={styles.heading}>Address</div>
+                <div className={styles.value}>
+                  {/* Imanbaeva Street 2
+                  <br /> */}
+                  Astana, Kazakhstan
+                </div>
+              </div>
+            </a>
+          </li>
 
           <li className={styles.item}>
             {/* <a href="tel:+77769222999" className={styles.link}> */}
@@ -39,27 +61,7 @@ export default function ContactInfo(): JSX.Element {
             {/* </a> */}
           </li>
 
-          <li className={styles.item}>
-            <a
-              // href="https://www.google.com/maps/search/?api=1&query=123+Innovation+Drive+Palo+Alto+CA"
-              // target="_blank"
-              rel="noopener noreferrer"
-              className={styles.link}
-            >
-              <span className={styles.iconWrap} aria-hidden="true">
-                <LocationOnIcon className={styles.icon} />
-              </span>
-
-              <div className={styles.text}>
-                <div className={styles.heading}>Address</div>
-                <div className={styles.value}>
-                  Imanbaeva Street 2
-                  <br />
-                  Astana, Kazakhstan
-                </div>
-              </div>
-            </a>
-          </li>
+          
         </ul>
       </div>
     </section>

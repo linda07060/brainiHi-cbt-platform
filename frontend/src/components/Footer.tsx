@@ -200,7 +200,7 @@ export default function Footer(): JSX.Element {
                 <h4 id="footer-brand-heading" className={styles.brandTitle}>BrainiHi</h4>
                 <p className={styles.address}>
                   BrainiHi • AI Exam Preparation<br />
-                  Imanbaeva Street 2, <br />
+                  {/* Imanbaeva Street 2, <br /> */}
                   Astana, Kazakhstan<br />
                   {/* <a href="tel:+1234567890" className={styles.contactLink}>+777 69222‑999</a><br /> */}
                   <a href="mailto:support@brainihi.com" className={styles.contactLink}>support@brainihi.com</a>

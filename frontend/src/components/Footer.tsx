@@ -6,8 +6,8 @@ import styles from "../styles/Footer.module.css";
 /**
  * Merged Footer
  *
- * - Adds links to Terms, Refund & Cancellation, Cookie Policy and Privacy.
- * - Ensure support email is visible in the footer.
+ * - FAQ footer link updated so it scrolls to the FAQ section on the Contact page.
+ * - handleAnchorClick improved to also navigate from the homepage to /contact when needed.
  */
 
 export default function Footer(): JSX.Element {
@@ -19,14 +19,13 @@ export default function Footer(): JSX.Element {
     { label: "ACT Prep", href: "/act" },
     { label: "CBT Portal", href: "/login" },
     { label: "Register", href: "/register" },
-    // { label: "Pricing", href: "/pricing" },
   ];
 
   const resources = [
     { label: "How it works", href: "/#how-it-works", anchor: "how-it-works" },
     { label: "Features", href: "/#features", anchor: "features" },
-    // { label: "Testimonials", href: "/#testimonials", anchor: "testimonials" },
-    { label: "FAQ", href: "/#faq", anchor: "faq" },
+    // FAQ now links to the FAQ section on the Contact page (contact component uses id="faq-heading")
+    { label: "FAQ", href: "/contact#faq-heading", anchor: "faq-heading" },
     { label: "Contact Us", href: "/contact", anchor: undefined },
   ];
 
@@ -123,24 +122,46 @@ export default function Footer(): JSX.Element {
     });
   }
 
+  /**
+   * Improved handleAnchorClick:
+   * - Always navigates to the provided href (or derived href) and waits for routeChangeComplete to attempt scrolling.
+   * - If already on the target page (e.g. /contact) it will try direct scroll first and then wait if not immediately available.
+   *
+   * Reason for change:
+   * Previously we attempted to special-case the homepage (router.pathname === "/") by only trying to scroll
+   * the current document. That prevented navigation from the homepage to /contact when the FAQ link was clicked.
+   * Now we always perform a navigation to the href when the element is not present on the current page, ensuring
+   * the link works from the homepage and any other route.
+   */
   async function handleAnchorClick(e: React.MouseEvent, anchorId?: string, href?: string) {
     if (!anchorId) return;
     e.preventDefault();
 
-    if (router.pathname === "/") {
+    const targetHref = href || `/#${anchorId}`;
+
+    // If we're already on the target page (e.g., /contact), try to scroll first.
+    if (router.pathname === "/contact" || router.pathname === targetHref.split("#")[0]) {
       if (tryScrollToId(anchorId)) return;
-      await waitForAndScroll(anchorId);
+      // If element isn't available immediately, wait (useful for hydration / client-rendered content)
+      const found = await waitForAndScroll(anchorId);
+      if (found) return;
+      // fallback: navigate to href (ensures consistent behavior even if the page needs re-render)
+      try {
+        await router.push(targetHref);
+      } catch {}
       return;
     }
 
+    // Not on target page: navigate then wait for route change to complete and scroll
     const onComplete = async () => {
       await waitForAndScroll(anchorId);
       router.events.off("routeChangeComplete", onComplete);
     };
 
     router.events.on("routeChangeComplete", onComplete);
+
     router
-      .push(href || `/#${anchorId}`)
+      .push(targetHref)
       .catch(() => {
         router.events.off("routeChangeComplete", onComplete);
       });
@@ -171,6 +192,7 @@ export default function Footer(): JSX.Element {
               {resources.map((r) => (
                 <li key={r.href}>
                   {r.anchor ? (
+                    // anchor links handled to attempt smooth scroll on target page
                     <a href={r.href} className={styles.link} onClick={(e) => handleAnchorClick(e, r.anchor, r.href)}>
                       {r.label}
                     </a>
@@ -200,9 +222,7 @@ export default function Footer(): JSX.Element {
                 <h4 id="footer-brand-heading" className={styles.brandTitle}>BrainiHi</h4>
                 <p className={styles.address}>
                   BrainiHi • AI Exam Preparation<br />
-                  {/* Imanbaeva Street 2, <br /> */}
                   Astana, Kazakhstan<br />
-                  {/* <a href="tel:+1234567890" className={styles.contactLink}>+777 69222‑999</a><br /> */}
                   <a href="mailto:support@brainihi.com" className={styles.contactLink}>support@brainihi.com</a>
                 </p>
 

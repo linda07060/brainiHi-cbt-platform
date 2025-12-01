@@ -22,6 +22,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Register.module.css';
 import Spinner from '../components/Spinner';
+import AgeConfirmationCheckbox from '../components/AgeConfirmationCheckbox';
 
 // AI transparency / legal components
 import AITransparency from '../components/AITransparency';
@@ -51,8 +52,6 @@ const PLANS: {
 
 /**
  * Permissive server response shape for register endpoint.
- * Casting to this type before reading fields prevents TS errors like
- * "Property 'access_token' does not exist on type '{}'."
  */
 interface RegisterResponse {
   access_token?: string;
@@ -91,6 +90,9 @@ export default function Register() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Age confirmation
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+
   useEffect(() => {
     // Prefill email from query param (used by Google onboarding flow)
     if (router.isReady && router.query.email) {
@@ -123,6 +125,8 @@ export default function Register() {
     const setKeys = new Set(keys);
     if (setKeys.size < 3) return 'Please choose three distinct security questions';
     if (!a1.trim() || !a2.trim() || !a3.trim()) return 'Please provide answers to all security questions';
+    // age confirmation
+    if (!ageConfirmed) return 'You must confirm that you are at least the minimum required age to register';
     return null;
   }
 
@@ -145,35 +149,30 @@ export default function Register() {
         phone: phone.trim(),
         password,
         plan,
-        billingPeriod, // include billing preference so backend can show pricing context (server will still enforce)
+        billingPeriod,
         recoveryPassphrase,
         securityAnswers: [
           { questionKey: q1, answer: a1.trim() },
           { questionKey: q2, answer: a2.trim() },
           { questionKey: q3, answer: a3.trim() },
         ],
+        ageConfirmed: true,
       };
 
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, payload);
 
-      // Cast response to a permissive type so TypeScript knows optional fields may exist
       const data = (res?.data ?? {}) as RegisterResponse;
 
-      // Expect either { access_token, user } or { token, user } or full user + token fields
       const token = data.access_token ?? data.token ?? data.accessToken ?? null;
       const user = data.user ?? data;
 
-      // Store normalized auth { token, user } when possible and update context
       if (token || user) {
         const auth = { token, user };
         try {
           if (typeof window !== 'undefined') localStorage.setItem('auth', JSON.stringify(auth));
-        } catch {
-          // ignore storage errors
-        }
+        } catch {}
         setUser(auth as any);
       } else {
-        // No token returned: remove any stale auth and redirect to login
         try { if (typeof window !== 'undefined') localStorage.removeItem('auth'); } catch {}
       }
 
@@ -185,7 +184,6 @@ export default function Register() {
         router.push('/dashboard');
       }, 1200);
     } catch (error: any) {
-      // Be defensive reading server error message (cast before reading)
       const serverData = (error?.response?.data ?? {}) as RegisterResponse;
       setMsg(serverData.message || error?.response?.data?.message || 'Registration failed. Please try again.');
       setSuccess(false);
@@ -311,7 +309,6 @@ export default function Register() {
                     {p.key === 'Free' ? (p.caption || 'Try Mode — Free') : getPriceLabel(p)}
                   </Typography>
 
-                  {/* Show both prices for paid plans to provide context */}
                   {p.key !== 'Free' && (
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>
                       {p.monthlyPrice && p.yearlyPrice ? `${p.monthlyPrice}/month · ${p.yearlyPrice}/year` : ''}
@@ -321,13 +318,12 @@ export default function Register() {
               ))}
             </Select>
 
-            {/* Display selected plan pricing/details under the dropdown */}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               {selectedPlan ? (selectedPlan.key === 'Free' ? selectedPlan.caption : getPriceLabel(selectedPlan)) : ''}
             </Typography>
           </FormControl>
 
-          {/* ---------- Paddle / Subscription transparency section ---------- */}
+          {/* Paddle / Subscription transparency section */}
           <Box sx={{ mt: 2, mb: 1, p: 2, borderRadius: 1, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
             {selectedPlan && selectedPlan.key !== 'Free' ? (
               <>
@@ -347,6 +343,11 @@ export default function Register() {
             )}
           </Box>
 
+          {/* Age confirmation component (required) */}
+          <Box sx={{ mt: 1 }}>
+            <AgeConfirmationCheckbox checked={ageConfirmed} onChange={setAgeConfirmed} />
+          </Box>
+
           {/* Terms + privacy acknowledgement required by Paddle (placed near the submit button) */}
           <Box sx={{ mt: 1, mb: 1, fontSize: 13, color: 'text.secondary' }}>
             By continuing, you agree to our{' '}
@@ -355,7 +356,7 @@ export default function Register() {
             <Link href="/privacy" style={{ color: 'inherit', textDecoration: 'underline' }}>Privacy Policy</Link>.
           </Box>
 
-          <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 2, py: 1.5, fontWeight: '700' }} disabled={submitting} >
+          <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 2, py: 1.5, fontWeight: '700' }} disabled={submitting || !ageConfirmed} >
             {submitting ? <><Spinner /> Creating account…</> : 'Register'}
           </Button>
 
@@ -371,7 +372,7 @@ export default function Register() {
         </Typography>
       </Box>
 
-      {/* Transparency + legal blocks: show on auth pages so users see AI origin and disclaimer */}
+      {/* Transparency + legal blocks */}
       <AITransparency />
       <LegalDisclaimer />
 

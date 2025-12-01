@@ -1,6 +1,7 @@
 import Head from "next/head";
 import Header from "../components/Header";
 import layout from "../styles/Layout.module.css";
+import { Container } from "@mui/material";
 
 /**
  * Cookie Policy page — updated to include clear descriptions and contact.
@@ -30,7 +31,9 @@ export default function CookiePolicy(): JSX.Element {
           <p>Users can control or disable cookies through their browser settings at any time. If essential cookies are disabled, some features may not function correctly.</p>
 
           <h2>Contact</h2>
-          <p>For questions: <a href="mailto:support@brainihi.com">support@brainihi.com</a></p>
+          <p>
+            For questions: <a href="mailto:support@brainihi.com">support@brainihi.com</a>
+          </p>
 
           <h2>Short banner text (suggested)</h2>
           <p>

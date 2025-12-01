@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 import AITransparency from "../components/AITransparency";
 import layout from "../styles/Layout.module.css";
-import { Container, Box, Typography } from "@mui/material";
+import { Container, Box, Typography, Link } from "@mui/material";
 
 /**
  * /policies — persistent page exposing full legal content for SEO and teams.
@@ -19,7 +19,7 @@ export default function PoliciesPage(): JSX.Element {
         <title>Policies — BrainiHi</title>
         <meta
           name="description"
-          content="Policies, content generation policy, privacy, terms and AI transparency for BrainiHi."
+          content="Policies, content generation policy, AI transparency, and other legal notices for BrainiHi."
         />
       </Head>
 
@@ -43,6 +43,17 @@ export default function PoliciesPage(): JSX.Element {
             <section aria-labelledby="ai-transparency-heading" style={{ marginTop: 24 }}>
               <AITransparency />
             </section>
+
+            {/* Contact for legal questions — ensure email is a clickable mailto link */}
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+                Contact
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                For questions about these policies or other legal matters, contact us at{" "}
+                <Link href="mailto:support@brainihi.com" underline="always">support@brainihi.com</Link>.
+              </Typography>
+            </Box>
           </Box>
         </Container>
       </main>

@@ -1,103 +1,131 @@
-/* Minimal reset / neutralization of legacy styles that conflict with MUI sx rules.
-   This file intentionally keeps rules small and scoped to classes used by the dashboard page.
-   It avoids heavy selectors so MUI sx props can take precedence.
+/* Dashboard.module.css
+   Full updated CSS for Dashboard page.
+   Responsive, minimalist nav and clean layout.
 */
 
-/* Container - keep max width in CSS but let MUI handle spacing */
+:root {
+  --max-width: 1100px;
+  --nav-gap: 8px;
+  --accent: #861f41;
+  --muted: #6c6c6c;
+  --card-radius: 12px;
+}
+
+/* Page container */
 .container {
   box-sizing: border-box;
   width: 100%;
   margin: 0 auto;
-  max-width: 1100px;
-  padding-left: 16px;
-  padding-right: 16px;
+  max-width: var(--max-width);
+  padding: 18px;
 }
 
-/* Profile and tests cards - neutral baseline */
-.profileCard {
-  /* let MUI Paper supply padding and elevation; ensure legacy margins removed */
+/* Top bar layout: heading stands alone; menu below it */
+.topBar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Heading area (standalone) */
+.headingArea,
+.headingAreaTop {
+  min-width: 220px;
+  flex: 1 1 320px;
+  margin-bottom: 12px;           /* ensure heading separates from menu */
+}
+.pageTitle {
   margin: 0;
-  background: transparent;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.pageIntro {
+  margin-top: 6px;
+  color: rgba(0,0,0,0.65);
+  font-size: 0.98rem;
 }
 
-/* Make the profile card "sticky" on larger screens so the right column can scroll */
-@media (min-width: 900px) {
-  .profileCard {
-    position: sticky;
-    top: 24px; /* matches typical app header spacing; tweak if you have a taller header */
-    align-self: start; /* make sure it doesn't stretch */
-    z-index: 1;
-  }
-}
-
-/* testsCard: keep a constrained height and make it scroll internally when content grows.
-   This prevents the right column from extending the whole page height and keeps the left column
-   visual height as the visible reference.
-*/
-.testsCard {
-  margin: 0;
-  background: transparent;
-
-  /* On medium+ screens, limit height to viewport minus header area and allow internal scroll */
-  max-height: calc(100vh - 160px); /* adjust 160px if your header + top spacing differs */
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* grid wrapper (if older styles used .grid) */
-.grid {
-  display: block;
-}
-
-/* field rows: ensure predictable spacing */
-.fieldRow {
+/* Nav area: horizontal, minimal, appears below heading */
+.navRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
-/* labels and values: avoid overriding typography set by MUI */
-.fieldLabel {
-  margin: 0;
-  padding: 0;
-  color: rgba(0,0,0,0.6);
-  font-size: 0.85rem;
+/* Centered nav inner for desktop */
+.navInner,
+.navInnerDesktop {
+  display: flex;
+  gap: var(--nav-gap);
+  align-items: center;
+  overflow-x: auto;
+  padding: 4px 2px;
+  -webkit-overflow-scrolling: touch;
+  justify-content: center;
 }
 
-.fieldValue {
-  margin: 0;
-  padding: 0;
+/* If many links: allow wrap and keep minimalist look */
+.navInnerDesktop { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+
+/* Buttons in nav */
+.navButton {
+  white-space: nowrap;
+  border-radius: 12px;
+  text-transform: none;
   font-weight: 700;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
 }
 
-/* planBadge legacy fallback - keep it minimal */
-.planBadge {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background-color: transparent;
-  font-weight: 700;
+/* Actions area (Start / Logout) */
+.actionsArea {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
-/* Scrollbar styling (subtle) - optional, improves UX on desktop */
-.testsCard::-webkit-scrollbar {
-  width: 10px;
-}
-.testsCard::-webkit-scrollbar-track {
+/* Profile card baseline */
+.profileCard {
+  margin: 0;
   background: transparent;
-}
-.testsCard::-webkit-scrollbar-thumb {
-  background-color: rgba(0,0,0,0.08);
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  min-height: 180px;
+  border-radius: var(--card-radius);
 }
 
-/* Responsive adjustments */
+/* make the profile card "sticky" on larger screens */
+@media (min-width: 900px) {
+  .profileCard {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    z-index: 1;
+  }
+}
+
+/* tests card tuning */
+.testsCard {
+  margin: 0;
+  background: transparent;
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ensure the MUI ListItemButton expands full width */
+.MuiListItemButton-root {
+  width: 100%;
+}
+
+/* small responsive adjustments */
 @media (max-width: 899px) {
-  /* On small screens the layout stacks; don't constrain height so user can scroll page normally */
   .testsCard {
     max-height: none;
     overflow: visible;
@@ -108,23 +136,43 @@
   }
 }
 
-/* Slight spacing tweak for the tests list entries so scroll looks balanced */
-.testsCard .MuiList-root,
-.testsCard .MuiPaper-root > .MuiList-root {
-  padding-right: 12px; /* ensure content doesn't sit under scrollbar */
+/* ensure chips look good */
+.MuiChip-root {
+  letter-spacing: -0.01em;
+  text-transform: none;
 }
 
-/* Ensure long content doesn't break layout */
-.testsCard pre {
-  white-space: pre-wrap;
-  word-break: break-word;
+/* button styles for nav */
+.navButton.MuiButton-contained {
+  background: var(--accent);
+  color: #fff;
+}
+.navButton.MuiButton-outlined {
+  border-color: rgba(134,31,65,0.12);
+  color: rgba(0,0,0,0.85);
 }
 
-/* Ensure responsive stacking doesn't get broken by legacy floats */
-@media (max-width: 600px) {
-  .fieldRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
+/* responsive collapse */
+@media (max-width: 900px) {
+  .pageTitle { font-size: 1.6rem; }
+  .headingArea { flex-basis: 100%; }
+  .navInner { flex-basis: 100%; justify-content: flex-start; padding-left: 4px; }
+  .actionsArea { flex-basis: 100%; justify-content: flex-end; }
 }
+
+/* very small screens */
+@media (max-width: 480px) {
+  .pageTitle { font-size: 1.25rem; }
+  .pageIntro { font-size: 0.9rem; }
+  .navButton { padding-left: 10px !important; padding-right: 10px !important; font-size: 0.86rem; }
+  .actionsArea button { padding-left: 8px; padding-right: 8px; }
+}
+
+/* accessibility: don't remove focus outlines globally, but keep visual neatness */
+:focus-visible { outline: none; }
+
+/* ensure pre blocks don't overflow */
+.testsCard pre { white-space: pre-wrap; word-break: break-word; }
+
+/* utility small spacing */
+.grid-gap { gap: 18px; }

@@ -1,10 +1,11 @@
 import React from "react";
 import styles from "../../styles/ContactInfo.module.css";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
-import PhoneIcon from "@mui/icons-material/Phone";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 
 export default function ContactInfo(): JSX.Element {
+  const address = "Astana, Kazakhstan";
+
   return (
     <section className={styles.infoSection} aria-labelledby="contact-info-heading">
       <div className={styles.container}>
@@ -14,7 +15,11 @@ export default function ContactInfo(): JSX.Element {
 
         <ul className={styles.grid} role="list" aria-label="Contact methods">
           <li className={styles.item}>
-            <a href="mailto:support@brainihi.com" className={styles.link}>
+            <a
+              href="mailto:support@brainihi.com"
+              className={styles.link}
+              aria-label="Email support at support@brainihi.com"
+            >
               <span className={styles.iconWrap} aria-hidden="true">
                 <MailOutlineIcon className={styles.icon} />
               </span>
@@ -25,13 +30,13 @@ export default function ContactInfo(): JSX.Element {
               </div>
             </a>
           </li>
-          
-            <li className={styles.item}>
-            <a
-              // href="https://www.google.com/maps/search/?api=1&query=123+Innovation+Drive+Palo+Alto+CA"
-              // target="_blank"
-              rel="noopener noreferrer"
-              className={styles.link}
+
+          <li className={styles.item}>
+            {/* Address presented as non-interactive, accessible content (no Google Maps link) */}
+            <div
+              className={styles.linkStatic}
+              aria-label={`Address: ${address}`}
+              role="group"
             >
               <span className={styles.iconWrap} aria-hidden="true">
                 <LocationOnIcon className={styles.icon} />
@@ -39,29 +44,10 @@ export default function ContactInfo(): JSX.Element {
 
               <div className={styles.text}>
                 <div className={styles.heading}>Address</div>
-                <div className={styles.value}>
-                  {/* Imanbaeva Street 2
-                  <br /> */}
-                  Astana, Kazakhstan
-                </div>
+                <div className={styles.value}>{address}</div>
               </div>
-            </a>
+            </div>
           </li>
-
-          <li className={styles.item}>
-            {/* <a href="tel:+77769222999" className={styles.link}> */}
-              {/* <span className={styles.iconWrap} aria-hidden="true"> */}
-                {/* <PhoneIcon className={styles.icon} /> */}
-              {/* </span> */}
-
-              <div className={styles.text}>
-                {/* <div className={styles.heading}>Phone</div>
-                <div className={styles.value}>+77769222999</div> */}
-              </div>
-            {/* </a> */}
-          </li>
-
-          
         </ul>
       </div>
     </section>

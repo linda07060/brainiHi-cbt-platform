@@ -52,13 +52,16 @@
   gap: 14px;
   border: 1px solid rgba(0,0,0,0.03);
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  color: var(--text-strong);
 }
 
-/* Featured card */
+/* Featured card adjustments for better contrast/legibility */
 .card.featured {
   transform: translateY(-6px);
   border-color: rgba(134,31,65,0.08);
   box-shadow: 0 18px 50px rgba(20,20,24,0.06);
+  /* Ensure body text is crisp/dark in the featured card for readability */
+  color: #111;
 }
 
 /* Header (name + small badge) */
@@ -73,18 +76,61 @@
   align-items:center;
   gap:10px;
 }
+
+/* Plan icon dot (default) */
+.planIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,#4bbf73,#18a4ff); /* friendly default */
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* Plan icon for featured (Pro) - maroon variant */
+.planIconFeatured {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #a43b57, #6a1633);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+/* small inner to slightly reduce emoji size if present */
+.iconInner {
+  transform: translateY(-1px);
+  font-size: 12px;
+  display: inline-block;
+}
+
+/* Plan name */
 .planName {
   font-size: 1.05rem;
   color: var(--primary);
   font-weight: 800;
   letter-spacing: 0.01em;
 }
+
+/* Badge: Most popular - white text on maroon background */
 .badge {
   font-size: 11px;
   padding: 6px 8px;
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--primary);
+  background: var(--primary); /* maroon background */
+  color: #fff; /* white text as requested */
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -112,14 +158,6 @@
   margin-top: 6px;
 }
 
-/* Savings (if present) */
-.savings {
-  font-size: 0.82rem;
-  color: #0a7a4a;
-  margin-left: 6px;
-  font-weight: 700;
-}
-
 /* Feature list */
 .features {
   list-style: none;
@@ -130,6 +168,10 @@
   gap: 10px;
   color: var(--text-strong);
   font-size: 0.98rem;
+}
+.card.featured .features {
+  /* ensure feature text is slightly darker in the Pro card for contrast */
+  color: #222;
 }
 .featureItem {
   display:flex;
@@ -177,8 +219,18 @@
 .cta.primary:focus, .cta.secondary:focus { outline: 3px solid rgba(134,31,65,0.09); outline-offset: 4px; }
 
 /* Responsive */
+/* Tablet: 2 columns */
 @media (max-width: 980px) {
-  .cards { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: repeat(2, 1fr); gap: 20px; }
   .pricingSection { padding: 36px 16px; }
-  .heading { font-size: 1.6rem; margin-bottom: 20px; }
+  .heading { font-size: 1.8rem; margin-bottom: 20px; }
+  .card { max-width: 420px; }
+}
+
+/* Mobile: 1 column */
+@media (max-width: 640px) {
+  .cards { grid-template-columns: 1fr; gap: 16px; }
+  .pricingSection { padding: 28px 12px; }
+  .heading { font-size: 1.6rem; margin-bottom: 18px; }
+  .card { max-width: 100%; padding: 16px; }
 }

@@ -82,8 +82,14 @@ export default function Pricing(): JSX.Element {
               <div className={styles.cardHeader}>
                 <div className={styles.planLeft}>
                   {plan.icon && (
-                    <span aria-hidden="true" style={{ fontSize: 20, marginRight: 6 }}>
-                      {plan.icon}
+                    <span
+                      aria-hidden="true"
+                      className={plan.highlight ? styles.planIconFeatured : styles.planIcon}
+                    >
+                      {/* keep the emoji for accessibility/visual hint but it's styled inside a colored dot */}
+                      <span className={styles.iconInner} aria-hidden="true">
+                        {plan.icon}
+                      </span>
                     </span>
                   )}
                   <div id={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`} className={styles.planName}>

@@ -3,15 +3,16 @@
   --card-bg: #ffffff;
   --muted: #6c6c6c;
   --accent: #861f41;
-  --soft-border: rgba(35,31,32,0.05);
+  --soft-border: rgba(35,31,32,0.06);
   --radius: 12px;
   --shadow: 0 8px 28px rgba(20,20,24,0.04);
+  --gap: 18px;
 }
 
 /* Outer shell */
 .infoSection {
   background: transparent;
-  padding: 36px 16px;
+  padding: clamp(20px, 4vw, 48px) 16px;
   display: flex;
   justify-content: center;
 }
@@ -19,18 +20,20 @@
 /* Constraining container */
 .container {
   max-width: var(--max-width);
-  width: 50%;
-  padding: 0 6px;
+  width: min(100%, var(--max-width));
+  padding: 0 12px;
+  box-sizing: border-box;
 }
 
-/* Grid: keeps cards aligned and responsive */
+/* Grid: responsive and minimal */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(320px, 1fr));
-  gap: 50px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--gap);
   list-style: none;
   margin: 0;
   padding: 0;
+  align-items: stretch;
 }
 
 /* Card item */
@@ -42,62 +45,88 @@
 .link {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 18px 20px;
+  padding: clamp(12px, 1.6vw, 18px);
   text-decoration: none;
   color: inherit;
   border: 1px solid var(--soft-border);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
   box-shadow: none;
+  min-height: 72px;
 }
 
-/* subtle hover / focus */
+/* Non-interactive card style (used for address when we don't want a map link) */
+.linkStatic {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: clamp(12px, 1.6vw, 18px);
+  color: inherit;
+  border: 1px solid var(--soft-border);
+  box-shadow: none;
+  min-height: 72px;
+  cursor: default;
+}
+
+/* subtle hover / focus: restrained for professional look */
 .link:hover,
 .link:focus {
   transform: translateY(-4px);
   box-shadow: var(--shadow);
+  border-color: rgba(134,31,65,0.08);
   outline: none;
 }
 
-/* Icon styling */
+/* Do not apply hover lift to non-interactive card */
+.linkStatic:hover,
+.linkStatic:focus {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Icon styling (responsive) */
 .iconWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: clamp(44px, 6vw, 56px);
+  height: clamp(44px, 6vw, 56px);
   border-radius: 10px;
   background: rgba(134,31,65,0.06);
-  flex: 0 0 56px;
+  flex: 0 0 auto;
 }
 .icon {
   color: var(--accent);
-  font-size: 28px !important;
+  font-size: clamp(20px, 3.2vw, 28px) !important;
 }
 
-/* Text block */
+/* Text block: left aligned, allow truncation gracefully */
 .text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  min-width: 0;
 }
 
 /* Heading and value */
 .heading {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 800;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   margin-bottom: 6px;
 }
 .value {
-  font-size: 1rem;
+  font-size: clamp(0.95rem, 1.4vw, 1rem);
   color: #222;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.25;
+  word-break: break-word;
 }
 
 /* small utility for accessibility-only heading */
@@ -109,20 +138,30 @@
   white-space: nowrap;
 }
 
-/* Responsive: collapse to a single column on narrow screens */
-@media (max-width: 880px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(200px, 1fr));
-  }
-}
+/* Responsive adjustments for very small screens */
 @media (max-width: 560px) {
   .grid {
-    grid-template-columns: 1fr;
-  }
-  .link {
     gap: 12px;
-    padding: 16px;
   }
-  .iconWrap { width: 48px; height: 48px; }
-  .icon { font-size: 24px !important; }
+  .link,
+  .linkStatic {
+    gap: 12px;
+    padding: 12px;
+    min-height: 64px;
+  }
+  .iconWrap { width: 44px; height: 44px; }
+  .icon { font-size: 20px !important; }
+  .heading { font-size: 0.68rem; }
+}
+
+/* Ensure good contrast when system in dark mode: keep cards slightly elevated */
+@media (prefers-color-scheme: dark) {
+  .link,
+  .linkStatic {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.04);
+    box-shadow: none;
+  }
+  .value { color: #f1f1f1; }
+  .heading { color: #cfcfcf; }
 }

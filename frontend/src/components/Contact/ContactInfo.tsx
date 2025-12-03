@@ -5,6 +5,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 
 export default function ContactInfo(): JSX.Element {
   const address = "Astana, Kazakhstan";
+  const email = "support@brainihi.com";
 
   return (
     <section className={styles.infoSection} aria-labelledby="contact-info-heading">
@@ -16,9 +17,9 @@ export default function ContactInfo(): JSX.Element {
         <ul className={styles.grid} role="list" aria-label="Contact methods">
           <li className={styles.item}>
             <a
-              href="mailto:support@brainihi.com"
+              href={`mailto:${email}`}
               className={styles.link}
-              aria-label="Email support at support@brainihi.com"
+              aria-label={`Email support at ${email}`}
             >
               <span className={styles.iconWrap} aria-hidden="true">
                 <MailOutlineIcon className={styles.icon} />
@@ -26,13 +27,14 @@ export default function ContactInfo(): JSX.Element {
 
               <div className={styles.text}>
                 <div className={styles.heading}>Email</div>
-                <div className={styles.value}>support@brainihi.com</div>
+                <div className={styles.value}>
+                  <span className={styles.noBreak}>{email}</span>
+                </div>
               </div>
             </a>
           </li>
 
           <li className={styles.item}>
-            {/* Address presented as non-interactive, accessible content (no Google Maps link) */}
             <div
               className={styles.linkStatic}
               aria-label={`Address: ${address}`}

@@ -126,7 +126,27 @@
   color: #222;
   font-weight: 600;
   line-height: 1.25;
-  word-break: break-word;
+  /* Prevent aggressive arbitrary-word breaks (was causing the email to split at the dot) */
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+/* Prevent breaking inside the email on normal screens */
+.noBreak {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* On very narrow screens allow wrapping so content doesn't overflow the viewport */
+@media (max-width: 360px) {
+  .noBreak {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
 }
 
 /* small utility for accessibility-only heading */

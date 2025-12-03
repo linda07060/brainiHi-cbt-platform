@@ -1,11 +1,17 @@
 import React from "react";
-import styles from "../../styles/ContactInfo.module.css";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import styles from "../../styles/ContactInfo.module.css";
 
+/**
+ * Minimal, responsive ContactInfo component.
+ * - Shows Email and Address.
+ * - Accessible (aria labels, semantic list).
+ * - Email is non-breaking on normal viewports; wraps on very small screens.
+ */
 export default function ContactInfo(): JSX.Element {
-  const address = "Astana, Kazakhstan";
   const email = "support@brainihi.com";
+  const address = "Astana, Kazakhstan";
 
   return (
     <section className={styles.infoSection} aria-labelledby="contact-info-heading">
@@ -16,11 +22,7 @@ export default function ContactInfo(): JSX.Element {
 
         <ul className={styles.grid} role="list" aria-label="Contact methods">
           <li className={styles.item}>
-            <a
-              href={`mailto:${email}`}
-              className={styles.link}
-              aria-label={`Email support at ${email}`}
-            >
+            <a href={`mailto:${email}`} className={styles.card} aria-label={`Email ${email}`}>
               <span className={styles.iconWrap} aria-hidden="true">
                 <MailOutlineIcon className={styles.icon} />
               </span>
@@ -35,11 +37,7 @@ export default function ContactInfo(): JSX.Element {
           </li>
 
           <li className={styles.item}>
-            <div
-              className={styles.linkStatic}
-              aria-label={`Address: ${address}`}
-              role="group"
-            >
+            <div className={styles.cardStatic} role="group" aria-label={`Address: ${address}`}>
               <span className={styles.iconWrap} aria-hidden="true">
                 <LocationOnIcon className={styles.icon} />
               </span>

@@ -2,19 +2,23 @@
   --max-width: 1100px;
   --card-bg: #ffffff;
   --muted: #6c6c6c;
-  --accent: #861f41;
+  --accent: #861f41;      /* brand color */
   --soft-border: rgba(35,31,32,0.06);
   --radius: 12px;
   --shadow: 0 8px 28px rgba(20,20,24,0.04);
   --gap: 18px;
+
+  --pad-vertical: clamp(18px, 3.2vw, 36px);
+  --pad-horizontal: 16px;
 }
 
 /* Outer shell */
 .infoSection {
   background: transparent;
-  padding: clamp(20px, 4vw, 48px) 16px;
+  padding: var(--pad-vertical) var(--pad-horizontal);
   display: flex;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 /* Constraining container */
@@ -25,10 +29,10 @@
   box-sizing: border-box;
 }
 
-/* Grid: responsive and minimal */
+/* Responsive grid: auto-fit ensures 2 columns on tablets and 1 on narrow screens */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--gap);
   list-style: none;
   margin: 0;
@@ -36,75 +40,64 @@
   align-items: stretch;
 }
 
-/* Card item */
-.item {
-  margin: 0;
-}
+/* Each grid item */
+.item { margin: 0; }
 
-/* Link wrapper makes the whole card clickable */
-.link {
+/* Card base used for link and static variants */
+.card,
+.cardStatic {
   display: flex;
   align-items: center;
   gap: 16px;
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: clamp(12px, 1.6vw, 18px);
+  padding: clamp(12px, 2.2vw, 18px);
+  color: inherit;
+  border: 1px solid var(--soft-border);
   text-decoration: none;
-  color: inherit;
-  border: 1px solid var(--soft-border);
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
   box-shadow: none;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
   min-height: 72px;
 }
 
-/* Non-interactive card style (used for address when we don't want a map link) */
-.linkStatic {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  padding: clamp(12px, 1.6vw, 18px);
-  color: inherit;
-  border: 1px solid var(--soft-border);
-  box-shadow: none;
-  min-height: 72px;
-  cursor: default;
-}
-
-/* subtle hover / focus: restrained for professional look */
-.link:hover,
-.link:focus {
+/* Clickable card */
+.card:hover,
+.card:focus {
   transform: translateY(-4px);
   box-shadow: var(--shadow);
   border-color: rgba(134,31,65,0.08);
   outline: none;
 }
 
-/* Do not apply hover lift to non-interactive card */
-.linkStatic:hover,
-.linkStatic:focus {
+/* Static (non-interactive) card should not lift */
+.cardStatic {
+  cursor: default;
+}
+.cardStatic:hover,
+.cardStatic:focus {
   transform: none;
   box-shadow: none;
 }
 
-/* Icon styling (responsive) */
+/* Icon container */
 .iconWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: clamp(44px, 6vw, 56px);
-  height: clamp(44px, 6vw, 56px);
+  width: clamp(44px, 6.6vw, 56px);
+  height: clamp(44px, 6.6vw, 56px);
   border-radius: 10px;
   background: rgba(134,31,65,0.06);
   flex: 0 0 auto;
 }
+
+/* Material icon styling */
 .icon {
   color: var(--accent);
-  font-size: clamp(20px, 3.2vw, 28px) !important;
+  font-size: clamp(18px, 3.4vw, 28px) !important;
 }
 
-/* Text block: left aligned, allow truncation gracefully */
+/* Text column */
 .text {
   display: flex;
   flex-direction: column;
@@ -112,7 +105,7 @@
   min-width: 0;
 }
 
-/* Heading and value */
+/* Heading and value styles */
 .heading {
   font-size: 0.72rem;
   font-weight: 800;
@@ -122,17 +115,15 @@
   margin-bottom: 6px;
 }
 .value {
-  font-size: clamp(0.95rem, 1.4vw, 1rem);
-  color: #222;
+  font-size: clamp(0.98rem, 1.8vw, 1.02rem);
+  color: #111;
   font-weight: 600;
-  line-height: 1.25;
-  /* Prevent aggressive arbitrary-word breaks (was causing the email to split at the dot) */
+  line-height: 1.3;
   word-break: normal;
-  overflow-wrap: normal;
-  hyphens: none;
+  overflow-wrap: anywhere;
 }
 
-/* Prevent breaking inside the email on normal screens */
+/* Prevent the email from breaking at the dot on normal viewports */
 .noBreak {
   white-space: nowrap;
   overflow: hidden;
@@ -141,47 +132,46 @@
   max-width: 100%;
 }
 
-/* On very narrow screens allow wrapping so content doesn't overflow the viewport */
+/* For extremely narrow screens allow the email to wrap instead of overflowing */
 @media (max-width: 360px) {
-  .noBreak {
-    white-space: normal;
-    overflow-wrap: break-word;
-  }
+  .noBreak { white-space: normal; overflow-wrap: break-word; }
 }
 
-/* small utility for accessibility-only heading */
+/* Reduce spacing at small screens */
+@media (max-width: 880px) {
+  .grid { gap: 14px; }
+  .card, .cardStatic { padding: 12px; min-height: 64px; gap: 12px; }
+  .iconWrap { width: 48px; height: 48px; }
+  .heading { font-size: 0.66rem; }
+  .value { font-size: 0.95rem; }
+}
+
+/* Very small phones: single column, comfortable padding */
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; gap: 12px; }
+  .container { padding: 0 10px; }
+  .iconWrap { width: 44px; height: 44px; }
+}
+
+/* Dark mode tweaks */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-bg: rgba(255,255,255,0.02);
+    --soft-border: rgba(255,255,255,0.04);
+  }
+  .card, .cardStatic {
+    background: var(--card-bg);
+    border-color: var(--soft-border);
+  }
+  .heading { color: #cfcfcf; }
+  .value { color: #f5f5f5; }
+}
+
+/* Visually hidden helper */
 .visuallyHidden {
   position: absolute !important;
   height: 1px; width: 1px;
   overflow: hidden;
   clip: rect(1px,1px,1px,1px);
   white-space: nowrap;
-}
-
-/* Responsive adjustments for very small screens */
-@media (max-width: 560px) {
-  .grid {
-    gap: 12px;
-  }
-  .link,
-  .linkStatic {
-    gap: 12px;
-    padding: 12px;
-    min-height: 64px;
-  }
-  .iconWrap { width: 44px; height: 44px; }
-  .icon { font-size: 20px !important; }
-  .heading { font-size: 0.68rem; }
-}
-
-/* Ensure good contrast when system in dark mode: keep cards slightly elevated */
-@media (prefers-color-scheme: dark) {
-  .link,
-  .linkStatic {
-    background: rgba(255,255,255,0.03);
-    border-color: rgba(255,255,255,0.04);
-    box-shadow: none;
-  }
-  .value { color: #f1f1f1; }
-  .heading { color: #cfcfcf; }
 }

@@ -34,15 +34,7 @@ import TopicDifficultyModal from '../components/TopicDifficultyModal';
 import styles from '../styles/Practice.module.css';
 import Spinner from '../components/Spinner';
 
-/**
- * Practice page (updated)
- *
- * - "Back to Dashboard" button added
- * - Hides the global footer while this page is mounted and restores it on unmount
- * - Start guided session and Start button enforce plan limits
- */
-
-/* ---------- Helpers ---------- */
+/* ---------- Helpers (unchanged) ---------- */
 
 function getLocalAuthTokenFromStorage(): string | null {
   if (typeof window === 'undefined') return null;
@@ -114,6 +106,7 @@ export default function PracticePage(): JSX.Element {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
   // hide footer while on this page
   useEffect(() => {
@@ -323,17 +316,23 @@ export default function PracticePage(): JSX.Element {
       ? `Start test (${testAvailability.remainingLabel} left)`
       : 'Start practice';
 
+  // Dialog fullScreen on very small screens
+  const dialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Box>
+    <Box className={styles.pageContainer}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3, gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>Practice</Typography>
           <Typography color="text.secondary" sx={{ mt: 0.5 }}>Start guided practice, adaptive mode or resume a saved session.</Typography>
         </Box>
 
-        <Stack direction="row" spacing={2} alignItems="center">
-          <FormControlLabel control={<Switch checked={adaptiveMode} onChange={(_, v) => setAdaptiveMode(v)} />} label="Adaptive mode" />
-          <FormControlLabel control={<Switch checked={allowExplanations} onChange={(_, v) => setAllowExplanations(v)} />} label="Allow explanations" />
+        {/* NEW: actionsWrap centers and limits the width of the Start practice button on small screens */}
+        <div className={styles.actionsWrap}>
+          <Stack direction="row" spacing={2} alignItems="center" className={styles.actionsInner}>
+            <FormControlLabel control={<Switch checked={adaptiveMode} onChange={(_, v) => setAdaptiveMode(v)} />} label="Adaptive mode" />
+            <FormControlLabel control={<Switch checked={allowExplanations} onChange={(_, v) => setAllowExplanations(v)} />} label="Allow explanations" />
+          </Stack>
 
           <Button
             variant="contained"
@@ -342,32 +341,35 @@ export default function PracticePage(): JSX.Element {
             disabled={!canStartTest || startingFromModal}
             startIcon={startingFromModal ? <Spinner size={16} /> : undefined}
             sx={{ fontWeight: 700 }}
+            className={styles.startBtn}
           >
             {startButtonLabel}
           </Button>
-        </Stack>
+        </div>
       </Stack>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+          <Paper className={`${styles.panel}`} elevation={1}>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>Resume session</Typography>
             <Divider sx={{ my: 1 }} />
             <Typography color="text.secondary">You can resume a saved session on this device.</Typography>
             <Box sx={{ mt: 2 }}>
-              <Button variant="contained" onClick={handleResume} sx={{ mr: 1 }}>Resume</Button>
-              <Button variant="outlined" onClick={handleClearSaved}>Clear saved</Button>
+              <div className={styles.buttonGroup}>
+                <Button variant="contained" onClick={handleResume} fullWidth={isMobile} sx={{ mr: isMobile ? 0 : 1 }}>Resume</Button>
+                <Button variant="outlined" onClick={handleClearSaved} fullWidth={isMobile}>Clear saved</Button>
+              </div>
             </Box>
           </Paper>
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
+          <Paper className={`${styles.panel}`} elevation={1}>
             <Typography variant="h6" sx={{ fontWeight: 800 }}>New session</Typography>
             <Divider sx={{ my: 1 }} />
             <Typography color="text.secondary">Start a guided session (topic, difficulty, question count).</Typography>
             <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" onClick={() => setModalOpen(true)} disabled={!canStartTest} sx={{ fontWeight: 700 }}>
+              <Button variant="outlined" onClick={() => setModalOpen(true)} disabled={!canStartTest} sx={{ fontWeight: 700 }} fullWidth={isMobile}>
                 Start guided session
               </Button>
               {!canStartTest && <Typography color="warning.main" sx={{ mt: 1 }}>You have no tests remaining for today on your plan.</Typography>}
@@ -378,12 +380,14 @@ export default function PracticePage(): JSX.Element {
 
       {session && (
         <Box sx={{ mt: 3 }}>
-          <Paper sx={{ p: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>{session.topic} — {session.difficulty}</Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button onClick={() => { setRunning((r) => !r); }} variant="outlined" startIcon={running ? <PauseIcon /> : <PlayArrowIcon />}>{running ? 'Pause' : 'Resume'}</Button>
-                <Button onClick={() => { try { sessionStorage.setItem('PRACTICE_SESSION', JSON.stringify(session)); setSnack({ severity: 'success', message: 'Saved' }); } catch { setSnack({ severity: 'error', message: 'Save failed' }); } }} variant="outlined">Save</Button>
+          <Paper className={styles.panel} elevation={1}>
+            <Stack direction={isSmall ? 'column' : 'row'} justifyContent="space-between" alignItems="center" spacing={2}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, wordBreak: 'break-word' }}>{session.topic} — {session.difficulty}</Typography>
+              <Stack direction={isSmall ? 'column' : 'row'} spacing={1} alignItems="center" sx={{ width: isSmall ? '100%' : 'auto' }}>
+                <Button onClick={() => { setRunning((r) => !r); }} variant="outlined" startIcon={running ? <PauseIcon /> : <PlayArrowIcon />} fullWidth={isSmall}>
+                  {running ? 'Pause' : 'Resume'}
+                </Button>
+                <Button onClick={() => { try { sessionStorage.setItem('PRACTICE_SESSION', JSON.stringify(session)); setSnack({ severity: 'success', message: 'Saved' }); } catch { setSnack({ severity: 'error', message: 'Save failed' }); } }} variant="outlined" fullWidth={isSmall}>Save</Button>
               </Stack>
             </Stack>
 
@@ -393,20 +397,22 @@ export default function PracticePage(): JSX.Element {
             <Box sx={{ mt: 1 }}>
               <Typography variant="body2" color="text.secondary">This interactive view is intentionally compact — full review and grading happen on the Review/Test page (opened after creation).</Typography>
               <Box sx={{ mt: 2 }}>
-                <Button variant="contained" component={Link} href={session.sessionId ? `/test?session=${session.sessionId}` : '/test'}>Open test page</Button>
+                <Button variant="contained" component={Link} href={session.sessionId ? `/test?session=${session.sessionId}` : '/test'} fullWidth={isSmall}>
+                  Open test page
+                </Button>
               </Box>
             </Box>
           </Paper>
         </Box>
       )}
 
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="sm">
+      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="sm" fullScreen={dialogFullScreen}>
         <DialogTitle>Start guided session</DialogTitle>
         <DialogContent dividers>
           <TopicDifficultyModal
             open={true}
             initialTopic={undefined}
-            initialDifficulty={'medium' as any} // safe assertion so TS accepts the literal
+            initialDifficulty={'medium' as any}
             onClose={(res?: any) => {
               setModalOpen(false);
               if (!res) return;
@@ -418,7 +424,7 @@ export default function PracticePage(): JSX.Element {
             explanationsAllowed={(effectiveUsage?.remaining?.explanationsRemaining ?? effectiveUsage?.limits?.explanationsPerMonth) !== 0}
           />
         </DialogContent>
-        <DialogActions>
+        <DialogActions className={styles.dialogActionsResponsive}>
           <Button onClick={() => setModalOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
@@ -431,9 +437,11 @@ export default function PracticePage(): JSX.Element {
         </Snackbar>
       )}
 
-      {/* Back to Dashboard button */}
-      <Box sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1200 }}>
-        <Button component={Link} href="/dashboard" variant="outlined">Back to Dashboard</Button>
+      {/* Back to Dashboard button - responsive placement */}
+      <Box className={styles.floatingAction}>
+        <Button component={Link} href="/dashboard" variant="outlined" size={isSmall ? 'small' : 'medium'}>
+          Back to Dashboard
+        </Button>
       </Box>
     </Box>
   );

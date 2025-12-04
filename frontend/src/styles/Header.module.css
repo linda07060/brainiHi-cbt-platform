@@ -1,6 +1,5 @@
 :root {
   --accent: #861f41;
-  /* brand maroon (your previous color) */
   --accent-strong: #6f1836;
   --accent-contrast: #fff;
   --muted: #000000;
@@ -127,7 +126,7 @@
 }
 
 .promoCta {
-  background: #861f41;
+  background: var(--accent);
   color: var(--accent-contrast);
   padding: 8px 12px;
   border-radius: 10px;
@@ -143,7 +142,7 @@
 
 /* ---------- Primary nav (full-width colored bar) ---------- */
 .navBar {
-  background: #861f41;
+  background: var(--accent);
   color: var(--accent-contrast);
   height: var(--nav-height);
   display: flex;
@@ -217,23 +216,46 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* mobile toggle – shows only on small screens; three stacked bars */
+/* mobile toggle – icon + label ("Menu") to match the provided image */
 .mobileToggle {
   display: none;
-  background: transparent;
-  border: none;
-  padding: 8px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: 1px solid rgba(0,0,0,0.04);
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #444;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
+/* the three-bar icon inside the pill */
+.mobileToggleIcon {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.03);
+}
+
+/* hamburger bars */
 .hamburgerBar {
   display: block;
   width: 18px;
   height: 2px;
-  background: var(--accent-contrast);
-  margin: 3px 0;
+  background: #444;
   border-radius: 2px;
+}
+
+/* small label next to the icon */
+.mobileToggleLabel {
+  display: inline-block;
+  color: #444;
 }
 
 /* ---------- Mobile off-canvas panel ---------- */
@@ -309,7 +331,7 @@
 }
 
 .mobileCta {
-  background: #861f41;
+  background: var(--accent);
   color: #fff;
   padding: 12px;
   border-radius: 10px;
@@ -320,7 +342,7 @@
 .mobileSecondary {
   text-align: center;
   padding: 12px;
-  color: #861f41;
+  color: var(--accent);
   text-decoration: none;
   border-radius: 8px;
 }
@@ -355,6 +377,7 @@
 }
 
 @media (max-width: 900px) {
+  /* show the new mobile toggle with label */
   .mobileToggle {
     display: inline-flex;
   }
@@ -363,7 +386,7 @@
     display: none;
   }
 
-  /* hide desktop nav, use mobile panel */
+  /* hide desktop search button on small screens */
   .searchBtn {
     display: none;
   }
@@ -372,12 +395,9 @@
     display: block;
   }
 
-  /* available for open state */
   .promo {
     display: none;
   }
-
-  /* conserve space */
 }
 
 @media (max-width: 480px) {

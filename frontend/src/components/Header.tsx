@@ -8,8 +8,10 @@ import SampleTestModal from "./SampleTestModal";
 import ScrollingTicker, { TickerItem } from "./ScrollingTicker";
 
 /**
- * Header updated to mount ScrollingTicker directly under the header.
- * The ticker scrolls continuously from right->left and is professional/minimalist.
+ * Header updated:
+ * - removed "Advertise" link from the top utility row
+ * - replaced the previous hamburger visuals with a compact "Menu" button (icon + label)
+ *   that matches the requested appearance and behavior on mobile
  */
 
 export default function Header(): JSX.Element {
@@ -61,16 +63,14 @@ export default function Header(): JSX.Element {
   return (
     <>
       <header className={styles.header} role="banner">
-        {/* Top utility row */}
+        {/* Top utility row (Advertise removed) */}
         <div className={styles.topBar}>
           <div className={layout.contentInner + " " + styles.topInner}>
-            <div className={styles.topLeft}>{/* date omitted for brevity */}</div>
+            <div className={styles.topLeft}>{/* optional small utility text */}</div>
             <div className={styles.topRight}>
               <Link href="/login" className={styles.topLink}>Sign in</Link>
               <span className={styles.topDivider}>|</span>
               <Link href="/register" className={styles.topLink}>Join</Link>
-              <span className={styles.topDivider}>|</span>
-              <Link href="/contact" className={styles.topLink}>Advertise</Link>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function Header(): JSX.Element {
 
             <div className={styles.headerRight}>
               <div className={styles.promo}>
-                <span className={styles.promoLabel}>Featured</span>
+                {/* <span className={styles.promoLabel}>Featured</span> */}
                 <button className={styles.promoCta} onClick={openSampleModal}>Try a free test</button>
               </div>
             </div>
@@ -125,15 +125,19 @@ export default function Header(): JSX.Element {
                 </svg>
               </button>
 
+              {/* Mobile menu button: icon + label "Menu" (matches provided image) */}
               <button
                 className={styles.mobileToggle}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((s) => !s)}
               >
-                <span className={styles.hamburgerBar} />
-                <span className={styles.hamburgerBar} />
-                <span className={styles.hamburgerBar} />
+                <span className={styles.mobileToggleIcon} aria-hidden="true">
+                  <span className={styles.hamburgerBar} />
+                  <span className={styles.hamburgerBar} />
+                  <span className={styles.hamburgerBar} />
+                </span>
+                <span className={styles.mobileToggleLabel}>Menu</span>
               </button>
             </div>
           </div>

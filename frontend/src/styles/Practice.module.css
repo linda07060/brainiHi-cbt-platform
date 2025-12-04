@@ -1,9 +1,68 @@
-/* Practice.module.css - styles for practice page */
+/* Practice.module.css - responsive styles and start-button centering */
 
-.questionCard {
-  border-radius: 12px;
+.pageContainer {
+  padding: clamp(12px, 3.6vw, 24px);
+  box-sizing: border-box;
+  min-height: 60vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* Panel base used for Papers */
+.panel {
+  border-radius: 12px;
+  padding: clamp(12px, 2.6vw, 20px) !important;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Actions wrapper that holds switches and start button */
+.actionsWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end; /* on desktop keep it right-aligned */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* inner group for the switches so they can wrap properly on small screens */
+.actionsInner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Start button sizing: keep moderate width on desktop, centered and limited on mobile */
+.startBtn {
+  flex: 0 0 auto;
+  min-width: 220px;
+  max-width: 420px;
+  width: auto;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* On medium/smaller viewports stack controls and center the start button */
+@media (max-width: 900px) {
+  .actionsWrap {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .actionsInner { order: 2; justify-content: center; }
+  .startBtn { order: 1; width: calc(min(420px, 88%)); }
+}
+
+/* Very small screens: slightly reduce button width */
+@media (max-width: 420px) {
+  .startBtn { width: calc(min(360px, 92%)); min-width: 180px; }
+}
+
+/* Keep other responsive helpers */
 .topicRow {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -11,10 +70,14 @@
   align-items: center;
   padding: 8px 0;
 }
-
-.topicName {
-  font-weight: 700;
+@media (max-width: 660px) {
+  .topicRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
+
+.topicName { font-weight: 700; overflow-wrap: anywhere; }
 
 .barBg {
   width: 100%;
@@ -27,6 +90,7 @@
   height: 100%;
   background: linear-gradient(90deg,#861f41,#2b9a6b);
   border-radius: 999px;
+  transition: width 420ms cubic-bezier(.2,.9,.2,1);
 }
 
 .metricRow {
@@ -34,16 +98,91 @@
   justify-content: space-between;
   align-items: baseline;
   padding: 6px 0;
+  gap: 12px;
+}
+@media (max-width: 520px) {
+  .metricRow { flex-direction: column; align-items: stretch; }
 }
 
 .questionCard .MuiButton-root {
   text-transform: none;
+  border-radius: 10px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* make buttons larger and easy to tap on mobile */
 @media (max-width: 600px) {
   .questionCard .MuiButton-root {
-    height: 56px;
-    font-size: 16px;
+    height: 52px;
+    font-size: 15px;
+    padding: 0 14px;
   }
+}
+
+/* Floating Back to Dashboard button placement */
+.floatingAction {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1200;
+  display: inline-block;
+  max-width: calc(100% - 40px);
+  box-sizing: border-box;
+}
+@media (max-width: 640px) {
+  .floatingAction {
+    right: 50%;
+    transform: translateX(50%);
+    bottom: 14px;
+  }
+}
+@media (max-width: 420px) {
+  .floatingAction {
+    right: 50%;
+    transform: translateX(50%);
+    bottom: 12px;
+  }
+}
+
+/* Button group: stack on small screens */
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 520px) {
+  .buttonGroup {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .buttonGroup .MuiButton-root {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Dialog action layout */
+.dialogActionsResponsive {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .dialogActionsResponsive {
+    justify-content: center;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .dialogActionsResponsive .MuiButton-root { width: 100%; }
+}
+
+/* Accessibility helper */
+.visuallyHidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px,1px,1px,1px);
+  white-space: nowrap;
 }

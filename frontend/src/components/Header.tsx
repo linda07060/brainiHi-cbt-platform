@@ -8,10 +8,8 @@ import SampleTestModal from "./SampleTestModal";
 import ScrollingTicker, { TickerItem } from "./ScrollingTicker";
 
 /**
- * Header updated:
- * - removed "Advertise" link from the top utility row
- * - replaced the previous hamburger visuals with a compact "Menu" button (icon + label)
- *   that matches the requested appearance and behavior on mobile
+ * Header updated to include a Pricing link in the primary navigation.
+ * The rest of the header remains unchanged.
  */
 
 export default function Header(): JSX.Element {
@@ -24,6 +22,7 @@ export default function Header(): JSX.Element {
     { href: "/sat", label: "SAT Prep" },
     { href: "/act", label: "ACT Prep" },
     { href: "/policies", label: "Policies" },
+     { href: "/pricing", label: "Pricing" },            // <- Added Pricing link
     { href: "/login", label: "CBT Portal" },
     { href: "/about", label: "About Us" },
     { href: "/contact", label: "Contact" },
@@ -92,7 +91,6 @@ export default function Header(): JSX.Element {
 
             <div className={styles.headerRight}>
               <div className={styles.promo}>
-                {/* <span className={styles.promoLabel}>Featured</span> */}
                 <button className={styles.promoCta} onClick={openSampleModal}>Try a free test</button>
               </div>
             </div>
@@ -125,7 +123,6 @@ export default function Header(): JSX.Element {
                 </svg>
               </button>
 
-              {/* Mobile menu button: icon + label "Menu" (matches provided image) */}
               <button
                 className={styles.mobileToggle}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -188,7 +185,6 @@ export default function Header(): JSX.Element {
         }}
       />
 
-      {/* keep modal mounted */}
       <SampleTestModal />
     </>
   );

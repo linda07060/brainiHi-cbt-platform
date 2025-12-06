@@ -19,6 +19,15 @@ export default function TermsPage(): JSX.Element {
       <main className={layout.container} style={{ padding: "40px 0" }} aria-labelledby="tos-heading">
         <article style={{ maxWidth: 880, margin: "0 auto" }}>
           <h1 id="tos-heading">BrainiHi — Terms of Service</h1>
+
+          {/* Company information required by Paddle */}
+          <section aria-labelledby="company-info-heading" style={{ marginBottom: 12 }}>
+            <h2 id="company-info-heading" style={{ fontSize: "1rem", margin: "8px 0" }}>Company Information</h2>
+            <p style={{ margin: 0 }}>
+              Legal business name: <strong>IP Ovcharenko A</strong>
+            </p>
+          </section>
+
           <p><strong>Effective Date:</strong> October 2025</p>
 
           <p>Welcome to BrainiHi.com (“BrainiHi”, “we”, “our”, “us”). These Terms govern your use of our website and services (“Service”). By using the Service, you agree to these Terms.</p>

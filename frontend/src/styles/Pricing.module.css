@@ -10,33 +10,91 @@
   --radius-lg: 12px;
 }
 
+/* Hero */
+.hero {
+  display: flex;
+  justify-content: center;
+  padding: 28px 12px;
+  background: linear-gradient(180deg, rgba(255,251,236,1) 0%, rgba(255,255,255,1) 100%);
+  border-radius: 12px;
+  margin-bottom: 22px;
+  box-shadow: 0 6px 18px rgba(134,31,65,0.03);
+}
+.heroContent {
+  max-width: 960px;
+  width: 100%;
+  text-align: center;
+  padding: 6px 12px;
+}
+.heroTitle {
+  margin: 0 0 8px;
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  color: var(--primary);
+  font-weight: 800;
+  line-height: 1.05;
+}
+.heroSubtitle {
+  margin: 0 auto 16px;
+  color: #4b4b4b;
+  max-width: 760px;
+  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+}
+.heroActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.heroCta {
+  display: inline-block;
+  padding: 10px 18px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(134,31,65,0.08);
+}
+.heroCta:hover { background: #6a1633; }
+.heroSecondary {
+  display: inline-block;
+  padding: 10px 16px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
 /* Section wrapper */
 .pricingSection {
-  background: linear-gradient(180deg, rgba(255,251,236,1) 0%, var(--bg-soft) 100%);
-  border-radius: 18px;
-  box-shadow: 0 6px 30px rgba(134,31,65,0.04);
-  max-width: 1200px;
-  margin: 0 auto 3.5rem;
-  padding: 48px 20px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0 auto;
+  padding: 0;
   text-align: center;
 }
 
 /* Heading */
 .heading {
   color: var(--primary);
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  margin-bottom: 28px;
+  margin-bottom: 12px;
   letter-spacing: 0.01em;
 }
 
 /* Card grid */
+/* Desktop: 3 columns */
 .cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   align-items: start;
   justify-items: center;
+  margin-top: 8px;
 }
 
 /* Card */
@@ -55,13 +113,11 @@
   color: var(--text-strong);
 }
 
-/* Featured card adjustments for better contrast/legibility */
+/* Featured card */
 .card.featured {
   transform: translateY(-6px);
   border-color: rgba(134,31,65,0.08);
   box-shadow: 0 18px 50px rgba(20,20,24,0.06);
-  /* Ensure body text is crisp/dark in the featured card for readability */
-  color: #111;
 }
 
 /* Header (name + small badge) */
@@ -76,8 +132,6 @@
   align-items:center;
   gap:10px;
 }
-
-/* Plan icon dot (default) */
 .planIcon {
   width: 18px;
   height: 18px;
@@ -85,15 +139,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg,#4bbf73,#18a4ff); /* friendly default */
+  background: linear-gradient(135deg,#4bbf73,#18a4ff);
   box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
   color: #fff;
   font-size: 11px;
-  line-height: 1;
-  flex: 0 0 auto;
 }
-
-/* Plan icon for featured (Pro) - maroon variant */
 .planIconFeatured {
   width: 18px;
   height: 18px;
@@ -104,33 +154,24 @@
   background: linear-gradient(135deg, #a43b57, #6a1633);
   box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
   color: #fff;
-  font-size: 11px;
-  line-height: 1;
-  flex: 0 0 auto;
 }
-
-/* small inner to slightly reduce emoji size if present */
 .iconInner {
   transform: translateY(-1px);
   font-size: 12px;
   display: inline-block;
 }
-
-/* Plan name */
 .planName {
   font-size: 1.05rem;
   color: var(--primary);
   font-weight: 800;
   letter-spacing: 0.01em;
 }
-
-/* Badge: Most popular - white text on maroon background */
 .badge {
   font-size: 11px;
   padding: 6px 8px;
   border-radius: 999px;
-  background: var(--primary); /* maroon background */
-  color: #fff; /* white text as requested */
+  background: var(--primary);
+  color: #fff;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -170,7 +211,6 @@
   font-size: 0.98rem;
 }
 .card.featured .features {
-  /* ensure feature text is slightly darker in the Pro card for contrast */
   color: #222;
 }
 .featureItem {
@@ -201,25 +241,19 @@
   display: inline-block;
   cursor: pointer;
   border: none;
-}
-.cta.primary {
   background: var(--primary);
   color: #fff;
   box-shadow: 0 10px 30px rgba(134,31,65,0.08);
 }
-.cta.secondary {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid rgba(0,0,0,0.06);
-}
+.cta:hover { background: #6a1633; }
 
 /* Subtle hover */
 .card:hover { transform: translateY(-4px); box-shadow: 0 18px 50px rgba(20,20,24,0.06); }
-.cta.primary:hover { background: #6a1633; }
-.cta.primary:focus, .cta.secondary:focus { outline: 3px solid rgba(134,31,65,0.09); outline-offset: 4px; }
 
-/* Responsive */
-/* Tablet: 2 columns */
+/* Responsive
+   - Tablet: 2 columns
+   - Mobile: 1 column
+*/
 @media (max-width: 980px) {
   .cards { grid-template-columns: repeat(2, 1fr); gap: 20px; }
   .pricingSection { padding: 36px 16px; }
@@ -227,10 +261,13 @@
   .card { max-width: 420px; }
 }
 
-/* Mobile: 1 column */
 @media (max-width: 640px) {
   .cards { grid-template-columns: 1fr; gap: 16px; }
   .pricingSection { padding: 28px 12px; }
   .heading { font-size: 1.6rem; margin-bottom: 18px; }
   .card { max-width: 100%; padding: 16px; }
+  .hero { padding: 20px 8px; margin-bottom: 16px; }
+  .heroTitle { font-size: 1.4rem; }
+  .heroSubtitle { font-size: 0.95rem; }
+  .heroCta { padding: 10px 14px; }
 }

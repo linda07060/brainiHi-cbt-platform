@@ -23,8 +23,13 @@ export default function TermsPage(): JSX.Element {
           {/* Company information required by Paddle */}
           <section aria-labelledby="company-info-heading" style={{ marginBottom: 12 }}>
             <h2 id="company-info-heading" style={{ fontSize: "1rem", margin: "8px 0" }}>Company Information</h2>
-            <p style={{ margin: 0 }}>
+            {/* <p style={{ margin: 0 }}>
               Legal business name: <strong>IP Ovcharenko A</strong>
+            </p> */}
+
+            {/* Required Paddle wording */}
+            <p style={{ margin: "8px 0 0 0" }}>
+              The service is provided by IP Ovcharenko A, registered in Kazakhstan.
             </p>
           </section>
 

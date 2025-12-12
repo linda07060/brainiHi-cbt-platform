@@ -1,10 +1,13 @@
 import Head from "next/head";
 import Header from "../components/Header";
 import layout from "../styles/Layout.module.css";
+import styles from "../styles/CookiePolicy.module.css";
 import { Container } from "@mui/material";
 
 /**
  * Cookie Policy page — updated to include clear descriptions and contact.
+ * Uses a dedicated CSS module to ensure narrow, centered layout with strong (important) rules
+ * so mobile/tablet margins do not hug the screen edge.
  */
 export default function CookiePolicy(): JSX.Element {
   return (
@@ -16,8 +19,8 @@ export default function CookiePolicy(): JSX.Element {
 
       <Header />
 
-      <main className={layout.container} style={{ padding: "40px 0" }} aria-labelledby="cookie-policy-heading">
-        <article style={{ maxWidth: 880, margin: "0 auto" }}>
+      <main className={`${layout.container} ${styles.policyMain}`} aria-labelledby="cookie-policy-heading">
+        <article className={styles.articleWrapper}>
           <h1 id="cookie-policy-heading">BrainiHi — Cookie Policy</h1>
           <p><strong>Effective Date:</strong> October 2025</p>
 
@@ -37,8 +40,8 @@ export default function CookiePolicy(): JSX.Element {
 
           <h2>Short banner text (suggested)</h2>
           <p>
-            We use cookies to improve your experience and analytics. By continuing, you accept our
-            <a href="/privacy"> Privacy Policy</a> and <a href="/cookie-policy"> Cookie Policy</a>.
+            We use cookies to improve your experience and analytics. By continuing, you accept our{" "}
+            <a href="/privacy">Privacy Policy</a> and <a href="/cookie-policy">Cookie Policy</a>.
           </p>
         </article>
       </main>

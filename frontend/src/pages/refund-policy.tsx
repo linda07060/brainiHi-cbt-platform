@@ -1,9 +1,11 @@
 import Head from "next/head";
 import Header from "../components/Header";
 import layout from "../styles/Layout.module.css";
+import styles from "../styles/RefundPolicy.module.css";
 
 /**
- * Refund & Cancellation Policy page (updated per request)
+ * Refund & Cancellation Policy page — now uses a dedicated CSS module
+ * to ensure narrow, centered layout with comfortable mobile/tablet margins.
  */
 export default function RefundPolicy(): JSX.Element {
   return (
@@ -18,8 +20,8 @@ export default function RefundPolicy(): JSX.Element {
 
       <Header />
 
-      <main className={layout.container} style={{ padding: "40px 0" }} aria-labelledby="refund-heading">
-        <article style={{ maxWidth: 880, margin: "0 auto" }}>
+      <main className={`${layout.container} ${styles.policyMain}`} aria-labelledby="refund-heading">
+        <article className={styles.articleWrapper}>
           <h1 id="refund-heading">Refund &amp; Cancellation Policy</h1>
 
           <p>We follow Paddle’s refund policy. All payments for BrainiHi are processed by Paddle, our merchant of record.</p>

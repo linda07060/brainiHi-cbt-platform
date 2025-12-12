@@ -1,0 +1,118 @@
+/* Narrow, centered, mobile-friendly layout for policy pages.
+   Important declarations used to ensure the module wins over other global rules.
+*/
+
+.policyMain {
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+
+  /* responsive side padding (keeps content away from screen edges) */
+  --side-pad: clamp(20px, 6vw, 40px);
+  padding-left: calc(var(--side-pad) + env(safe-area-inset-left, 0px)) !important;
+  padding-right: calc(var(--side-pad) + env(safe-area-inset-right, 0px)) !important;
+
+  /* vertical spacing */
+  padding-top: 28px !important;
+  padding-bottom: 28px !important;
+}
+
+/* centered, readable column */
+.articleWrapper {
+  max-width: 760px !important;
+  width: min(100%, 760px) !important;
+  margin: 0 auto !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* ensure text wraps and won't overflow */
+.articleWrapper h1,
+.articleWrapper h2,
+.articleWrapper p,
+.articleWrapper li,
+.articleWrapper a {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* comfortable typography and spacing */
+.articleWrapper h1 {
+  margin-top: 0 !important;
+  margin-bottom: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  color: #111 !important;
+}
+.articleWrapper h2 {
+  margin-top: 18px !important;
+  margin-bottom: 8px !important;
+  font-size: 1.05rem !important;
+  color: #111 !important;
+}
+.articleWrapper p,
+.articleWrapper li {
+  color: #222 !important;
+  line-height: 1.6 !important;
+  margin: 0 0 14px 0 !important;
+}
+
+/* images and embeds constrained */
+.articleWrapper img,
+.articleWrapper iframe,
+.articleWrapper video {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block !important;
+}
+
+/* pre/code safety */
+.articleWrapper pre,
+.articleWrapper code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+/* Tablet tweaks: slightly narrower column and increased side gutter */
+@media (max-width: 900px) {
+  .policyMain {
+    --side-pad: clamp(24px, 8vw, 48px);
+    padding-top: 30px !important;
+    padding-bottom: 30px !important;
+  }
+  .articleWrapper {
+    max-width: 700px !important;
+    width: min(100%, 700px) !important;
+    padding: 0 14px !important;
+  }
+  .articleWrapper h1 { font-size: 1.9rem !important; }
+}
+
+/* Mobile: keep column narrow and comfortable */
+@media (max-width: 640px) {
+  .policyMain {
+    --side-pad: clamp(20px, 9vw, 44px);
+    padding-top: 22px !important;
+    padding-bottom: 22px !important;
+  }
+  .articleWrapper {
+    max-width: 640px !important;
+    width: min(100%, 640px) !important;
+    padding: 0 14px !important;
+  }
+  .articleWrapper h1 {
+    font-size: 1.6rem !important;
+    line-height: 1.08 !important;
+    margin-bottom: 12px !important;
+  }
+  .articleWrapper p,
+  .articleWrapper li {
+    font-size: 0.98rem !important;
+  }
+}
+
+/* extra small phones */
+@media (max-width: 420px) {
+  .policyMain { padding-top: 20px !important; padding-bottom: 20px !important; }
+  .articleWrapper { padding: 0 16px !important; }
+}

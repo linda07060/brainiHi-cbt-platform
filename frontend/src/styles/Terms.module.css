@@ -1,0 +1,131 @@
+/* styles/Terms.module.css
+   Updated to render a centered, narrow readable column on tablet & mobile,
+   matching the layout in your reference image.
+*/
+
+.termsMain {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden; /* prevent horizontal scroll on small devices */
+
+  /* global side padding to keep content off the edges (safe-area aware) */
+  --side-pad: clamp(24px, 6vw, 40px);
+  padding-left: calc(var(--side-pad) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--side-pad) + env(safe-area-inset-right, 0px));
+
+  /* comfortable vertical spacing */
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+
+/* Article wrapper becomes a centered column */
+.articleWrapper {
+  /* limit the readable line length; center the column */
+  max-width: 760px;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Content typography niceties */
+.articleWrapper h1 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.05;
+}
+
+/* Make subheadings stand out and align with the column */
+.articleWrapper h2 {
+  margin-top: 18px;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  color: #111;
+}
+
+/* Paragraphs and lists use a comfortable line-height */
+.articleWrapper p,
+.articleWrapper li {
+  color: #222;
+  line-height: 1.6;
+  margin: 0 0 14px 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Ensure headings, long words and inline elements don't cause overflow */
+.articleWrapper h1,
+.articleWrapper h2,
+.articleWrapper p,
+.articleWrapper li,
+.articleWrapper a {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Slightly larger side padding on tablets for more breathing room */
+@media (max-width: 900px) {
+  .termsMain {
+    --side-pad: clamp(28px, 8vw, 48px);
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+  .articleWrapper {
+    max-width: 700px;
+    width: min(100%, 700px);
+  }
+  .articleWrapper h1 { font-size: 1.9rem; }
+}
+
+/* Mobile: narrow column, centered, with larger gutters */
+@media (max-width: 640px) {
+  .termsMain {
+    --side-pad: clamp(20px, 9vw, 44px);
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+  .articleWrapper {
+    max-width: 640px;
+    width: min(100%, 640px); /* keeps the column readable but leaves gutters */
+  }
+  .articleWrapper h1 {
+    font-size: 1.6rem;
+    line-height: 1.08;
+    margin-bottom: 14px;
+  }
+  .articleWrapper p,
+  .articleWrapper li {
+    font-size: 0.98rem;
+  }
+}
+
+/* Keep media, if any, constrained within the column */
+.articleWrapper img,
+.articleWrapper iframe,
+.articleWrapper video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Prevent long code/pre from overflowing the column */
+.articleWrapper pre,
+.articleWrapper code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Optional: small visual separation from the header on mobile */
+@media (max-width: 480px) {
+  .termsMain { padding-top: 30px; }
+}
+
+/* stronger rule to ensure mobile/tablet gutters */
+:global(.__next) .termsMain,
+.termsMain {
+  --side-pad: clamp(20px, 8vw, 44px);
+  padding-left: calc(var(--side-pad) + env(safe-area-inset-left, 0px)) !important;
+  padding-right: calc(var(--side-pad) + env(safe-area-inset-right, 0px)) !important;
+}

@@ -24,6 +24,14 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/router";
 
 /**
+ * Subscription page
+ * - Removed references to Paddle and replaced display text with:
+ *   "Payment provider: TipTop Pay (CloudPayments)"
+ * - API endpoints previously pointing to /api/paddle/* were updated to /api/payments/*
+ *   (adjust backend routes if necessary to match your server implementation).
+ */
+
+/**
  * Derive plan limits for display on the subscription page.
  * Mirrors the product limits you provided.
  */
@@ -114,7 +122,8 @@ export default function SubscriptionPage(): JSX.Element {
     async function loadSubscription() {
       setLoading(true);
       try {
-        const res = await axios.get("/api/paddle/subscription", { headers });
+        // updated API route (replace with your backend path if different)
+        const res = await axios.get("/api/payments/subscription", { headers });
         if (!mounted) return;
         setSub(res.data ?? null);
       } catch {
@@ -184,7 +193,8 @@ export default function SubscriptionPage(): JSX.Element {
     if (!confirm("Cancel subscription? This will stop future renewals.")) return;
     setBusy(true);
     try {
-      const res = await axios.post("/api/paddle/cancel", {}, { headers });
+      // updated API route
+      const res = await axios.post("/api/payments/cancel", {}, { headers });
       setSub(res.data ?? null);
       alert("Cancellation requested. Check your email for confirmation.");
     } catch (err: any) {
@@ -197,7 +207,8 @@ export default function SubscriptionPage(): JSX.Element {
   async function doReactivate() {
     setBusy(true);
     try {
-      const res = await axios.post("/api/paddle/reactivate", {}, { headers });
+      // updated API route
+      const res = await axios.post("/api/payments/reactivate", {}, { headers });
       setSub(res.data ?? null);
       alert("Subscription reactivated.");
     } catch (err: any) {
@@ -210,7 +221,8 @@ export default function SubscriptionPage(): JSX.Element {
   async function openPortal() {
     setBusy(true);
     try {
-      const res = await axios.post<{ url?: string }>("/api/paddle/portal", {}, { headers });
+      // updated API route
+      const res = await axios.post<{ url?: string }>("/api/payments/portal", {}, { headers });
       const url = res?.data?.url;
       if (url) window.open(url, "_blank");
       else alert("Billing portal unavailable.");
@@ -342,7 +354,7 @@ export default function SubscriptionPage(): JSX.Element {
 
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="caption" color="text.secondary">
-                    Payments are securely processed by Paddle. VAT/GST may apply based on your location. For refunds, see our{" "}
+                    Payment provider: <strong>TipTop Pay (CloudPayments)</strong>. VAT/GST may apply based on your location. For refunds, see our{" "}
                     <MuiLink href="/refund-policy">Refund &amp; Cancellation Policy</MuiLink>.
                   </Typography>
                 </Box>
@@ -359,7 +371,7 @@ export default function SubscriptionPage(): JSX.Element {
                 <Divider sx={{ my: 2 }} />
 
                 <Typography variant="caption" color="text.secondary">
-                  Receipts and invoices are managed by Paddle. For refunds, see our{" "}
+                  Receipts and invoices are managed by the payment provider. For refunds, see our{" "}
                   <MuiLink href="/refund-policy">Refund &amp; Cancellation Policy</MuiLink>.
                 </Typography>
               </Paper>

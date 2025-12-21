@@ -7,7 +7,8 @@ import styles from "../styles/Pricing.module.css";
 /**
  * Dedicated Pricing page at /pricing
  * - Minimalist, professional and responsive
- * - Includes a small hero/header above the plans with a concise statement + CTA
+ * - Shows local currency equivalents under USD monthly prices
+ * - Displays Payment provider information inside each plan card
  *
  * Note: Next.js Link is used directly (no inner <a>) to avoid "Invalid <Link> with <a> child"
  */
@@ -17,6 +18,7 @@ type Plan = {
   name: string;
   price: string;
   priceLabel?: string;
+  localPrice?: string; // local currency display (optional)
   details: string[];
   cta: string;
   link?: string;
@@ -44,6 +46,7 @@ const plans: Plan[] = [
     name: "Pro",
     price: "$12.99 / month",
     priceLabel: "or $99 / year",
+    localPrice: "₸6,699", // local equivalent for monthly
     details: [
       "Full access to all topics and quizzes",
       "50 AI explanations per month",
@@ -61,6 +64,7 @@ const plans: Plan[] = [
     name: "Tutor",
     price: "$24.99 / month",
     priceLabel: "or $199 / year",
+    localPrice: "₸12,889", // local equivalent for monthly
     details: [
       "Everything in Pro",
       "Unlimited AI explanations",
@@ -94,7 +98,6 @@ export default function PricingPage(): JSX.Element {
             </p>
 
             <div className={styles.heroActions}>
-              {/* Link used directly without inner <a> */}
               <Link href="/register?plan=Free" className={styles.heroCta} aria-label="Start free">Start free</Link>
               <Link href="/pricing#plans" className={styles.heroSecondary}>Compare plans</Link>
             </div>
@@ -149,6 +152,11 @@ export default function PricingPage(): JSX.Element {
                   <div className={styles.priceWrap}>
                     <div className={styles.priceMain}>{plan.price}</div>
                     {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
+                    {plan.localPrice && (
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
+                        <strong>Local price:</strong> {plan.localPrice}
+                      </div>
+                    )}
                     <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
                       <strong>Auto‑renewing subscription</strong> · Cancel anytime
                     </div>
@@ -163,7 +171,6 @@ export default function PricingPage(): JSX.Element {
                     ))}
                   </ul>
 
-                  {/* Link used directly (no nested <a>) */}
                   <Link href={href} className={styles.cta} role="button" aria-label={`${plan.cta} - ${plan.name}`}>
                     {plan.cta}
                   </Link>
@@ -175,8 +182,9 @@ export default function PricingPage(): JSX.Element {
                     <Link href="/privacy" className={styles.link}>Privacy Policy</Link>.
                   </div>
 
+                  {/* Payment provider shown per card, as requested */}
                   <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
-                    Payments are securely processed by Paddle. VAT/GST may apply based on your location.
+                    Payment provider: <strong>TipTop Pay (CloudPayments)</strong>
                   </div>
 
                   <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>

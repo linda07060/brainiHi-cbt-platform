@@ -7,6 +7,7 @@ type Plan = {
   name: string;
   price: string;
   priceLabel?: string;
+  localPrice?: string;
   details: string[];
   cta: string;
   link?: string;
@@ -34,6 +35,7 @@ const plans: Plan[] = [
     name: "Pro",
     price: "$12.99 / month",
     priceLabel: "or $99 / year",
+    localPrice: "₸6,699",
     details: [
       "Full access to all topics and quizzes",
       "50 AI explanations per month",
@@ -51,6 +53,7 @@ const plans: Plan[] = [
     name: "Tutor",
     price: "$24.99 / month",
     priceLabel: "or $199 / year",
+    localPrice: "₸12,889",
     details: [
       "Everything in Pro",
       "Unlimited AI explanations",
@@ -86,7 +89,6 @@ export default function Pricing(): JSX.Element {
                       aria-hidden="true"
                       className={plan.highlight ? styles.planIconFeatured : styles.planIcon}
                     >
-                      {/* keep the emoji for accessibility/visual hint but it's styled inside a colored dot */}
                       <span className={styles.iconInner} aria-hidden="true">
                         {plan.icon}
                       </span>
@@ -107,7 +109,12 @@ export default function Pricing(): JSX.Element {
               <div className={styles.priceWrap}>
                 <div className={styles.priceMain}>{plan.price}</div>
                 {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
-                {/* SUBSCRIPTION TRANSPARENCY FOR PADDLE */}
+                {plan.localPrice && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
+                    <strong>Local price:</strong> {plan.localPrice}
+                  </div>
+                )}
+
                 <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
                   <strong>Auto‑renewing subscription</strong> · Cancel anytime
                 </div>
@@ -122,14 +129,9 @@ export default function Pricing(): JSX.Element {
                 ))}
               </ul>
 
-              <Link href={href} passHref legacyBehavior>
-                <a
-                  className={`${styles.cta} ${plan.highlight ? " " + styles["primary"] : " " + styles["primary"]}`}
-                  role="button"
-                  aria-label={`${plan.cta} - ${plan.name}`}
-                >
-                  {plan.cta}
-                </a>
+              {/* Use Link directly (no inner <a>) to avoid Next.js <Link> + <a> runtime errors */}
+              <Link href={href} className={`${styles.cta} ${plan.highlight ? styles.primary : ""}`} role="button" aria-label={`${plan.cta} - ${plan.name}`}>
+                {plan.cta}
               </Link>
 
               {/* Terms + privacy consent near payment */}
@@ -145,9 +147,9 @@ export default function Pricing(): JSX.Element {
                 .
               </div>
 
-              {/* Paddle legal hint */}
+              {/* Payment provider shown per card as requested */}
               <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
-                Payments are securely processed by Paddle. VAT/GST may apply based on your location.
+                Payment provider: <strong>TipTop Pay (CloudPayments)</strong>
               </div>
 
               {/* Support hint */}

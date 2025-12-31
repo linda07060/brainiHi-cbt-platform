@@ -7,9 +7,8 @@ import { Container, Box, Typography, Link } from "@mui/material";
 
 /**
  * /policies — persistent page exposing full legal content for SEO and teams.
- *
- * Note: Footer is intentionally NOT rendered here. The site-wide Footer is mounted once in pages/_app.tsx
- * to avoid duplication across pages.
+ * Added mandatory disclaimer about results under the main hero/intro and
+ * included the PayPal onboarding business description verbatim for easy reference.
  */
 
 export default function PoliciesPage(): JSX.Element {
@@ -19,7 +18,7 @@ export default function PoliciesPage(): JSX.Element {
         <title>Policies — BrainiHi</title>
         <meta
           name="description"
-          content="Policies, content generation policy, AI transparency, and other legal notices for BrainiHi."
+          content="Policies, content generation policy, AI transparency information, and other legal notices for BrainiHi."
         />
       </Head>
 
@@ -35,6 +34,31 @@ export default function PoliciesPage(): JSX.Element {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               Below you will find our content generation policy, AI transparency information, and other legal notices. This page is intentionally focused and suitable for sharing with legal teams.
             </Typography>
+
+            {/* Mandatory disclaimer about results */}
+            <Box sx={{ mb: 3, p: 2, borderRadius: 1, backgroundColor: "#fbfbfb", border: "1px solid #eee" }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                Disclaimer:
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                BrainiHi provides AI-generated educational practice tools.
+                We do not guarantee specific exam results or score improvements.
+              </Typography>
+            </Box>
+
+            {/* PAYPAL ONBOARDING: exact text (verbatim) - included for onboarding reference */}
+            <Box sx={{ mb: 3, p: 2, borderRadius: 1, backgroundColor: "#ffffff", border: "1px solid #eee" }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                Business description (for PayPal onboarding)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-wrap" }}>
+BrainiHi is an online educational platform that provides AI-powered practice tests,
+step-by-step explanations, and personalized learning tools.
+
+Users purchase subscription-based access to digital features delivered electronically.
+No physical goods are shipped. The service is intended for educational purposes only.
+              </Typography>
+            </Box>
 
             <section aria-labelledby="content-policy-heading" id="policies-content">
               <LegalDisclaimer />

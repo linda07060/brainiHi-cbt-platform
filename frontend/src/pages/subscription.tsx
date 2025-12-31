@@ -25,15 +25,13 @@ import { useRouter } from "next/router";
 
 /**
  * Subscription page
- * - Removed references to Paddle and replaced display text with:
- *   "Payment provider: TipTop Pay (CloudPayments)"
- * - API endpoints previously pointing to /api/paddle/* were updated to /api/payments/*
- *   (adjust backend routes if necessary to match your server implementation).
+ * - Updated visible payment text to use the standardized sentence:
+ *   "Payments are processed securely via PayPal."
+ * - API endpoints use /api/payments/* (adjust backend routes if necessary).
  */
 
 /**
  * Derive plan limits for display on the subscription page.
- * Mirrors the product limits you provided.
  */
 function getPlanLimits(plan: string) {
   const p = String(plan || "").toLowerCase();
@@ -354,7 +352,7 @@ export default function SubscriptionPage(): JSX.Element {
 
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="caption" color="text.secondary">
-                    Payment provider: <strong>TipTop Pay (CloudPayments)</strong>. VAT/GST may apply based on your location. For refunds, see our{" "}
+                    Payments are processed securely via PayPal. For refunds, see our{" "}
                     <MuiLink href="/refund-policy">Refund &amp; Cancellation Policy</MuiLink>.
                   </Typography>
                 </Box>
@@ -371,7 +369,7 @@ export default function SubscriptionPage(): JSX.Element {
                 <Divider sx={{ my: 2 }} />
 
                 <Typography variant="caption" color="text.secondary">
-                  Receipts and invoices are managed by the payment provider. For refunds, see our{" "}
+                  Payments are processed securely via PayPal. For refunds, see our{" "}
                   <MuiLink href="/refund-policy">Refund &amp; Cancellation Policy</MuiLink>.
                 </Typography>
               </Paper>

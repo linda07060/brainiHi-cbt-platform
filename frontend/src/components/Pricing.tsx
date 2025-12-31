@@ -85,13 +85,8 @@ export default function Pricing(): JSX.Element {
               <div className={styles.cardHeader}>
                 <div className={styles.planLeft}>
                   {plan.icon && (
-                    <span
-                      aria-hidden="true"
-                      className={plan.highlight ? styles.planIconFeatured : styles.planIcon}
-                    >
-                      <span className={styles.iconInner} aria-hidden="true">
-                        {plan.icon}
-                      </span>
+                    <span aria-hidden="true" className={plan.highlight ? styles.planIconFeatured : styles.planIcon}>
+                      <span className={styles.iconInner} aria-hidden="true">{plan.icon}</span>
                     </span>
                   )}
                   <div id={`plan-${plan.name.replace(/\s+/g, "-").toLowerCase()}`} className={styles.planName}>
@@ -99,25 +94,14 @@ export default function Pricing(): JSX.Element {
                   </div>
                 </div>
 
-                {plan.badge && (
-                  <div className={styles.badge} aria-hidden="true">
-                    {plan.badge}
-                  </div>
-                )}
+                {plan.badge && <div className={styles.badge} aria-hidden="true">{plan.badge}</div>}
               </div>
 
               <div className={styles.priceWrap}>
                 <div className={styles.priceMain}>{plan.price}</div>
                 {plan.priceLabel && <div className={styles.priceSub}>{plan.priceLabel}</div>}
-                {plan.localPrice && (
-                  <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
-                    <strong>Local price:</strong> {plan.localPrice}
-                  </div>
-                )}
-
-                <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>
-                  <strong>Auto‑renewing subscription</strong> · Cancel anytime
-                </div>
+                {plan.localPrice && <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}><strong>Local price:</strong> {plan.localPrice}</div>}
+                <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}><strong>Auto‑renewing subscription</strong> · Cancel anytime</div>
               </div>
 
               <ul className={styles.features} aria-label={`${plan.name} features`}>
@@ -129,30 +113,25 @@ export default function Pricing(): JSX.Element {
                 ))}
               </ul>
 
-              {/* Use Link directly (no inner <a>) to avoid Next.js <Link> + <a> runtime errors */}
-              <Link href={href} className={`${styles.cta} ${plan.highlight ? styles.primary : ""}`} role="button" aria-label={`${plan.cta} - ${plan.name}`}>
+              <Link href={href} className={`${styles.cta} ${plan.highlight ? styles.primary : ""}`} role="button">
                 {plan.cta}
               </Link>
 
-              {/* Terms + privacy consent near payment */}
-              <div style={{ marginTop: 10, fontSize: 13, color: "#666" }}>
-                By continuing, you agree to our{" "}
-                <Link href="/terms" className={styles.link}>
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className={styles.link}>
-                  Privacy Policy
-                </Link>
-                .
+              {/* Subscription clarity message for paid plans */}
+              {plan.name !== "Free" && (
+                <div style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
+                  You can cancel your subscription at any time from your account settings.
+                </div>
+              )}
+
+              <div style={{ marginTop: 12, fontSize: 13, color: "#666" }}>
+                By continuing, you agree to our <Link href="/terms" className={styles.link}>Terms of Service</Link> and <Link href="/privacy" className={styles.link}>Privacy Policy</Link>.
               </div>
 
-              {/* Payment provider shown per card as requested */}
               <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
-                Payment provider: <strong>TipTop Pay (CloudPayments)</strong>
+                Payments are processed securely via PayPal.
               </div>
 
-              {/* Support hint */}
               <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
                 Need help? Contact: <a href="mailto:support@brainihi.com">support@brainihi.com</a>
               </div>

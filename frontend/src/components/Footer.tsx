@@ -4,10 +4,12 @@ import { useRouter } from "next/router";
 import styles from "../styles/Footer.module.css";
 
 /**
- * Merged Footer
+ * Footer — layout refreshed for a cleaner, more professional look.
  *
- * - FAQ footer link updated so it scrolls to the FAQ section on the Contact page.
- * - handleAnchorClick improved to also navigate from the homepage to /contact when needed.
+ * Notes:
+ * - Preserves all existing logic (anchor scrolling, links, social icons).
+ * - Visual/markup changes only: reorganized columns and bottom row.
+ * - Payment sentence and disclaimer moved into the bottom area and styled for clarity.
  */
 
 export default function Footer(): JSX.Element {
@@ -24,9 +26,11 @@ export default function Footer(): JSX.Element {
   const resources = [
     { label: "How it works", href: "/#how-it-works", anchor: "how-it-works" },
     { label: "Features", href: "/#features", anchor: "features" },
-    // FAQ now links to the FAQ section on the Contact page (contact component uses id="faq-heading")
     { label: "FAQ", href: "/contact#faq-heading", anchor: "faq-heading" },
     { label: "Contact Us", href: "/contact", anchor: undefined },
+    { label: "Terms of Service", href: "/terms", anchor: undefined },
+    { label: "Refund & Cancellation Policy", href: "/refund-policy", anchor: undefined },
+    { label: "Cookie Policy", href: "/cookie-policy", anchor: undefined },
   ];
 
   function getHeaderOffset(): number {
@@ -122,17 +126,6 @@ export default function Footer(): JSX.Element {
     });
   }
 
-  /**
-   * Improved handleAnchorClick:
-   * - Always navigates to the provided href (or derived href) and waits for routeChangeComplete to attempt scrolling.
-   * - If already on the target page (e.g. /contact) it will try direct scroll first and then wait if not immediately available.
-   *
-   * Reason for change:
-   * Previously we attempted to special-case the homepage (router.pathname === "/") by only trying to scroll
-   * the current document. That prevented navigation from the homepage to /contact when the FAQ link was clicked.
-   * Now we always perform a navigation to the href when the element is not present on the current page, ensuring
-   * the link works from the homepage and any other route.
-   */
   async function handleAnchorClick(e: React.MouseEvent, anchorId?: string, href?: string) {
     if (!anchorId) return;
     e.preventDefault();
@@ -142,10 +135,8 @@ export default function Footer(): JSX.Element {
     // If we're already on the target page (e.g., /contact), try to scroll first.
     if (router.pathname === "/contact" || router.pathname === targetHref.split("#")[0]) {
       if (tryScrollToId(anchorId)) return;
-      // If element isn't available immediately, wait (useful for hydration / client-rendered content)
       const found = await waitForAndScroll(anchorId);
       if (found) return;
-      // fallback: navigate to href (ensures consistent behavior even if the page needs re-render)
       try {
         await router.push(targetHref);
       } catch {}
@@ -173,6 +164,7 @@ export default function Footer(): JSX.Element {
 
       <div className={styles.inner}>
         <div className={styles.columns}>
+          {/* Column 1 — Tools */}
           <div className={styles.col}>
             <h3 className={styles.colHeading}>Tools</h3>
             <ul className={styles.linkList}>
@@ -186,13 +178,13 @@ export default function Footer(): JSX.Element {
             </ul>
           </div>
 
+          {/* Column 2 — Resources */}
           <div className={styles.col}>
             <h3 className={styles.colHeading}>Resources</h3>
             <ul className={styles.linkList}>
               {resources.map((r) => (
                 <li key={r.href}>
                   {r.anchor ? (
-                    // anchor links handled to attempt smooth scroll on target page
                     <a href={r.href} className={styles.link} onClick={(e) => handleAnchorClick(e, r.anchor, r.href)}>
                       {r.label}
                     </a>
@@ -203,18 +195,10 @@ export default function Footer(): JSX.Element {
                   )}
                 </li>
               ))}
-              <li>
-                <Link href="/terms" className={styles.link}>Terms of Service</Link>
-              </li>
-              <li>
-                <Link href="/refund-policy" className={styles.link}>Refund &amp; Cancellation Policy</Link>
-              </li>
-              <li>
-                <Link href="/cookie-policy" className={styles.link}>Cookie Policy</Link>
-              </li>
             </ul>
           </div>
 
+          {/* Column 3 — Brand / Contact / Description */}
           <div className={styles.brandCol} aria-labelledby="footer-brand-heading">
             <div className={styles.brandInner}>
               <img src="/images/logo.png" alt="BrainiHi logo" className={styles.brandLogo} />
@@ -226,13 +210,18 @@ export default function Footer(): JSX.Element {
                   <a href="mailto:support@brainihi.com" className={styles.contactLink}>support@brainihi.com</a>
                 </p>
 
-                <p className={styles.quickLinks}>
+                <p className={styles.businessDescription}>
+                  BrainiHi is a digital educational platform providing subscription-based access to AI-powered learning tools.
+                  All services are delivered electronically. No physical goods are provided.
+                </p>
+
+                <div className={styles.brandLinks}>
                   <Link href="/privacy" className={styles.link}>Privacy</Link>
                   <span className={styles.dot}>•</span>
                   <Link href="/terms" className={styles.link}>Terms</Link>
                   <span className={styles.dot}>•</span>
-                  <Link href="/safety" className={styles.link}>Safety</Link>
-                </p>
+                  <Link href="/sitemap" className={styles.link}>Sitemap</Link>
+                </div>
 
                 <div className={styles.social}>
                   <a href="https://twitter.com/" aria-label="Twitter" className={styles.socialIcon} target="_blank" rel="noreferrer">
@@ -253,15 +242,29 @@ export default function Footer(): JSX.Element {
           </div>
         </div>
 
+        {/* Bottom row — simplified and centered on small screens */}
         <div className={styles.bottom}>
-          <p className={styles.copy}>&copy; {new Date().getFullYear()} BrainiHi. All rights reserved.</p>
-          <p className={styles.legal}>
-            <Link href="/privacy" className={styles.link}>Privacy</Link>
-            <span className={styles.dot}>•</span>
-            <Link href="/terms" className={styles.link}>Terms</Link>
-            <span className={styles.dot}>•</span>
-            <Link href="/sitemap" className={styles.link}>Sitemap</Link>
-          </p>
+          <div className={styles.bottomLeft}>
+            <p className={styles.copy}>&copy; {new Date().getFullYear()} BrainiHi. All rights reserved.</p>
+          </div>
+
+          <div className={styles.bottomCenter}>
+            <nav className={styles.bottomNav} aria-label="Footer secondary links">
+              <Link href="/privacy" className={styles.link}>Privacy</Link>
+              <span className={styles.dot}>•</span>
+              <Link href="/terms" className={styles.link}>Terms</Link>
+              <span className={styles.dot}>•</span>
+              <Link href="/sitemap" className={styles.link}>Sitemap</Link>
+            </nav>
+          </div>
+
+          <div className={styles.bottomRight}>
+            <p className={styles.paymentStandard}>Payments are processed securely via PayPal.</p>
+            <p className={styles.disclaimer}>
+              Disclaimer: BrainiHi provides AI-generated educational practice tools.
+              We do not guarantee specific exam results or score improvements.
+            </p>
+          </div>
         </div>
       </div>
     </footer>

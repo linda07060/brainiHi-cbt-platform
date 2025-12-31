@@ -83,6 +83,18 @@ export default function About() {
             </p>
           </section>
 
+          {/* PAYPAL ONBOARDING: exact text (verbatim) */}
+          <section className={styles.section} aria-labelledby="paypal-onboarding-heading" id="paypal-onboarding">
+            <h2 id="paypal-onboarding-heading" className={styles.sectionTitle}>Business description (for PayPal onboarding)</h2>
+            <div className={styles.sectionText} style={{ whiteSpace: "pre-wrap", background: "#fafafa", padding: 12, borderRadius: 6, border: "1px solid #eee" }}>
+BrainiHi is an online educational platform that provides AI-powered practice tests,
+step-by-step explanations, and personalized learning tools.
+
+Users purchase subscription-based access to digital features delivered electronically.
+No physical goods are shipped. The service is intended for educational purposes only.
+            </div>
+          </section>
+
           {/* Testimonials Section */}
           <section className={styles.testimonialSection} aria-labelledby="testimonials-heading">
             {/* <h2 id="testimonials-heading" className={styles.sectionTitle}>Loved by Students Everywhere</h2> */}

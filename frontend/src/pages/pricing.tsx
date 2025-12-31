@@ -8,7 +8,7 @@ import styles from "../styles/Pricing.module.css";
  * Dedicated Pricing page at /pricing
  * - Minimalist, professional and responsive
  * - Shows local currency equivalents under USD monthly prices
- * - Displays Payment provider information inside each plan card
+ * - Displays standardized payment sentence inside each plan card
  *
  * Note: Next.js Link is used directly (no inner <a>) to avoid "Invalid <Link> with <a> child"
  */
@@ -175,6 +175,13 @@ export default function PricingPage(): JSX.Element {
                     {plan.cta}
                   </Link>
 
+                  {/* Subscription clarity message for paid plans */}
+                  {plan.name !== "Free" && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: "#666" }}>
+                      You can cancel your subscription at any time from your account settings.
+                    </div>
+                  )}
+
                   <div style={{ marginTop: 12, fontSize: 13, color: "#666" }}>
                     By continuing, you agree to our{" "}
                     <Link href="/terms" className={styles.link}>Terms of Service</Link>{" "}
@@ -182,9 +189,9 @@ export default function PricingPage(): JSX.Element {
                     <Link href="/privacy" className={styles.link}>Privacy Policy</Link>.
                   </div>
 
-                  {/* Payment provider shown per card, as requested */}
+                  {/* STANDARDIZED PAYMENT SENTENCE (exact) */}
                   <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
-                    Payment provider: <strong>TipTop Pay (CloudPayments)</strong>
+                    Payments are processed securely via PayPal.
                   </div>
 
                   <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>

@@ -46,7 +46,7 @@ const plans: Plan[] = [
     name: "Pro",
     price: "$12.99 / month",
     priceLabel: "or $99 / year",
-    localPrice: "₸6,699", // local equivalent for monthly
+    // localPrice: "₸6,699", // local equivalent for monthly
     details: [
       "Full access to all topics and quizzes",
       "50 AI explanations per month",
@@ -64,7 +64,7 @@ const plans: Plan[] = [
     name: "Tutor",
     price: "$24.99 / month",
     priceLabel: "or $199 / year",
-    localPrice: "₸12,889", // local equivalent for monthly
+    // localPrice: "₸12,889", // local equivalent for monthly
     details: [
       "Everything in Pro",
       "Unlimited AI explanations",

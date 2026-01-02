@@ -22,7 +22,7 @@ export default function CookiePolicy(): JSX.Element {
       <main className={`${layout.container} ${styles.policyMain}`} aria-labelledby="cookie-policy-heading">
         <article className={styles.articleWrapper}>
           <h1 id="cookie-policy-heading">BrainiHi — Cookie Policy</h1>
-          <p><strong>Effective Date:</strong> October 2025</p>
+          <p><strong>Effective Date:</strong> December 19, 2025</p>
 
           <p>BrainiHi uses cookies to operate and improve the Service.</p>
 

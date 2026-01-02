@@ -6,7 +6,7 @@ export default function Privacy(): JSX.Element {
     <main className={layout.contentInner} style={{ padding: "40px 20px" }}>
       <article>
         <h1>Privacy Policy — BrainiHi</h1>
-        <p><strong>Last updated:</strong> October 2025</p>
+        <p><strong>Last updated:</strong> December 19, 2025</p>
 
         <p>
           BrainiHi.com (“we”, “our”, “us”) is operated by Anatoliy Ovcharenko, Individual
@@ -107,7 +107,7 @@ export default function Privacy(): JSX.Element {
         <p>
           <strong>Owner & Data Controller</strong><br />
           Anatoliy Ovcharenko<br />
-          Imanbaeva Street 2, Astana, Kazakhstan<br />
+          Astana, Kazakhstan<br />
           Email: <a href="mailto:support@brainihi.com">support@brainihi.com</a>
         </p>
 

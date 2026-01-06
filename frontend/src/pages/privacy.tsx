@@ -24,7 +24,7 @@ export default function Privacy(): JSX.Element {
           <li>Usage data (page views, test attempts, interaction timestamps)</li>
         </ul>
         <h3>If you purchase a subscription</h3>
-        <p>Billing information is processed by Paddle. We do not store card data on our servers.</p>
+        <p>Billing information is processed by PayPal. We do not store card data on our servers.</p>
         <p>
           We do not knowingly collect personal data of children under 13 or sensitive personal data.
           If you believe a child under 13 used BrainiHi, please contact us immediately.
@@ -36,7 +36,7 @@ export default function Privacy(): JSX.Element {
           <li>Create and manage user accounts</li>
           <li>Provide testing and AI-based explanations</li>
           <li>Improve the platform and product features</li>
-          <li>Process payments (via Paddle)</li>
+          <li>Process payments (via PayPal)</li>
           <li>Communicate important service updates</li>
         </ul>
         <p>We do not sell or rent personal information.</p>
@@ -51,7 +51,7 @@ export default function Privacy(): JSX.Element {
         <h2>4. Data sharing</h2>
         <p>Your data may be shared with:</p>
         <ul>
-          <li>Paddle — payment processor</li>
+          <li>PayPal — payment processor</li>
           <li>Hosting providers (Vercel, Render)</li>
           <li>Analytics services (e.g., Google Analytics) — only with consent</li>
         </ul>

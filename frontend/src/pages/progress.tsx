@@ -11,28 +11,12 @@ import {
   useMediaQuery,
   Tooltip,
   Divider,
+  Alert,
 } from '@mui/material';
 import axios from 'axios';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Progress.module.css';
-
-/**
- * pages/progress.tsx
- *
- * - Fetches the user's tests from /api/tests/my (same shape used on dashboard)
- * - Aggregates per-topic averages, counts and pass rates
- * - Renders:
- *    - Overall completion percentage and average score
- *    - Per-topic horizontal bar chart (pure CSS/SVG, no external deps)
- *    - Sparkline timeline of recent test scores (SVG)
- *    - Key metrics cards
- *    - Auto-generated insights / recommendations
- *
- * Notes:
- * - Adds "Back to Dashboard" button at the top-left/right (explicit)
- * - Hides the global footer while this page is mounted and restores it on unmount
- */
 
 /* ---------- Small helpers (kept local to this page) ---------- */
 
@@ -72,10 +56,58 @@ function formatNumber(n: number | null | undefined) {
   return String(Math.round(n * 100) / 100);
 }
 
+/* ---------- Small plan helpers (copied from dashboard/practice) ---------- */
+
+function normalizePlanLabel(plan?: string | null): string {
+  if (!plan) return 'Free';
+  const p = String(plan).trim();
+  if (p === '') return 'Free';
+  const low = p.toLowerCase();
+  if (low.includes('tutor')) return 'Tutor';
+  if (low.includes('pro')) return 'Pro';
+  if (low.includes('free')) return 'Free';
+  return p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+function defaultLimitsForPlanLocal(planName?: string | null) {
+  const name = (planName || '').toLowerCase();
+  if (name.includes('free') || name === '') {
+    return {
+      plan: 'Free',
+      limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
+      usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+      remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+    } as any;
+  }
+  if (name.includes('pro')) {
+    return {
+      plan: 'Pro',
+      limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
+      usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+      remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
+    } as any;
+  }
+  if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
+    return {
+      plan: 'Tutor',
+      limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
+      usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+      remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
+    } as any;
+  }
+  return {
+    plan: 'Free',
+    limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
+    usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+    remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+  } as any;
+}
+
 /* ---------- Page component ---------- */
 
 export default function ProgressPage(): JSX.Element {
   const { user, token: tokenFromContext } = useAuth() as any;
+  const profile = user as any; // alias for code that expects `profile`
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -142,6 +174,96 @@ export default function ProgressPage(): JSX.Element {
     fetchTests();
   }, [fetchTests]);
 
+  /* ---------- Usage fallback (derive effectiveUsage from profile) ---------- */
+  // (Progress page uses a lightweight effectiveUsage derived from profile
+  //  so payment fallback logic can reason about plan limits.)
+  const effectiveUsage = useMemo(() => {
+    // If backend/other pages provide an admin usage API you can hook it here.
+    // For now derive from profile.plan
+    const plan = profile?.plan ?? profile?.planName ?? null;
+    return defaultLimitsForPlanLocal(plan);
+  }, [profile]);
+
+  /* ---------- Payment / billing status (moved after effectiveUsage) ---------- */
+  const [paymentStatus, setPaymentStatus] = useState<any | null>(null);
+  useEffect(() => {
+    let mountedLocal = true;
+    const loadPaymentStatus = async () => {
+      if (!token) {
+        if (mountedLocal) setPaymentStatus(null);
+        return;
+      }
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/payments/check-access`;
+        let res: any | null = null;
+        try {
+          res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        } catch {
+          // try proxy route fallback if frontend has one
+          res = await axios.get('/api/payments/check-access', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+        }
+        if (!mountedLocal) return;
+        setPaymentStatus(res?.data ?? null);
+      } catch {
+        if (!mountedLocal) return;
+        // on error, set to null so fallback logic below will apply
+        setPaymentStatus(null);
+      }
+    };
+    loadPaymentStatus();
+    return () => { mountedLocal = false; };
+  }, [token, effectiveUsage, profile]);
+
+  // derive effective booleans and final canStartTest logic (mirror dashboard)
+  const { canStartTest, startTooltip, showPending, showNoPlan } = useMemo(() => {
+    // resolve plan candidate: prefer explicit profile plan (auth/profile), otherwise server payment plan, otherwise effectiveUsage.plan
+    const explicitProfilePlan =
+      profile?.plan ?? profile?.planName ?? profile?.plan_name ?? null;
+
+    const resolvedPlanCandidateRaw =
+      explicitProfilePlan && normalizePlanLabel(String(explicitProfilePlan)) !== 'Free'
+        ? explicitProfilePlan
+        : (paymentStatus?.plan ?? effectiveUsage?.plan ?? 'Free');
+
+    const currentPlanForPayment = normalizePlanLabel(resolvedPlanCandidateRaw ?? 'Free');
+    const isFreePlanCurrent = currentPlanForPayment.toLowerCase().includes('free');
+    const isPaidPlanCurrent = !isFreePlanCurrent;
+
+    const billingValid = Boolean(
+      paymentStatus && (paymentStatus.activeSubscription === true || paymentStatus.hasSuccessfulPayment === true || paymentStatus.allowed === true)
+    );
+
+    const paidBlocked = isPaidPlanCurrent && (!paymentStatus || (!paymentStatus.activeSubscription && !paymentStatus.hasSuccessfulPayment && paymentStatus.allowed !== true));
+
+    const interactiveAllowed = isPaidPlanCurrent ? billingValid : true;
+
+    // plan limit check using effectiveUsage
+    const planLimit = effectiveUsage?.limits?.testsPerDay ?? null;
+    const remaining = effectiveUsage?.remaining?.testsRemaining ?? null;
+    const availabilityStatus =
+      remaining === Infinity || planLimit === Infinity ? 'A'
+      : (typeof remaining === 'number' && remaining > 0) ? 'B'
+      : (typeof planLimit === 'number' && planLimit > 0) ? 'B'
+      : 'C';
+
+    const testAllowedByLimit = availabilityStatus !== 'C';
+
+    const finalCanStart = testAllowedByLimit && interactiveAllowed;
+
+    // tooltip and banners
+    const planName = paymentStatus?.plan ?? profile?.plan ?? effectiveUsage?.plan ?? 'Free';
+    const pendingAmount = paymentStatus?.pendingAmount ?? paymentStatus?.amount ?? null;
+    const tooltip = finalCanStart ? '' :
+      paidBlocked
+        ? (pendingAmount ? `Payment required: ${String(pendingAmount)}` : `You selected a paid plan (${planName}) but have no active subscription.`)
+        : (!testAllowedByLimit ? 'No tests remaining for today on your plan.' : '');
+
+    const showPendingBanner = paidBlocked && !!pendingAmount;
+    const showNoPlanBanner = paidBlocked && !pendingAmount && !paymentStatus;
+
+    return { canStartTest: finalCanStart, startTooltip: tooltip, showPending: showPendingBanner, showNoPlan: showNoPlanBanner };
+  }, [paymentStatus, effectiveUsage, profile]);
+
   /* ---------- Aggregations ---------- */
 
   const aggregated = useMemo(() => {
@@ -164,19 +286,16 @@ export default function ProgressPage(): JSX.Element {
       .slice(0, 40); // recent window
 
     for (const t of tests) {
-      // determine score (robust)
       const rawScore = parseNumberSafe(t.score ?? t.result ?? t.percent ?? t.percentage ?? t.points ?? null);
       if (rawScore != null) {
         totalScore += rawScore;
         scoreCount++;
         if (bestScore == null || rawScore > bestScore) bestScore = rawScore;
       }
-      // completed semantic
       const status = (t.status ?? t.state ?? '').toString().toLowerCase();
       const isCompleted = (t.completed === true) || /complete|done|finished/.test(status) || (rawScore != null && rawScore > 0);
       if (isCompleted) completed++;
 
-      // duration: prefer durationSec, else created/taken timestamps
       const dur = parseNumberSafe(t.durationSeconds ?? t.duration ?? t.timeTaken ?? null);
       if (dur != null) {
         totalDurationSeconds += Number(dur);
@@ -197,8 +316,7 @@ export default function ProgressPage(): JSX.Element {
       if (rawScore != null) {
         byTopic[topic].sumScore += rawScore;
         byTopic[topic].scoreCount++;
-        // treat pass as >= 50 or >0 if scale unknown
-        const passThreshold = rawScore <= 10 ? 1 : 50; // heuristic
+        const passThreshold = rawScore <= 10 ? 1 : 50;
         if (rawScore >= passThreshold) byTopic[topic].passes++;
       }
     }
@@ -214,7 +332,6 @@ export default function ProgressPage(): JSX.Element {
         passRate,
       };
     }).sort((a, b) => {
-      // sort by avgScore desc (nulls last), then count desc
       if (a.avgScore == null && b.avgScore != null) return 1;
       if (b.avgScore == null && a.avgScore != null) return -1;
       if (a.avgScore != null && b.avgScore != null) return b.avgScore - a.avgScore;
@@ -225,7 +342,6 @@ export default function ProgressPage(): JSX.Element {
     const overallCompletionPercent = total ? (completed / total) * 100 : null;
     const avgTimeSeconds = durationCount ? totalDurationSeconds / durationCount : null;
 
-    // timeline for sparkline: recentTests map to numeric scores (null -> 0)
     const timelineScores = recentTests
       .map((t) => {
         const s = parseNumberSafe(t.score ?? t.result ?? t.percent ?? t.percentage ?? t.points ?? null);
@@ -247,7 +363,8 @@ export default function ProgressPage(): JSX.Element {
     };
   }, [tests]);
 
-  /* ---------- Insights generation (simple rules) ---------- */
+  /* ---------- Insights ---------- */
+
   const insights = useMemo(() => {
     const out: string[] = [];
     const { topics, overallAvg } = aggregated;
@@ -263,78 +380,109 @@ export default function ProgressPage(): JSX.Element {
     }
     if (topics.length === 0) return out;
 
-    // find weakest topic
     const topicsWithAvg = topics.filter((t) => t.avgScore != null);
     if (topicsWithAvg.length) {
       const weakest = topicsWithAvg.reduce((a, b) => (a.avgScore! < b.avgScore! ? a : b));
       const strongest = topicsWithAvg.reduce((a, b) => (a.avgScore! > b.avgScore! ? a : b));
       out.push(`Weakest topic: ${weakest.topic} — average ${formatNumber(weakest.avgScore)}.`);
       out.push(`Strongest topic: ${strongest.topic} — average ${formatNumber(strongest.avgScore)}.`);
-      // recommendation
       out.push(`Recommendation: Focus 20–30 min daily on ${weakest.topic} with targeted practice and review mistakes.`);
     }
     return out;
   }, [aggregated]);
 
-  /* ---------- Small rendering helpers: CSS bar + sparkline ---------- */
-
-  function TopicBar({ topicObj }: { topicObj: { topic: string; avgScore: number | null; count: number; passRate: number | null } }) {
-    const value = topicObj.avgScore != null ? Math.max(0, Math.min(100, topicObj.avgScore)) : 0;
-    return (
-      <div className={styles.topicRow}>
-        <div className={styles.topicLabel}>
-          <div className={styles.topicName}>{topicObj.topic}</div>
-          <div className={styles.topicMeta}>{topicObj.count} attempt{topicObj.count !== 1 ? 's' : ''}</div>
-        </div>
-
-        <div className={styles.barWrap} role="img" aria-label={`${topicObj.topic} average ${formatNumber(topicObj.avgScore)}`}>
-          <div className={styles.barBg}>
-            <div className={styles.barFill} style={{ width: `${value}%` }} />
-          </div>
-        </div>
-
-        <div className={styles.topicValue}>
-          {topicObj.avgScore == null ? '—' : `${formatNumber(topicObj.avgScore)}%`}
-        </div>
-      </div>
-    );
-  }
-
-  function Sparkline({ points }: { points: number[] }) {
-    if (!points || points.length === 0) {
-      return <div className={styles.sparklineEmpty}>No recent scores</div>;
-    }
-    const width = Math.max(120, Math.min(600, points.length * 12));
-    const height = 40;
-    const max = Math.max(...points, 100);
-    const min = Math.min(...points, 0);
-    const norm = (v: number) => (v - min) / (max - min || 1);
-    const coords = points.map((p, i) => `${(i / (points.length - 1)) * width},${height - norm(p) * height}`);
-    const poly = coords.join(' ');
-    const last = points[points.length - 1];
-    return (
-      <svg className={styles.sparkline} width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Recent scores sparkline">
-        <polyline points={poly} fill="none" stroke="#861f41" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx={(points.length - 1) / Math.max(1, points.length - 1) * width} cy={height - norm(last) * height} r={3} fill="#861f41" />
-      </svg>
-    );
-  }
-
   /* ---------- Render ---------- */
+
+  const startTooltipText = startTooltip;
 
   return (
     <Box sx={{ p: isMobile ? 2 : 4, maxWidth: 1200, margin: '0 auto' }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-        <Box>
+      {/* Header: responsive so buttons align nicely on mobile */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
+          justifyContent: 'space-between',
+          mb: 3,
+          gap: 2,
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>Progress & Analytics</Typography>
-          <Typography color="text.secondary" sx={{ mt: 0.5 }}>Overview of your performance — per-topic trends, timeline and recommendations.</Typography>
+          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+            Overview of your performance — per-topic trends, timeline and recommendations.
+          </Typography>
         </Box>
 
-        <Box>
-          <Button component={Link} href="/dashboard" variant="outlined" sx={{ mr: 1 }}>Back to Dashboard</Button>
-          <Button component={Link} href="/practice" variant="contained">Start practice</Button>
+        {/* Buttons group: stacked & centered on mobile, inline on desktop */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: { xs: 'center', md: 'flex-end' },
+            mt: { xs: 1, md: 0 },
+            width: { xs: '100%', md: 'auto' },
+          }}
+        >
+          <Box sx={{ width: { xs: '90%', sm: 'auto' }, maxWidth: { xs: 520, md: 'none' } }}>
+            <Button
+              component={Link}
+              href="/dashboard"
+              variant="outlined"
+              fullWidth={isMobile}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 700,
+                py: 1,
+                borderRadius: 2,
+              }}
+            >
+              Back to Dashboard
+            </Button>
+          </Box>
+
+          <Box sx={{ width: { xs: '90%', sm: 'auto' }, maxWidth: { xs: 520, md: 'none' } }}>
+            <Tooltip title={startTooltipText}>
+              <span style={{ display: 'block' }}>
+                <Button
+                  component={Link}
+                  href="/practice"
+                  variant="contained"
+                  disabled={!canStartTest}
+                  fullWidth={isMobile}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 800,
+                    py: 1,
+                    borderRadius: 2,
+                  }}
+                >
+                  Start practice
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
         </Box>
-      </Stack>
+      </Box>
+
+      {showPending && (
+        <Box sx={{ mb: 2 }}>
+          <Alert severity="warning" action={<Button color="inherit" size="small" component={Link} href="/subscription">Complete payment</Button>}>
+            You have a pending payment. Complete payment to access tests.
+          </Alert>
+        </Box>
+      )}
+
+      {showNoPlan && (
+        <Box sx={{ mb: 2 }}>
+          <Alert severity="info" action={<Button color="inherit" size="small" component={Link} href="/subscription">Complete payment</Button>}>
+            You have no active plan. Kindly complete your payment to have access to practice tests.
+          </Alert>
+        </Box>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
@@ -374,12 +522,6 @@ export default function ProgressPage(): JSX.Element {
                   <div className={styles.metricValue}>{aggregated.avgTimeSeconds ? `${Math.round(aggregated.avgTimeSeconds)}s` : '—'}</div>
                 </Box>
               </Box>
-
-              <Divider sx={{ my: 1.5 }} />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Recent scores</Typography>
-              <Sparkline points={aggregated.timelineScores} />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>Last {aggregated.recentTestsCount} attempts</Typography>
             </Paper>
 
             <Paper sx={{ p: 2, mt: 2 }} className={styles.card}>
@@ -404,11 +546,22 @@ export default function ProgressPage(): JSX.Element {
               ) : (
                 <Box sx={{ display: 'grid', gap: 1 }}>
                   {aggregated.topics.map((t) => (
-                    <Tooltip key={t.topic} title={`${t.topic}: avg ${t.avgScore == null ? '—' : formatNumber(t.avgScore)} • ${t.count} attempts`} arrow>
-                      <div>
-                        <TopicBar topicObj={{ topic: t.topic, avgScore: t.avgScore, count: t.count, passRate: t.passRate }} />
+                    <div key={t.topic} className={styles.topicRow}>
+                      <div className={styles.topicLabel}>
+                        <div className={styles.topicName}>{t.topic}</div>
+                        <div className={styles.topicMeta}>{t.count} attempt{t.count !== 1 ? 's' : ''}</div>
                       </div>
-                    </Tooltip>
+
+                      <div className={styles.barWrap} role="img" aria-label={`${t.topic} average ${formatNumber(t.avgScore)}`}>
+                        <div className={styles.barBg}>
+                          <div className={styles.barFill} style={{ width: `${t.avgScore != null ? Math.max(0, Math.min(100, t.avgScore)) : 0}%` }} />
+                        </div>
+                      </div>
+
+                      <div className={styles.topicValue}>
+                        {t.avgScore == null ? '—' : `${formatNumber(t.avgScore)}%`}
+                      </div>
+                    </div>
                   ))}
                 </Box>
               )}
@@ -418,7 +571,6 @@ export default function ProgressPage(): JSX.Element {
               <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>Recommendations</Typography>
               <Divider sx={{ mb: 1 }} />
               <Box sx={{ display: 'grid', gap: 1 }}>
-                {/* Simple recommendations derived from insights */}
                 {aggregated.topics.length === 0 ? (
                   <Typography color="text.secondary">Take a few practice tests to receive personalized recommendations.</Typography>
                 ) : (

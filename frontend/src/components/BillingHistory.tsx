@@ -12,8 +12,7 @@ export default function BillingHistory({ token, compact }: { token?: string | nu
     async function load() {
       setLoading(true);
       try {
-        // use a permissive response type so TypeScript doesn't complain about unknown shapes
-        const res = await axios.get<any>("/api/paddle/invoices", { headers });
+        const res = await axios.get<any>("/api/payments/invoices", { headers });
 
         if (!mounted) return;
 

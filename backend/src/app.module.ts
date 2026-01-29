@@ -10,22 +10,23 @@ import { TestModule } from './test/test.module';
 import { AdminModule } from './admin/admin.module';
 import { PlanModule } from './plan/plan.module';
 import { AiModule } from './ai/ai.module';
-import { SettingsModule } from './modules/settings/settings.module'; // <-- already present
-import { MaintenanceGuard } from './common/guards/maintenance.guard'; // <-- new guard
-
-// New EnforceResetGuard import
+import { SettingsModule } from './modules/settings/settings.module';
+import { MaintenanceGuard } from './common/guards/maintenance.guard';
 import { EnforceResetGuard } from './auth/enforce-reset.guard';
-
-// New: setup-security controller/service so the /auth/setup-security route is registered
 import { SetupSecurityController } from './auth/setup-security.controller';
 import { SetupSecurityService } from './auth/setup-security.service';
 
+// Payments module and paid-access guard
+import { PaymentsModule } from './payments/payments.module';
+import { PaidAccessGuard } from './common/guards/paid-access.guard';
+
+// Dashboard controller (protected)
+import { DashboardController } from './dashboard/dashboard.controller';
+
 @Module({
   imports: [
-    // Load .env into process.env
     ConfigModule.forRoot({ isGlobal: true }),
 
-    // Use async factory so we read DB config from environment (DATABASE_URL or DB_* vars)
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -68,30 +69,35 @@ import { SetupSecurityService } from './auth/setup-security.service';
     AdminModule,
     PlanModule,
     AiModule,
-    SettingsModule, // <-- needed by MaintenanceGuard
+    SettingsModule,
+    PaymentsModule,
 
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'replace-with-prod-secret',
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [SetupSecurityController],
+  controllers: [
+    SetupSecurityController,
+    DashboardController, // register protected dashboard controller here
+  ],
   providers: [
     SetupSecurityService,
 
-    // Existing maintenance guard (keeps current behavior)
+    // global maintenance guard
     {
       provide: APP_GUARD,
       useClass: MaintenanceGuard,
     },
 
-    // NEW: EnforceResetGuard registered as a global guard.
-    // This guard is intentionally tolerant (it checks req.user and DB). It will
-    // return 403 with structured details when a user must complete setup.
+    // enforce reset guard globally
     {
       provide: APP_GUARD,
       useClass: EnforceResetGuard,
     },
+
+    // Provide the PaidAccessGuard so Nest can inject PaymentsService into it
+    PaidAccessGuard,
   ],
 })
 export class AppModule {}

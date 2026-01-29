@@ -69,33 +69,42 @@ export default function Login(): JSX.Element {
     }
   };
 
-  // Always use fresh /auth/me result to decide where to navigate after login.
-  const navigateAfterLogin = (userPayload: any) => {
+  // Helper to read property names from payload/user object (robust)
+  const read = (obj: any, names: string[]) => {
+    if (!obj) return undefined;
+    for (const k of names) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
+    }
+    const u = obj.user ?? obj;
+    if (u && typeof u === "object") {
+      for (const k of names) if (Object.prototype.hasOwnProperty.call(u, k)) return u[k];
+    }
+    return undefined;
+  };
+
+  /**
+   * navigateAfterLogin: decide where to navigate after login
+   *
+   * New behavior:
+   * - call /api/payments/check-access (requires axios to have Authorization header set)
+   * - if allowed or plan is Free => proceed to setup checks or dashboard
+   * - else redirect to checkout with a user-visible notification
+   */
+  const navigateAfterLogin = async (userPayload: any) => {
     if (navLockRef.current) {
       console.debug("navigateAfterLogin: navigation already handled by this instance, ignoring duplicate call");
       return;
     }
 
-    // Normalize many possible shapes & key names
-    const read = (obj: any, names: string[]) => {
-      if (!obj) return undefined;
-      for (const k of names) {
-        if (Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
-      }
-      const u = obj.user ?? obj;
-      if (u && typeof u === "object") {
-        for (const k of names) if (Object.prototype.hasOwnProperty.call(u, k)) return u[k];
-      }
-      return undefined;
-    };
+    // Acquire in-component lock immediately to avoid duplicate navigation
+    navLockRef.current = true;
 
+    // read security/passphrase flags as before
     const secRaw = read(userPayload, [
       "require_security_setup",
       "requireSecuritySetup",
       "require_security",
       "requireSecurity",
-      // note: we intentionally do NOT treat securityConfigured === false as a hard "require" here
-      // because that flag can be unset/false for reasons other than an admin reset.
     ]);
     const passRaw = read(userPayload, [
       "require_passphrase_setup",
@@ -103,38 +112,65 @@ export default function Login(): JSX.Element {
       "require_passphrase",
       "requirePassphrase",
     ]);
-    // const securityConfigured = read(userPayload, ["securityConfigured", "security_configured"]);
 
-    // IMPORTANT: require security only when an explicit require flag is present.
-    // Removing the previous "securityConfigured === false" clause prevents forcing users into security
-    // setup when the admin didn't explicitly reset security.
     const requireSecurity = valueIsTrueish(secRaw);
     const requirePassphrase = valueIsTrueish(passRaw);
 
-    console.debug("navigateAfterLogin -> requireSecurity:", requireSecurity, "requirePassphrase:", requirePassphrase, "userPayload:", userPayload);
+    // Determine plan (normalize best-effort)
+    const planNameRaw = read(userPayload, ["plan", "current_plan", "subscription_plan"]);
+    const planName = planNameRaw ? String(planNameRaw) : "Free";
 
-    // Ensure preloader hides before navigation
+    // Determine billingPeriod (prefer explicit, fallback to monthly)
+    const billingPeriodRaw = read(userPayload, ["billingPeriod", "billing_period", "billingFrequency", "billing_frequency"]);
+    const billingPeriod = billingPeriodRaw ? String(billingPeriodRaw).toLowerCase() : "monthly";
+
+    // ALWAYS stop any preloader
+    try { setLoading(false); } catch {}
+
+    // Now check server-side access (this requires Authorization header to be set on axios).
+    // If axios default header isn't present, this request will return 401 and we treat as not allowed.
+    let hasAccess = false;
     try {
-      setLoading(false);
-    } catch {}
+      const res = await axios.get<{ allowed: boolean }>("/api/payments/check-access");
+      hasAccess = Boolean(res?.data?.allowed ?? false);
+    } catch (err) {
+      // If check fails due to network/auth, be conservative: deny access (so user goes to checkout)
+      console.warn("check-access failed", err);
+      hasAccess = false;
+    }
 
-    // Acquire in-component lock immediately to avoid duplicate navigation
-    navLockRef.current = true;
+    // If user is on free plan we allow access
+    const isFreePlan = String(planName).toLowerCase() === "free";
+    if (isFreePlan || hasAccess) {
+      // Redirect to setup pages if required, else dashboard
+      if (requireSecurity && requirePassphrase) {
+        router.replace('/setup-required');
+        return;
+      }
+      if (requireSecurity) {
+        router.replace('/setup-security');
+        return;
+      }
+      if (requirePassphrase) {
+        router.replace('/setup-passphrase');
+        return;
+      }
+      router.replace('/dashboard');
+      return;
+    }
 
-    // Use replace instead of push so back button doesn't return to login and reduces visible flicker
-    if (requireSecurity && requirePassphrase) {
-      router.replace('/setup-required');
-      return;
-    }
-    if (requireSecurity) {
-      router.replace('/setup-security');
-      return;
-    }
-    if (requirePassphrase) {
-      router.replace('/setup-passphrase');
-      return;
-    }
-    router.replace('/dashboard');
+    // At this point: user has a paid plan (not Free) and checkAccess returned false — redirect to checkout
+    const humanPlan = String(planName);
+    // message shown to user: user selected paid plan but no successful payment
+    const notification = "You selected a paid plan but have not completed payment. Please complete payment to proceed.";
+    setMsg(notification);
+    setSuccess(false);
+    setOpen(true);
+
+    // navigate to checkout with plan + billingPeriod
+    const query = { plan: humanPlan, billingPeriod };
+    // use replace to avoid back-to-login bounce
+    router.replace({ pathname: "/checkout", query });
   };
 
   useEffect(() => {
@@ -179,8 +215,8 @@ export default function Login(): JSX.Element {
           // remove the nav lock immediately after we set context so other listeners don't race
           try { localStorage.removeItem('auth_nav_lock'); } catch {}
 
-          // navigate based on the DB-backed /auth/me response
-          navigateAfterLogin(me ?? {});
+          // navigate based on the DB-backed /auth/me response (await the async navigator)
+          await navigateAfterLogin(me ?? {});
 
           // remove the nav lock shortly after as an extra safety (no-op if already removed)
           setTimeout(() => {
@@ -228,7 +264,7 @@ export default function Login(): JSX.Element {
           // ensure any nav lock is removed immediately
           try { localStorage.removeItem('auth_nav_lock'); } catch {}
 
-          navigateAfterLogin(returnedUser);
+          await navigateAfterLogin(returnedUser);
         } else {
           throw new Error("Invalid login response (missing token)");
         }
@@ -245,7 +281,7 @@ export default function Login(): JSX.Element {
           (adminApi.defaults as any).headers.common = (adminApi.defaults as any).headers.common || {};
           (adminApi.defaults as any).headers.common['Authorization'] = `Bearer ${token}`;
         } else {
-          try { (adminApi.defaults.headers as any).common['Authorization'] = `Bearer ${token}`; } catch {}
+          try { (adminApi.defaults as any).common['Authorization'] = `Bearer ${token}`; } catch {}
         }
       } catch {}
 
@@ -281,7 +317,7 @@ export default function Login(): JSX.Element {
       }, 2500);
 
       // Give UI a short moment to show success, then navigate.
-      setTimeout(() => navigateAfterLogin(user), 400);
+      setTimeout(() => { void navigateAfterLogin(user); }, 400);
     } catch (error: any) {
       setSuccess(false);
       const serverData = (error?.response?.data ?? {}) as { message?: string; [k: string]: any };
@@ -383,11 +419,11 @@ export default function Login(): JSX.Element {
 
       <Snackbar
         open={open}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setOpen(false)}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity={success ? "success" : "error"} sx={{ width: "100%" }}>
+        <Alert severity={success ? "success" : "warning"} sx={{ width: "100%" }}>
           {msg}
         </Alert>
       </Snackbar>

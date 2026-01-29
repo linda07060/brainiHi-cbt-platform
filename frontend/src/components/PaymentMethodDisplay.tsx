@@ -12,7 +12,7 @@ export default function PaymentMethodDisplay({ token }: { token?: string | null 
     async function load() {
       setLoading(true);
       try {
-        const res = await axios.get("/api/paddle/payment-method", { headers });
+        const res = await axios.get("/api/payments/payment-method", { headers });
         if (!mounted) return;
         setPm(res.data ?? null);
       } catch {
@@ -29,9 +29,8 @@ export default function PaymentMethodDisplay({ token }: { token?: string | null 
     return null;
   }
 
-  const brand = pm.brand ?? pm.type ?? "Card";
+  const brand = pm.brand ?? pm.type ?? "PayPal";
   const last4 = pm.last4 ?? pm.last4 ?? pm.masked?.slice(-4) ?? "****";
-
   const exp = pm.exp_month && pm.exp_year ? `${String(pm.exp_month).padStart(2, "0")}/${String(pm.exp_year).slice(-2)}` : null;
 
   return (

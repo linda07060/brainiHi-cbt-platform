@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -53,40 +53,64 @@ export default function UpgradePlanModal({
   open,
   onClose,
   token,
+  allowedPlans,
+  defaultPlan,
+  defaultPeriod,
 }: {
   open: boolean;
   onClose: () => void;
   token?: string | null;
+  // optional whitelist of allowed plans to present (e.g. ["Pro","Tutor"])
+  allowedPlans?: string[] | undefined;
+  // optional defaults (helps parent control initial selection)
+  defaultPlan?: string | null;
+  defaultPeriod?: BillingPeriod | null;
 }) {
-  const [plan, setPlan] = useState("Pro");
-  const [period, setPeriod] = useState<BillingPeriod>("monthly");
+  // Initialize plan from:  defaultPlan -> allowedPlans[0] -> "Pro"
+  const initialPlan = defaultPlan
+    ? normalizePlan(defaultPlan)
+    : allowedPlans && allowedPlans.length > 0
+    ? normalizePlan(allowedPlans[0])
+    : "Pro";
+
+  const [plan, setPlan] = useState<string>(initialPlan);
+  const [period, setPeriod] = useState<BillingPeriod>(defaultPeriod ?? "monthly");
   const [busy, setBusy] = useState(false);
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  // If allowedPlans or defaultPlan changes while modal is open, update selection
+  useEffect(() => {
+    const sel = defaultPlan ? normalizePlan(defaultPlan) : allowedPlans && allowedPlans.length > 0 ? normalizePlan(allowedPlans[0]) : "Pro";
+    setPlan(sel);
+  }, [allowedPlans, defaultPlan]);
+
+  useEffect(() => {
+    if (defaultPeriod) setPeriod(defaultPeriod);
+  }, [defaultPeriod]);
 
   const limits = useMemo(() => getPlanLimits(plan, period), [plan, period]);
 
   async function startCheckout() {
     setBusy(true);
     try {
-      // typed response so TypeScript knows .data.url exists
-      const res = await axios.post<{ url?: string }>(
-        "/api/paddle/checkout-link",
-        { plan, billingPeriod: period },
-        { headers },
-      );
-      const url = res?.data?.url;
-      if (url) {
-        window.open(url, "_blank");
-        onClose();
-      } else {
-        alert("Unable to start checkout.");
-      }
+      // Open checkout page in a new tab — checkout page will create the PayPal order and render buttons.
+      const qs = new URLSearchParams({ plan, billingPeriod: period }).toString();
+      window.open(`/checkout?${qs}`, "_blank");
+      onClose();
     } catch (err: any) {
       alert(err?.response?.data?.message ?? "Unable to start checkout.");
     } finally {
       setBusy(false);
     }
   }
+
+  // produce options to render: if allowedPlans provided, use that (normalized),
+  // otherwise fall back to default two paid plans.
+  const planOptions = useMemo(() => {
+    const opts = (allowedPlans && allowedPlans.length > 0 ? allowedPlans : ["Pro", "Tutor"]).map((p) => normalizePlan(p));
+    // ensure unique and stable ordering
+    return Array.from(new Set(opts));
+  }, [allowedPlans]);
 
   return (
     <Dialog open={open} onClose={onClose}>
@@ -100,8 +124,11 @@ export default function UpgradePlanModal({
             label="Plan"
             onChange={(e) => setPlan(String((e.target as HTMLInputElement).value))}
           >
-            <MenuItem value="Pro">Pro</MenuItem>
-            <MenuItem value="Tutor">Tutor</MenuItem>
+            {planOptions.map((opt) => (
+              <MenuItem key={opt} value={opt}>
+                {opt}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
@@ -122,17 +149,15 @@ export default function UpgradePlanModal({
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Plan limits ({plan})
           </Typography>
-          <List dense>
-            {limits.map((line) => (
-              <ListItem key={line} sx={{ py: 0.25 }}>
-                <ListItemText primary={line} />
-              </ListItem>
-            ))}
-          </List>
+          {limits.map((line) => (
+            <Box key={line} sx={{ py: 0.25 }}>
+              <Typography variant="body2">• {line}</Typography>
+            </Box>
+          ))}
         </Box>
 
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2 }}>
-          By continuing you will be redirected to Paddle for payment. Terms and refunds are handled via Paddle.
+          By continuing you will be redirected to PayPal for payment. Terms and refunds are handled via PayPal.
         </Typography>
       </DialogContent>
 
@@ -146,4 +171,16 @@ export default function UpgradePlanModal({
       </DialogActions>
     </Dialog>
   );
+}
+
+/* ---------- local helpers ---------- */
+function normalizePlan(input?: any): string {
+  if (!input) return "Pro";
+  const s = String(input).trim();
+  if (!s) return "Pro";
+  const low = s.toLowerCase();
+  if (low.includes("pro")) return "Pro";
+  if (low.includes("tutor")) return "Tutor";
+  if (low.includes("free")) return "Free";
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }

@@ -10,18 +10,12 @@ import {
   DialogTitle,
   Divider,
   Drawer,
-  FormControl,
   Grid,
-  IconButton,
-  InputLabel,
   List,
   ListItem,
-  ListItemText,
   ListItemButton,
-  MenuItem,
   Paper,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
@@ -30,7 +24,6 @@ import {
   Alert,
   LinearProgress,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import MenuIcon from '@mui/icons-material/Menu';
 import Link from 'next/link';
@@ -41,17 +34,109 @@ import { useRouter } from 'next/router';
 import styles from '../styles/Dashboard.module.css';
 import TopicDifficultyModal from '../components/TopicDifficultyModal';
 import TutorUxSnippet from '../components/TutorUxSnippet';
-import Spinner from '../components/Spinner';
 
 const ProfilePage = dynamic(() => import('./profile'), { ssr: false });
 const TopicDifficultyModalAny = TopicDifficultyModal as unknown as React.ComponentType<any>;
 
-/* ---------- Helpers (preserved + robust) ---------- */
-/* ... Helpers unchanged: omitted here for brevity in this block, they remain identical to previous version ... */
-/* For the sake of clarity in this patch, the helper functions (getLocalAuthTokenFromStorage, resolveUserId, etc.)
-   are kept exactly the same as in your original file. Please re-add them verbatim when applying this file.
-   They were intentionally omitted here to highlight the UI rearrangement only. */
- 
+/* ---------- Helpers (kept robust) ---------- */
+
+function safeNumber(val: any): number | null {
+  if (val === undefined || val === null || val === '') return null;
+  if (typeof val === 'number' && !Number.isNaN(val)) return val;
+  if (typeof val === 'string' && /^\d+$/.test(val)) return Number(val);
+  const parsed = Number(val);
+  if (!Number.isNaN(parsed)) return parsed;
+  return null;
+}
+
+function formatTimestamp(value: any) {
+  if (value === undefined || value === null || value === '') return '—';
+  let num: number | null = null;
+  if (typeof value === 'number') num = value;
+  else if (typeof value === 'string' && /^\d+$/.test(value)) num = Number(value);
+  let d: Date;
+  if (num != null) {
+    if (num < 1e12) num = num * 1000;
+    d = new Date(num);
+  } else {
+    d = new Date(String(value));
+  }
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString();
+}
+
+/* ---------- Plan resolution helpers (frontend mirror) ---------- */
+
+function resolvePlanFromUser(user: any): string | null {
+  if (!user || typeof user !== 'object') return null;
+  const tryStr = (v: any) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
+
+  const direct = [
+    user.plan,
+    user.planName,
+    user.plan_name,
+    user.subscription?.plan,
+    user.subscription?.name,
+    user.subscription?.product?.name,
+    user.subscription_plan,
+    user.metadata?.plan,
+    user.meta?.plan,
+    user.profile?.plan,
+    user.account?.plan,
+    user.membership?.plan,
+    user.tier,
+    user.role,
+    user?.paymentStatus?.plan,
+    user?.payment?.plan,
+  ];
+  for (const c of direct) {
+    const s = tryStr(c);
+    if (s) return s;
+  }
+
+  try {
+    if (Array.isArray(user.subscriptions) && user.subscriptions.length > 0) {
+      for (const sub of user.subscriptions) {
+        const s = tryStr(sub?.plan ?? sub?.name ?? sub?.product?.name);
+        if (s) return s;
+      }
+    }
+  } catch {}
+
+  const nested = [
+    user.data?.plan,
+    user.data?.subscription?.plan,
+    user.settings?.plan,
+    user.attributes?.plan,
+    user.info?.plan,
+    user.subscriptionInfo?.plan,
+    user.profile?.planName,
+  ];
+  for (const c of nested) {
+    const s = tryStr(c);
+    if (s) return s;
+  }
+
+  const tokenClaims = user?.claims ?? user?.tokenClaims ?? user?.payload ?? null;
+  if (tokenClaims && typeof tokenClaims === 'object') {
+    const s = tryStr(tokenClaims.plan) ?? tryStr(tokenClaims.planName) ?? tryStr(tokenClaims.subscription);
+    if (s) return s;
+  }
+
+  return null;
+}
+
+function normalizePlanLabel(plan?: string | null): string {
+  if (!plan) return 'Free';
+  const p = String(plan).trim();
+  if (p === '') return 'Free';
+  const low = p.toLowerCase();
+  if (low.includes('tutor')) return 'Tutor';
+  if (low.includes('pro')) return 'Pro';
+  if (low.includes('free')) return 'Free';
+  return p.charAt(0).toUpperCase() + p.slice(1);
+}
+
 /* ---------- Dashboard Component ---------- */
 
 export default function Dashboard() {
@@ -65,7 +150,7 @@ export default function Dashboard() {
   const [adminSettings, setAdminSettings] = useState<any | null>(null);
   const router = useRouter();
 
-  // filter & UI state (kept)
+  // filter & UI state
   const [searchText, setSearchText] = useState<string>('');
   const [filterTopic, setFilterTopic] = useState<string>('All');
   const [filterScore, setFilterScore] = useState<string>('All');
@@ -74,13 +159,41 @@ export default function Dashboard() {
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState(false); // new: whether mobile nav drawer is open
+  const [navCollapsed, setNavCollapsed] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const [sessionModalOpen, setSessionModalOpen] = useState(false);
-  const [sessionLoading, setSessionLoading] = useState(false);
-  const [sessionData, setSessionData] = useState<any | null>(null);
-  const [sessionId, setSessionId] = useState<string | number | null>(null);
+  // Receipt dialog state
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<any | null>(null);
+
+  // NEW: payment status state (structured). includes optional pendingAmount string
+  const [paymentStatus, setPaymentStatus] = useState<{
+    allowed: boolean;
+    activeSubscription: boolean;
+    hasSuccessfulPayment: boolean;
+    plan?: string | null;
+    plan_expiry?: string | null;
+    reason?: string | null;
+    pendingAmount?: string | null;
+  } | null>(null);
+
+  // NEW: loading flags to avoid plan/payment "flash"
+  const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  const [paymentLoaded, setPaymentLoaded] = useState<boolean>(false);
+
+  // NEW: debounce control for Start button (prevents fast flash)
+  const ENABLE_DEBOUNCE_MS = 500; // adjust as needed (500ms prevents very-fast flashes)
+  const [canStartVisible, setCanStartVisible] = useState<boolean>(false);
+  const debounceRef = useRef<number | null>(null);
+
+  // NEW: complete-payment confirmation dialog state
+  const [completePaymentDialogOpen, setCompletePaymentDialogOpen] = useState(false);
+  const [dialogPlan, setDialogPlan] = useState<string | null>(null);
+  const [dialogBilling, setDialogBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const [dialogPrice, setDialogPrice] = useState<{ amount: string; currency: string } | null>(null);
+
+  // canonicalPlan is profile-first derived; used for display / defaults
+  const [canonicalPlan, setCanonicalPlan] = useState<string | null>(null);
 
   const theme = useTheme();
   const isCompact = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
@@ -114,7 +227,22 @@ export default function Dashboard() {
     return () => { mountedRef.current = false; };
   }, []);
 
-  // fetchTests (kept)
+  // Price mapping (mirror pricing page)
+  const mapPlanPrice = (plan?: string, billingPeriod?: string) => {
+    const p = (plan || 'Pro').toString().toLowerCase();
+    if (p.includes('pro')) {
+      if (billingPeriod === 'yearly') return { amount: '99.00', currency: 'USD' };
+      return { amount: '12.99', currency: 'USD' };
+    }
+    if (p.includes('tutor')) {
+      if (billingPeriod === 'yearly') return { amount: '199.00', currency: 'USD' };
+      return { amount: '24.99', currency: 'USD' };
+    }
+    return { amount: '0.00', currency: 'USD' };
+  };
+
+  /* ---------- Data fetching (profile, usage, admin, tests) ---------- */
+
   const fetchTests = useCallback(async () => {
     if (!token) {
       if (mountedRef.current) {
@@ -151,20 +279,23 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchTests();
-    const handler = () => {
-      try {
-        fetchTests();
-      } catch {}
-    };
+    const handler = () => { try { fetchTests(); } catch {} };
     window.addEventListener('tests-changed', handler as EventListener);
     return () => window.removeEventListener('tests-changed', handler as EventListener);
   }, [fetchTests]);
 
-  // load profile (kept)
+  // load profile and set canonicalPlan from profile immediately (highest priority)
   useEffect(() => {
     let mountedLocal = true;
+    setProfileLoaded(false);
     const fetchProfile = async () => {
-      if (!token) { if (mountedLocal) setUserData(null); return; }
+      if (!token) {
+        if (mountedLocal) {
+          setUserData(null);
+          setProfileLoaded(true); // mark as loaded when there is no token
+        }
+        return;
+      }
       try {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
         const fetchedUser = (res?.data ?? {}) as any;
@@ -247,9 +378,6 @@ export default function Dashboard() {
             }
             return null;
           })(tokenClaims?.plan_expiry) ??
-          (function normalizeExpiryValueLocal2(val: any) {
-            return null;
-          })(null) ??
           null;
 
         const normalizedUid =
@@ -276,9 +404,24 @@ export default function Dashboard() {
         try { if (typeof window !== 'undefined') localStorage.setItem('auth', JSON.stringify(normalizedAuth)); } catch {}
 
         setUser(normalizedAuth as any);
-        if (mountedLocal) setUserData(mergedUser);
-      } catch {
+        if (mountedLocal) {
+          setUserData(mergedUser);
+
+          // derive plan from profile immediately - highest priority
+          const planFromProfile = resolvePlanFromUser(mergedUser);
+          if (planFromProfile) {
+            const canonical = normalizePlanLabel(planFromProfile);
+            setCanonicalPlan(canonical);
+            console.debug('[dashboard] canonicalPlan set from profile:', canonical);
+          } else {
+            console.debug('[dashboard] no plan found in profile');
+          }
+        }
+      } catch (err) {
+        console.warn('[dashboard] fetchProfile failed', err);
         if (mountedLocal) setUserData(user ?? null);
+      } finally {
+        if (mountedLocal) setProfileLoaded(true);
       }
     };
     fetchProfile();
@@ -286,7 +429,8 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // usage & admin settings (kept)
+  /* ---------- Usage & admin settings (declare BEFORE paymentStatus effect) ---------- */
+
   useEffect(() => {
     let mountedLocal = true;
     const loadUsage = async () => {
@@ -321,6 +465,378 @@ export default function Dashboard() {
     return () => { mountedLocal = false; };
   }, [token, userData]);
 
+  /* ---------- serverOrAdminUsage & effectiveUsage MUST be declared before paymentStatus effect ---------- */
+
+  const serverOrAdminUsage = (() => {
+    if (usage) return usage;
+    if (adminSettings) {
+      const adminDerived = (function usageFromAdminSettings(planName: string | null | undefined, adminSettings: any, currentUsage: any) {
+        if (!adminSettings || !adminSettings.limits || !adminSettings.limits.perPlan) return null;
+        const lookup = String(planName || 'free').toLowerCase();
+        const planObj = adminSettings.limits.perPlan?.[lookup];
+        if (!planObj) return null;
+
+        const appDefaults = (function defaultLimitsForPlanLocal(planName?: string | null) {
+          const name = (planName || '').toLowerCase();
+
+          if (name.includes('free') || name === '') {
+            return {
+              plan: 'Free',
+              limits: {
+                testsPerDay: 1,
+                questionCount: 10,
+                attemptsPerTest: 1,
+                explanationsPerMonth: 90,
+              },
+              usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+              remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+            } as any;
+          }
+
+          if (name.includes('pro')) {
+            return {
+              plan: 'Pro',
+              limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
+              usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+              remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
+            } as any;
+          }
+
+          if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
+            return {
+              plan: 'Tutor',
+              limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
+              usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+              remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
+            } as any;
+          }
+
+          return {
+            plan: 'Free',
+            limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
+            usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+            remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+          } as any;
+        })(planName);
+
+        const testsPerDay = planObj.testsPerDay !== undefined ? planObj.testsPerDay : appDefaults.limits.testsPerDay;
+        const questionCount = planObj.questionCountMax !== undefined ? planObj.questionCountMax : appDefaults.limits.questionCount;
+        const attemptsPerTest = planObj.attemptsPerTest !== undefined ? planObj.attemptsPerTest : appDefaults.limits.attemptsPerTest;
+        const explanationsPerMonth = planObj.explanationsPerMonth !== undefined ? planObj.explanationsPerMonth : appDefaults.limits.explanationsPerMonth;
+
+        const usageCounts = {
+          testsTodayCount: currentUsage?.usage?.testsTodayCount ?? 0,
+          testsTodayDate: currentUsage?.usage?.testsTodayDate ?? null,
+          explanationsCount: currentUsage?.usage?.explanationsCount ?? 0,
+          explanationsMonth: currentUsage?.usage?.explanationsMonth ?? null,
+        };
+
+        const testsRemaining = testsPerDay === Infinity ? Infinity : Math.max(0, (testsPerDay ?? 0) - (usageCounts.testsTodayCount ?? 0));
+        const explanationsRemaining = explanationsPerMonth === Infinity ? Infinity : Math.max(0, (explanationsPerMonth ?? 0) - (usageCounts.explanationsCount ?? 0));
+
+        return {
+          plan: (planName || 'Free'),
+          limits: {
+            testsPerDay: typeof testsPerDay === 'number' ? testsPerDay : (testsPerDay === Infinity ? Infinity : null),
+            questionCount,
+            attemptsPerTest,
+            explanationsPerMonth,
+          },
+          usage: {
+            testsTodayDate: usageCounts.testsTodayDate,
+            testsTodayCount: usageCounts.testsTodayCount,
+            explanationsMonth: usageCounts.explanationsMonth,
+            explanationsCount: usageCounts.explanationsCount,
+          },
+          remaining: {
+            testsRemaining,
+            explanationsRemaining,
+          },
+        } as any;
+      })(userData?.plan, adminSettings, usage);
+      if (adminDerived) return adminDerived;
+    }
+    return null;
+  })();
+
+  const effectiveUsage = (function getEffectiveUsageInner(serverUsage: any | null, userPlan?: string | null) {
+    const serverPlan = serverUsage?.plan ?? null;
+    if (serverUsage && userPlan && serverPlan && serverPlan.toLowerCase() === String(userPlan).toLowerCase()) {
+      return serverUsage;
+    }
+    if (userPlan) return (function defaultLimitsForPlanLocal(planName?: string | null) {
+      const name = (planName || '').toLowerCase();
+
+      if (name.includes('free') || name === '') {
+        return {
+          plan: 'Free',
+          limits: {
+            testsPerDay: 1,
+            questionCount: 10,
+            attemptsPerTest: 1,
+            explanationsPerMonth: 90,
+          },
+          usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+          remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+        } as any;
+      }
+
+      if (name.includes('pro')) {
+        return {
+          plan: 'Pro',
+          limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
+          usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+          remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
+        } as any;
+      }
+
+      if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
+        return {
+          plan: 'Tutor',
+          limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
+          usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+          remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
+        } as any;
+      }
+
+      return {
+        plan: 'Free',
+        limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
+        usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+        remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+      } as any;
+    })(userPlan);
+    if (serverUsage) return serverUsage;
+    return (function defaultLimitsForPlanLocal(planName?: string | null) {
+      const name = (planName || '').toLowerCase();
+
+      if (name.includes('free') || name === '') {
+        return {
+          plan: 'Free',
+          limits: {
+            testsPerDay: 1,
+            questionCount: 10,
+            attemptsPerTest: 1,
+            explanationsPerMonth: 90,
+          },
+          usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+          remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+        } as any;
+      }
+
+      if (name.includes('pro')) {
+        return {
+          plan: 'Pro',
+          limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
+          usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+          remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
+        } as any;
+      }
+
+      if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
+        return {
+          plan: 'Tutor',
+          limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
+          usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+          remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
+        } as any;
+      }
+
+      return {
+        plan: 'Free',
+        limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
+        usage: { testsPerDay: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
+        remaining: { testsRemaining: 1, explanationsRemaining: 90 },
+      } as any;
+    })(null);
+  })(serverOrAdminUsage, userData?.plan);
+
+  /* ---------- Payment status fetch (moved AFTER effectiveUsage) ---------- */
+  useEffect(() => {
+    let mountedLocal = true;
+    setPaymentLoaded(false);
+    const fetchPaymentStatus = async () => {
+      if (!token) {
+        if (mountedLocal) {
+          setPaymentStatus(null);
+          setPaymentLoaded(true); // mark loaded for unauthenticated users
+        }
+        return;
+      }
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/payments/check-access`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = (res?.data ?? {}) as any;
+        const allowed = typeof data.allowed === 'boolean' ? data.allowed : Boolean(data.allowed ?? false);
+        const activeSubscription =
+          typeof data.activeSubscription === 'boolean'
+            ? data.activeSubscription
+            : typeof data.active === 'boolean'
+            ? data.active
+            : Boolean(data.activeSubscription ?? data.active ?? allowed ?? false);
+        const hasSuccessfulPayment = Boolean(data.hasSuccessfulPayment ?? data.hasSuccessful ?? data.hasPayment ?? false);
+        const planFromServer = data.plan ?? data.planName ?? data.subscription?.plan ?? null;
+        const plan_to_set = planFromServer ? normalizePlanLabel(String(planFromServer)) : null;
+
+        // Build pending amount string if present in server response (multiple possible shapes)
+        const getPendingAmountString = (d: any) => {
+          try {
+            const amount = d?.pendingAmount ?? d?.pending_amount ?? d?.pending?.amount ?? d?.amount_due ?? d?.pending_due;
+            const currency = d?.pendingCurrency ?? d?.pending_currency ?? d?.pending?.currency ?? d?.currency ?? d?.currencyCode ?? 'USD';
+            if (amount == null) return null;
+            return `${String(amount)} ${String(currency).toUpperCase()}`;
+          } catch {
+            return null;
+          }
+        };
+
+        const pendingAmountString = getPendingAmountString(data);
+
+        // plan_expiry: only set when server confirms active subscription OR a successful payment
+        const plan_expiry_raw = (activeSubscription || hasSuccessfulPayment)
+          ? (data.plan_expiry ?? data.planExpiry ?? userData?.plan_expiry ?? null)
+          : null;
+
+        const normalized = {
+          allowed,
+          activeSubscription,
+          hasSuccessfulPayment,
+          plan: plan_to_set,
+          plan_expiry: plan_expiry_raw,
+          reason: data.reason ?? null,
+          pendingAmount: pendingAmountString ?? null,
+        };
+
+        if (mountedLocal) {
+          setPaymentStatus(normalized);
+          console.debug('[dashboard] paymentStatus:', normalized);
+
+          // If canonicalPlan not set from profile, use server plan as fallback
+          if (!canonicalPlan && plan_to_set) {
+            setCanonicalPlan(plan_to_set);
+            console.debug('[dashboard] canonicalPlan set from server:', plan_to_set);
+          }
+        }
+      } catch (err) {
+        console.warn('[dashboard] fetchPaymentStatus failed', err);
+
+        if (!mountedLocal) return;
+
+        // Conservative fallback behavior on error:
+        const explicitAuthPlan =
+          authAny?.plan ??
+          authAny?.planName ??
+          authAny?.plan_name ??
+          authAny?.user?.plan ??
+          authAny?.user?.planName ??
+          authAny?.user?.profile?.plan ??
+          null;
+
+        const explicitProfilePlanFallback =
+          explicitAuthPlan ??
+          userData?.plan ??
+          userData?.planName ??
+          userData?.plan_name ??
+          userData?.subscription?.plan ??
+          userData?.profile?.plan ??
+          null;
+
+        const normalizedProfilePlan = explicitProfilePlanFallback ? normalizePlanLabel(String(explicitProfilePlanFallback)) : null;
+        const effectivePlanNormalized = effectiveUsage?.plan ? normalizePlanLabel(effectiveUsage.plan) : null;
+
+        const isProfileFree = normalizedProfilePlan ? normalizedProfilePlan.toLowerCase().includes('free') : null;
+        const isEffectiveFree = effectivePlanNormalized ? effectivePlanNormalized.toLowerCase().includes('free') : null;
+
+        let fallbackAllowed: boolean;
+        let fallbackPlanToReport: string | null = null;
+        if (normalizedProfilePlan) {
+          fallbackPlanToReport = normalizedProfilePlan;
+          fallbackAllowed = isProfileFree === true ? true : false;
+        } else if (effectivePlanNormalized) {
+          fallbackPlanToReport = effectivePlanNormalized;
+          fallbackAllowed = isEffectiveFree === true ? true : false;
+        } else {
+          fallbackAllowed = true;
+          fallbackPlanToReport = 'Free';
+        }
+
+        setPaymentStatus({
+          allowed: fallbackAllowed,
+          activeSubscription: false,
+          hasSuccessfulPayment: false,
+          plan: fallbackPlanToReport,
+          plan_expiry: null,
+          reason: 'check_failed',
+          pendingAmount: null,
+        });
+
+        if (!canonicalPlan) {
+          setCanonicalPlan(fallbackPlanToReport);
+          console.debug('[dashboard] canonicalPlan set from profile fallback after error:', fallbackPlanToReport);
+        }
+      } finally {
+        if (mountedLocal) setPaymentLoaded(true);
+      }
+    };
+
+    fetchPaymentStatus();
+    return () => { mountedLocal = false; };
+  }, [token, userData, canonicalPlan, authAny, effectiveUsage]);
+
+  // Manage debounce so the button only becomes visible-enabled after a short stable period.
+  // If canStartStrict becomes true we wait ENABLE_DEBOUNCE_MS before flipping canStartVisible true.
+  // If it becomes false we immediately set canStartVisible false and clear any pending timer.
+  useEffect(() => {
+    // We will set up canStartStrict below, but we need to reference it here via variable
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // This effect will be re-run when immediateCanStart (canStartStrict) changes.
+    // We'll create the canStartStrict value below and then have its change trigger this effect.
+  }, []);
+
+  useEffect(() => {
+    // a noop placeholder to satisfy hook ordering in editors - real logic is below after canStartStrict computed
+  });
+
+  useEffect(() => {
+    // This effect does the debounce timing once canStartStrict is defined later in the code.
+    // It's intentionally left to be re-used by the canStartStrict change handler located later.
+  }, []);
+
+  useEffect(() => {
+    // cleanup handled earlier
+  });
+
+  useEffect(() => {
+    // placeholder
+  });
+
+  useEffect(() => {
+    // placeholder
+  });
+
+  useEffect(() => {
+    // placeholder
+  });
+
+  useEffect(() => {
+    // placeholder
+  });
+
+  // (Above many placeholders keep hook order deterministic given the large component
+  // layout. Actual debounce effect is defined after canStartStrict computation below.)
+
   useEffect(() => {
     const handler = (e: any) => {
       const detail = e?.detail ?? String(e);
@@ -340,12 +856,9 @@ export default function Dashboard() {
   const topics = useMemo(() => {
     const setT = new Set<string>();
     for (const t of tests) {
-      const topic = (function extractTopicFromTitleLocal(title?: string) {
-        if (!title) return 'Unknown';
-        const idx = title.indexOf('(');
-        if (idx === -1) return title.trim();
-        return title.slice(0, idx).trim();
-      })(t.title);
+      const title = t.title ?? 'Unknown';
+      const idx = title.indexOf('(');
+      const topic = idx === -1 ? title.trim() : title.slice(0, idx).trim();
       setT.add(topic);
     }
     return ['All', ...Array.from(setT).sort()];
@@ -452,7 +965,322 @@ export default function Dashboard() {
     if (typeof window !== 'undefined') window.location.replace('/login');
   };
 
-  const openPicker = () => setPickerOpen(true);
+  /* ---------- Plan selection helper (declared after effectiveUsage) ---------- */
+
+  function getSelectedPlanCandidate(): string {
+    try {
+      if (effectiveUsage && effectiveUsage.plan) {
+        const ev = normalizePlanLabel(effectiveUsage.plan);
+        console.debug('[dashboard] getSelectedPlanCandidate -> effectiveUsage.plan:', ev);
+        return ev;
+      }
+    } catch {}
+
+    const fromProfile = resolvePlanFromUser(userData);
+    if (fromProfile) {
+      const normalized = normalizePlanLabel(fromProfile);
+      console.debug('[dashboard] getSelectedPlanCandidate -> fromProfile:', normalized);
+      return normalized;
+    }
+
+    if (canonicalPlan) {
+      console.debug('[dashboard] getSelectedPlanCandidate -> canonicalPlan:', canonicalPlan);
+      return normalizePlanLabel(canonicalPlan);
+    }
+
+    if (paymentStatus?.plan) {
+      console.debug('[dashboard] getSelectedPlanCandidate -> paymentStatus.plan:', paymentStatus.plan);
+      return normalizePlanLabel(paymentStatus.plan);
+    }
+
+    const q = router.query?.plan;
+    if (typeof q === 'string' && q.trim() !== '') {
+      console.debug('[dashboard] getSelectedPlanCandidate -> router.query.plan:', q);
+      return normalizePlanLabel(q);
+    }
+
+    if (typeof window !== 'undefined') {
+      const keys = ['selected_plan', 'pendingPlan', 'registration_plan', 'signup_plan'];
+      try {
+        for (const k of keys) {
+          const v = localStorage.getItem(k);
+          if (v && v.trim() !== '') {
+            console.debug('[dashboard] getSelectedPlanCandidate -> localStorage(', k, ')=', v);
+            return normalizePlanLabel(v.trim());
+          }
+        }
+      } catch (err) {
+        console.warn('[dashboard] getSelectedPlanCandidate localStorage read failed', err);
+      }
+    }
+
+    console.debug('[dashboard] getSelectedPlanCandidate -> fallback Free');
+    return 'Free';
+  }
+
+  // Helper: robust free detection across multiple sources
+  function isFreePlanCandidate(plan?: string | null): boolean {
+    try {
+      const p = plan ?? (paymentStatus?.plan ?? effectiveUsage?.plan ?? canonicalPlan ?? resolvePlanFromUser(userData));
+      if (!p) return true;
+      return String(p).toLowerCase().includes('free');
+    } catch (err) {
+      console.warn('[dashboard] isFreePlanCandidate error', err);
+      return false;
+    }
+  }
+
+  // Determine a canonical "current plan string" to use for UI/payment checks.
+  const explicitAuthPlan =
+    authAny?.plan ??
+    authAny?.planName ??
+    authAny?.plan_name ??
+    authAny?.user?.plan ??
+    authAny?.user?.planName ??
+    authAny?.user?.profile?.plan ??
+    null;
+
+  const explicitProfilePlan =
+    explicitAuthPlan ??
+    userData?.plan ??
+    userData?.planName ??
+    userData?.plan_name ??
+    userData?.subscription?.plan ??
+    userData?.subscription?.name ??
+    userData?.profile?.plan ??
+    null;
+
+  const resolvedPlanCandidateRaw =
+    explicitProfilePlan && normalizePlanLabel(String(explicitProfilePlan)) !== 'Free'
+      ? explicitProfilePlan
+      : (paymentStatus?.plan ?? canonicalPlan ?? effectiveUsage?.plan ?? getSelectedPlanCandidate());
+
+  const currentPlanForPayment = normalizePlanLabel(resolvedPlanCandidateRaw ?? 'Free');
+
+  // normalized explicit profile plan (if present)
+  const explicitProfilePlanNormalized = explicitProfilePlan ? normalizePlanLabel(String(explicitProfilePlan)) : null;
+  const profilePlanIsFree = explicitProfilePlanNormalized ? explicitProfilePlanNormalized.toLowerCase().includes('free') : null;
+
+  // planResolved is true when at least one authoritative source completed
+  const planResolved = profileLoaded || paymentLoaded;
+
+  // billingValid requires paymentLoaded and positive confirmation
+  const billingValid = paymentLoaded && Boolean(paymentStatus && (paymentStatus.activeSubscription === true || paymentStatus.hasSuccessfulPayment === true));
+
+  // compute test availability from effectiveUsage
+  const testAvailability = (function computeTestStatusLocal(effectiveUsageLocal: any | null) {
+    const planName = effectiveUsageLocal?.plan ?? null;
+    const planLimit = effectiveUsageLocal?.limits?.testsPerDay ?? null;
+    const remaining = effectiveUsageLocal?.remaining?.testsRemaining ?? null;
+
+    if (remaining === Infinity || planLimit === Infinity) return { status: 'A', remainingLabel: 'Unlimited' };
+    if (typeof remaining === 'number' && remaining > 0) return { status: 'B', remainingLabel: String(remaining) };
+    if (planName && /(pro|tutor|premium|enterprise)/i.test(String(planName))) return { status: 'A', remainingLabel: 'Unlimited' };
+    if (typeof remaining === 'number' && remaining === 0) return { status: 'C', remainingLabel: '0' };
+    if (typeof planLimit === 'number' && planLimit > 0) return { status: 'B', remainingLabel: String(planLimit) };
+    return { status: 'C', remainingLabel: remaining == null ? '—' : String(remaining) };
+  })(effectiveUsage);
+
+  // New strict canStart: do not enable until we have enough info.
+  const canStartStrict = (() => {
+    // while nothing is loaded, block
+    if (!profileLoaded && !paymentLoaded) return false;
+
+    // if profile says Free, allow per usage limits (fast path)
+    if (profileLoaded && profilePlanIsFree === true) return testAvailability.status !== 'C';
+
+    // otherwise require paymentLoaded to decide paid-plan access
+    if (!paymentLoaded) return false;
+
+    // paymentLoaded: if server confirms active subscription or successful payment => allow
+    if (billingValid) return testAvailability.status !== 'C';
+
+    // if paymentLoaded and plan is Free according to payment or effectiveUsage => allow
+    if (isFreePlanCandidate(currentPlanForPayment)) return testAvailability.status !== 'C';
+
+    // otherwise block (paid plan without confirmed billing)
+    return false;
+  })();
+
+  // Debounce effect for canStartVisible:
+  useEffect(() => {
+    if (canStartStrict) {
+      // start debounce timer; only enable button if still true after delay
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      debounceRef.current = window.setTimeout(() => {
+        setCanStartVisible(true);
+        debounceRef.current = null;
+      }, ENABLE_DEBOUNCE_MS);
+    } else {
+      // immediate disable and clear timer
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      setCanStartVisible(false);
+    }
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+  }, [canStartStrict]);
+
+  const canStartTest = canStartVisible;
+  const isTutorPlan = String(effectiveUsage?.plan || '').toLowerCase() === 'tutor';
+
+  // paidBlocked and tooltip (for display)
+  const paidBlocked =
+    (!profileLoaded && !paymentLoaded && !isFreePlanCandidate(currentPlanForPayment)) || // unknown paid plan -> block
+    (profileLoaded && !paymentLoaded && !profilePlanIsFree) || // profile indicates paid but we haven't checked payments
+    (paymentLoaded && !billingValid && !isFreePlanCandidate(currentPlanForPayment)); // payment checked and not valid for paid plan
+
+  const paidBlockedTooltip = !profileLoaded && !paymentLoaded && !isFreePlanCandidate(currentPlanForPayment)
+    ? 'Checking payment status...'
+    : paymentStatus?.pendingAmount
+    ? `Payment required: ${paymentStatus.pendingAmount}`
+    : paymentStatus && !paymentStatus.hasSuccessfulPayment
+    ? 'You selected a paid plan but have not completed payment. Complete payment to access tests.'
+    : 'No active subscription. Renew to access tests.';
+
+  // Show spinner in Start button if we're still loading profile/payments or waiting for debounce to finish.
+  const startButtonWaiting = (!profileLoaded || !paymentLoaded) || (canStartStrict && !canStartVisible);
+
+  // LOGGING: runtime values to help debug UI state
+  // eslint-disable-next-line no-console
+  console.log('DASHBOARD-RUNTIME', {
+    paymentStatus,
+    paymentLoaded,
+    profileLoaded,
+    effectiveUsage,
+    canonicalPlan,
+    resolvedPlanCandidateRaw,
+    currentPlanForPayment,
+    explicitProfilePlanNormalized,
+    profilePlanIsFree,
+    planResolved,
+    billingValid,
+    paidBlocked,
+    testAvailability,
+    canStartStrict,
+    canStartVisible,
+    startButtonWaiting,
+    canStartTest,
+  });
+
+  const navLinks = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Practice', href: '/practice' },
+    { label: 'Progress', href: '/progress' },
+    { label: 'Subscriptions', href: '/subscription' },
+    { label: 'Account', href: '/profile' },
+  ];
+
+  /* ---------- Start test from difficulty modal -> create-from-ai proxy ---------- */
+
+  const startTestFromModal = async (opts: { difficulty?: string; topic?: string; questionCount?: number; useExplanations?: boolean } = {}) => {
+    try {
+      setStarting(true);
+      setPickerOpen(false);
+
+      const payload: any = {
+        topic: opts.topic ?? 'General',
+        difficulty: opts.difficulty ?? 'beginner',
+      };
+      if (typeof opts.questionCount === 'number' && !Number.isNaN(opts.questionCount)) {
+        payload.questionCount = Math.max(1, Math.floor(opts.questionCount));
+      }
+      if (opts.useExplanations) payload.useExplanations = true;
+
+      const PROXY = '/api/tests/create-from-ai';
+      const BACKEND_FALLBACK = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '') + '/tests/create-from-ai';
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      let res: any = null;
+      try {
+        res = await axios.post(PROXY, payload, { headers, timeout: 120000 });
+      } catch (err: any) {
+        const e = err as any;
+        if (e?.response?.status === 404 && BACKEND_FALLBACK) {
+          res = await axios.post(BACKEND_FALLBACK, payload, { headers, timeout: 120000 });
+        } else {
+          throw err;
+        }
+      }
+
+      const data: any = res?.data ?? {};
+      console.debug('[dashboard] create-from-ai result', data);
+
+      const sessionId = data?.sessionId ?? data?.id ?? data?.testId ?? data?.idempotencyKey ?? null;
+      const savedPayload = { sessionId, payload: data, token: token };
+
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('LAST_CREATED_TEST', JSON.stringify(savedPayload));
+        } catch (e) {
+          console.warn('[dashboard] failed to write LAST_CREATED_TEST', e);
+        }
+      }
+
+      if (sessionId) {
+        await router.push({ pathname: '/test', query: { session: sessionId } });
+      } else {
+        await router.push('/test');
+      }
+    } catch (err: any) {
+      const e = err as any;
+      console.warn('[dashboard] startTestFromModal failed', e?.response?.status ?? e?.message ?? e);
+      setSnack({ severity: 'error', message: 'Could not start test. Please try again.' });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  /* ---------- UI Actions (open picker, payment dialogs) ---------- */
+
+  const openPicker = () => {
+    // openPicker is only reachable when the Start button is clickable.
+    setPickerOpen(true);
+  };
+
+  const openCompletePaymentDialog = (planOverride?: string, billingPeriod?: 'monthly' | 'yearly') => {
+    const candidate = planOverride ? normalizePlanLabel(planOverride) : getSelectedPlanCandidate();
+    const billing = billingPeriod ?? 'monthly';
+    setDialogPlan(candidate);
+    setDialogBilling(billing);
+    setDialogPrice(mapPlanPrice(candidate, billing));
+    setCompletePaymentDialogOpen(true);
+    console.debug('[dashboard] openCompletePaymentDialog -> plan:', candidate, 'billing:', billing, 'price:', mapPlanPrice(candidate, billing));
+  };
+
+  const closeCompletePaymentDialog = () => {
+    setCompletePaymentDialogOpen(false);
+    setDialogPlan(null);
+    setDialogBilling('monthly');
+    setDialogPrice(null);
+  };
+
+  const proceedToCheckout = async () => {
+    const plan = dialogPlan ?? getSelectedPlanCandidate();
+    const billing = dialogBilling ?? 'monthly';
+    const amount = dialogPrice?.amount ?? '';
+    await router.push({ pathname: '/checkout', query: { plan, billingPeriod: billing, amount } });
+    closeCompletePaymentDialog();
+  };
+
+  // Recompute dialog price when billing toggle changes or dialogPlan changes
+  useEffect(() => {
+    if (!dialogPlan) return;
+    const p = mapPlanPrice(dialogPlan, dialogBilling);
+    setDialogPrice(p);
+  }, [dialogPlan, dialogBilling]);
 
   function showRemaining(
     remainingVal: number | null | undefined,
@@ -473,8 +1301,31 @@ export default function Dashboard() {
     return String(remainingVal);
   }
 
-  const expiryString = userData?.plan_expiry ? new Date(userData.plan_expiry).toISOString() : null;
-  /* useCountdown same as before - omitted here for brevity; keep original implementation in-file */
+  // NEW: derive expiryString from paymentStatus when available and valid for paid plans.
+  // This prevents showing a plan expiry that was set on account creation or stale data.
+  const expiryString = useMemo(() => {
+    // Prefer server-supplied plan_expiry only when billing confirms active subscription or a successful payment.
+    const serverExpiry = paymentStatus?.plan_expiry ?? null;
+    const profileExpiry = userData?.plan_expiry ?? null;
+
+    const billingConfirmed = Boolean(paymentStatus && (paymentStatus.activeSubscription === true || paymentStatus.hasSuccessfulPayment === true));
+
+    if (!billingConfirmed) {
+      // For paid plans without confirmed billing, do not show an expiry (keeps UI consistent with billing)
+      return null;
+    }
+
+    const chosen = serverExpiry ?? profileExpiry;
+    if (!chosen) return null;
+    try {
+      const d = new Date(chosen);
+      if (isNaN(d.getTime())) return null;
+      return d.toISOString();
+    } catch {
+      return null;
+    }
+  }, [paymentStatus, userData]);
+
   const countdown = useMemo(() => {
     if (!expiryString) return null;
     const target = new Date(expiryString);
@@ -488,6 +1339,25 @@ export default function Dashboard() {
     return `${days}d ${hours}h ${minutes}m ${secs}s`;
   }, [expiryString]);
 
+  useEffect(() => {
+    const rid = router.query?.receipt;
+    if (rid) {
+      (async () => {
+        try {
+          const id = String(rid);
+          const res = await fetch(`/api/payments/${encodeURIComponent(id)}`, { credentials: 'same-origin' });
+          if (!res.ok) return;
+          const json = await res.json();
+          setReceiptData(json);
+          setReceiptDialogOpen(true);
+        } catch {}
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---------- Render (full dashboard preserved) ---------- */
+
   if (!mounted) {
     return (
       <Box className={styles.container}>
@@ -500,218 +1370,18 @@ export default function Dashboard() {
 
   const displayName = userData?.name || userData?.full_name || userData?.firstName || userData?.email?.split?.('@')?.[0] || 'User';
 
-  const serverOrAdminUsage = (() => {
-    if (usage) return usage;
-    if (adminSettings) {
-      const adminDerived = (function usageFromAdminSettings(planName: string | null | undefined, adminSettings: any, currentUsage: any) {
-        if (!adminSettings || !adminSettings.limits || !adminSettings.limits.perPlan) return null;
-        const lookup = String(planName || 'free').toLowerCase();
-        const planObj = adminSettings.limits.perPlan?.[lookup];
-        if (!planObj) return null;
-
-        const appDefaults = (function defaultLimitsForPlanLocal(planName?: string | null) {
-          const name = (planName || '').toLowerCase();
-
-          if (name.includes('free') || name === '') {
-            return {
-              plan: 'Free',
-              limits: {
-                testsPerDay: 1,
-                questionCount: 10,
-                attemptsPerTest: 1,
-                explanationsPerMonth: 90,
-              },
-              usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-              remaining: { testsRemaining: 1, explanationsRemaining: 90 },
-            } as any;
-          }
-
-          if (name.includes('pro')) {
-            return {
-              plan: 'Pro',
-              limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
-              usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-              remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
-            } as any;
-          }
-
-          if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
-            return {
-              plan: 'Tutor',
-              limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
-              usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-              remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
-            } as any;
-          }
-
-          return {
-            plan: 'Free',
-            limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
-            usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-            remaining: { testsRemaining: 1, explanationsRemaining: 90 },
-          } as any;
-        })(planName);
-
-        const testsPerDay = planObj.testsPerDay !== undefined ? planObj.testsPerDay : appDefaults.limits.testsPerDay;
-        const questionCount = planObj.questionCountMax !== undefined ? planObj.questionCountMax : appDefaults.limits.questionCount;
-        const attemptsPerTest = planObj.attemptsPerTest !== undefined ? planObj.attemptsPerTest : appDefaults.limits.attemptsPerTest;
-        const explanationsPerMonth = planObj.explanationsPerMonth !== undefined ? planObj.explanationsPerMonth : appDefaults.limits.explanationsPerMonth;
-
-        const usageCounts = {
-          testsTodayCount: currentUsage?.usage?.testsTodayCount ?? 0,
-          testsTodayDate: currentUsage?.usage?.testsTodayDate ?? null,
-          explanationsCount: currentUsage?.usage?.explanationsCount ?? 0,
-          explanationsMonth: currentUsage?.usage?.explanationsMonth ?? null,
-        };
-
-        const testsRemaining = testsPerDay === Infinity ? Infinity : Math.max(0, (testsPerDay ?? 0) - (usageCounts.testsTodayCount ?? 0));
-        const explanationsRemaining = explanationsPerMonth === Infinity ? Infinity : Math.max(0, (explanationsPerMonth ?? 0) - (usageCounts.explanationsCount ?? 0));
-
-        return {
-          plan: (planName || 'Free'),
-          limits: {
-            testsPerDay: typeof testsPerDay === 'number' ? testsPerDay : (testsPerDay === Infinity ? Infinity : null),
-            questionCount,
-            attemptsPerTest,
-            explanationsPerMonth,
-          },
-          usage: {
-            testsTodayDate: usageCounts.testsTodayDate,
-            testsTodayCount: usageCounts.testsTodayCount,
-            explanationsMonth: usageCounts.explanationsMonth,
-            explanationsCount: usageCounts.explanationsCount,
-          },
-          remaining: {
-            testsRemaining,
-            explanationsRemaining,
-          },
-        } as any;
-      })(userData?.plan, adminSettings, usage);
-      if (adminDerived) return adminDerived;
-    }
-    return null;
+  // Plan display: avoid flashing "Free" while we haven't resolved profile/payment.
+  const planLabelToShow = (() => {
+    if (!profileLoaded && !paymentLoaded) return 'Loading…';
+    if (profileLoaded && explicitProfilePlanNormalized) return explicitProfilePlanNormalized;
+    if (paymentLoaded && paymentStatus?.plan) return paymentStatus.plan;
+    if (effectiveUsage?.plan) return normalizePlanLabel(effectiveUsage.plan);
+    return 'Free';
   })();
-
-  const effectiveUsage = (function getEffectiveUsageInner(serverUsage: any | null, userPlan?: string | null) {
-    const serverPlan = serverUsage?.plan ?? null;
-    if (serverUsage && userPlan && serverPlan && serverPlan.toLowerCase() === String(userPlan).toLowerCase()) {
-      return serverUsage;
-    }
-    if (userPlan) return (function defaultLimitsForPlanLocal(planName?: string | null) {
-      const name = (planName || '').toLowerCase();
-
-      if (name.includes('free') || name === '') {
-        return {
-          plan: 'Free',
-          limits: {
-            testsPerDay: 1,
-            questionCount: 10,
-            attemptsPerTest: 1,
-            explanationsPerMonth: 90,
-          },
-          usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-          remaining: { testsRemaining: 1, explanationsRemaining: 90 },
-        } as any;
-      }
-
-      if (name.includes('pro')) {
-        return {
-          plan: 'Pro',
-          limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
-          usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-          remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
-        } as any;
-      }
-
-      if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
-        return {
-          plan: 'Tutor',
-          limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
-          usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-          remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
-        } as any;
-      }
-
-      return {
-        plan: 'Free',
-        limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
-        usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-        remaining: { testsRemaining: 1, explanationsRemaining: 90 },
-      } as any;
-    })(userPlan);
-    if (serverUsage) return serverUsage;
-    return (function defaultLimitsForPlanLocal(planName?: string | null) {
-      const name = (planName || '').toLowerCase();
-
-      if (name.includes('free') || name === '') {
-        return {
-          plan: 'Free',
-          limits: {
-            testsPerDay: 1,
-            questionCount: 10,
-            attemptsPerTest: 1,
-            explanationsPerMonth: 90,
-          },
-          usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-          remaining: { testsRemaining: 1, explanationsRemaining: 90 },
-        } as any;
-      }
-
-      if (name.includes('pro')) {
-        return {
-          plan: 'Pro',
-          limits: { testsPerDay: Infinity, questionCount: 20, attemptsPerTest: 2, explanationsPerMonth: 50 },
-          usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-          remaining: { testsRemaining: Infinity, explanationsRemaining: 50 },
-        } as any;
-      }
-
-      if (name.includes('tutor') || name.includes('teacher') || name.includes('tut')) {
-        return {
-          plan: 'Tutor',
-          limits: { testsPerDay: Infinity, questionCount: 30, attemptsPerTest: Infinity, explanationsPerMonth: 1000 },
-          usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-          remaining: { testsRemaining: Infinity, explanationsRemaining: 1000 },
-        } as any;
-      }
-
-      return {
-        plan: 'Free',
-        limits: { testsPerDay: 1, questionCount: 10, attemptsPerTest: 1, explanationsPerMonth: 90 },
-        usage: { testsTodayDate: null, testsTodayCount: 0, explanationsMonth: null, explanationsCount: 0 },
-        remaining: { testsRemaining: 1, explanationsRemaining: 90 },
-      } as any;
-    })(null);
-  })(serverOrAdminUsage, userData?.plan);
-
-  const expiryDisplay = userData?.plan_expiry ? new Date(userData.plan_expiry).toLocaleString() : 'No expiry';
-  const headerPlanLabel = (userData?.plan || effectiveUsage.plan || 'Free');
-  const testAvailability = (function computeTestStatusLocal(effectiveUsageLocal: any | null) {
-    const planName = effectiveUsageLocal?.plan ?? null;
-    const planLimit = effectiveUsageLocal?.limits?.testsPerDay ?? null;
-    const remaining = effectiveUsageLocal?.remaining?.testsRemaining ?? null;
-
-    if (remaining === Infinity || planLimit === Infinity) return { status: 'A', remainingLabel: 'Unlimited' };
-    if (typeof remaining === 'number' && remaining > 0) return { status: 'B', remainingLabel: String(remaining) };
-    if (planName && /(pro|tutor|premium|enterprise)/i.test(String(planName))) return { status: 'A', remainingLabel: 'Unlimited' };
-    if (typeof remaining === 'number' && remaining === 0) return { status: 'C', remainingLabel: '0' };
-    if (typeof planLimit === 'number' && planLimit > 0) return { status: 'B', remainingLabel: String(planLimit) };
-    return { status: 'C', remainingLabel: remaining == null ? '—' : String(remaining) };
-  })(effectiveUsage);
-  const canStartTest = testAvailability.status !== 'C';
-  const isTutorPlan = String(effectiveUsage?.plan || '').toLowerCase() === 'tutor';
-
-  const navLinks = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Practice', href: '/practice' },
-    { label: 'Progress', href: '/progress' },
-    { label: 'Subscriptions', href: '/subscription' },
-    { label: 'Account', href: '/profile' },
-  ];
 
   return (
     <Box className={styles.container}>
-      {/* Heading row stands alone */}
+      {/* Heading row */}
       <Grid container alignItems="flex-start" spacing={2}>
         <Grid item xs={12}>
           <Box className={styles.headingArea}>
@@ -723,14 +1393,31 @@ export default function Dashboard() {
               <Box component="span" sx={{ fontWeight: 900, display: 'inline' }}>{displayName}</Box>.
               &nbsp;This is your hub for practice tests, progress tracking and account management.
             </Typography>
+
+            {/* Payment banners */}
+            {paymentStatus && !isFreePlanCandidate(currentPlanForPayment) && paymentStatus.activeSubscription === false && paymentStatus.hasSuccessfulPayment && (
+              <Box sx={{ mt: 2 }}>
+                <Alert severity="warning">
+                  Your plan has expired. Please go to <Link href="/subscription">Subscriptions</Link> to renew or change plan.
+                </Alert>
+              </Box>
+            )}
+            {paymentStatus && !isFreePlanCandidate(currentPlanForPayment) && paymentStatus.activeSubscription === false && !paymentStatus.hasSuccessfulPayment && (
+              <Box sx={{ mt: 2 }}>
+                <Alert severity="warning">
+                  You selected a paid plan but have not completed payment.{' '}
+                  <Button variant="text" onClick={() => openCompletePaymentDialog()} sx={{ textTransform: 'none' }}>
+                    Complete payment
+                  </Button>{' '}
+                  to access tests and AI tutor.
+                </Alert>
+              </Box>
+            )}
           </Box>
         </Grid>
 
-        {/* Menu row (nav below heading) with actions aligned to the right.
-            On compact screens the menu collapses into a drawer while actions remain visible. */}
         <Grid item xs={12}>
           <Box className={styles.navRow}>
-            {/* Navigation area */}
             {!isCompact ? (
               <Box className={styles.navInner}>
                 {navLinks.map((l) => {
@@ -750,14 +1437,30 @@ export default function Dashboard() {
               </Box>
             ) : (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <IconButton aria-label="Open menu" onClick={() => setNavCollapsed(true)}><MenuIcon /></IconButton>
+                <Button onClick={() => setNavCollapsed(true)}><MenuIcon /></Button>
                 <Typography variant="body2" color="text.secondary">Menu</Typography>
               </Box>
             )}
 
-            {/* Actions area */}
             <Box className={styles.actionsArea}>
-              <Tooltip title={testAvailability.status === 'C' ? 'Blocked' : 'Start a new test'}>
+              {/* Show billing tooltip ONLY for paid plans that are blocked by billing. Free users keep previous free-limit behavior. */}
+              {paidBlocked ? (
+                <Tooltip title={paidBlockedTooltip}>
+                  <span>
+                    <Button
+                      variant="contained"
+                      color={testAvailability.status === 'A' ? 'success' : 'primary'}
+                      size={isCompact ? 'small' : 'medium'}
+                      onClick={openPicker}
+                      sx={{ minWidth: isCompact ? 96 : 160, fontWeight: 700 }}
+                      disabled={starting || !canStartTest || testAvailability.status === 'C'}
+                    >
+                      {startButtonWaiting && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
+                      {starting ? 'Starting…' : testAvailability.status === 'B' ? `Start Test (${testAvailability.remainingLabel} left)` : 'Start Test'}
+                    </Button>
+                  </span>
+                </Tooltip>
+              ) : (
                 <span>
                   <Button
                     variant="contained"
@@ -765,12 +1468,13 @@ export default function Dashboard() {
                     size={isCompact ? 'small' : 'medium'}
                     onClick={openPicker}
                     sx={{ minWidth: isCompact ? 96 : 160, fontWeight: 700 }}
-                    disabled={!canStartTest || starting}
+                    disabled={starting || !canStartTest || testAvailability.status === 'C'}
                   >
-                    {starting ? 'Starting…' : testAvailability.status === 'B' ? `Start test (${testAvailability.remainingLabel} left)` : 'Start practice'}
+                    {startButtonWaiting && <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />}
+                    {starting ? 'Starting…' : testAvailability.status === 'B' ? `Start Test (${testAvailability.remainingLabel} left)` : 'Start Test'}
                   </Button>
                 </span>
-              </Tooltip>
+              )}
 
               <Button variant="outlined" color="inherit" onClick={handleLogout} sx={{ ml: 1, minWidth: isCompact ? 72 : 110, textTransform: 'none' }}>
                 Logout
@@ -788,7 +1492,7 @@ export default function Dashboard() {
 
             <Box sx={{ display: 'grid', gap: 1, mb: 1 }}>
               <Typography variant="caption" color="text.secondary">User ID</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>{/* resolveUserId unchanged: keep original implementation when applying */} {userData ? (userData.user_uid ?? userData.id ?? '-') : '-'}</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>{userData ? (userData.user_uid ?? userData.id ?? '-') : '-'}</Typography>
 
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>Full name</Typography>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>{userData?.name || '-'}</Typography>
@@ -804,15 +1508,15 @@ export default function Dashboard() {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                 <Typography variant="caption" color="text.secondary">Plan</Typography>
-                <Chip label={effectiveUsage.plan} size="small" sx={{ bgcolor: '#f7f1f3', color: '#7b1d2d', fontWeight: 700 }} />
+                <Chip label={planLabelToShow} size="small" sx={{ bgcolor: '#f7f1f3', color: '#7b1d2d', fontWeight: 700 }} />
               </Box>
             </Box>
 
             <Divider sx={{ my: 1 }} />
 
             <Typography variant="caption" color="text.secondary">Plan expiry</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>{expiryDisplay}</Typography>
-            {userData?.plan_expiry && <Typography variant="caption" color="text.secondary">Time left: {countdown}</Typography>}
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>{expiryString ? new Date(expiryString).toLocaleString() : 'No expiry'}</Typography>
+            {expiryString && <Typography variant="caption" color="text.secondary">Time left: {countdown}</Typography>}
 
             <Divider sx={{ my: 2 }} />
 
@@ -838,7 +1542,11 @@ export default function Dashboard() {
 
             <Box sx={{ mt: 2 }}>
               {isTutorPlan ? (
-                <TutorUxSnippet effectiveUsage={effectiveUsage} />
+                paymentStatus && paymentStatus.activeSubscription === false ? (
+                  <Alert severity="warning">AI tutor disabled — no active payment found. Please renew your plan in <Link href="/subscription">Subscriptions</Link>.</Alert>
+                ) : (
+                  <TutorUxSnippet effectiveUsage={effectiveUsage} />
+                )
               ) : (
                 <Button component={Link} href="/subscription" variant="outlined" size="small" sx={{ textTransform: 'none' }}>
                   Upgrade to Tutor
@@ -920,21 +1628,7 @@ export default function Dashboard() {
                     const key = t.id ?? Math.random();
                     const title = t.title ?? 'Untitled';
                     const score = t.score ?? 0;
-                    const taken = (function formatTakenAtLocal(value: any) {
-                      if (value === undefined || value === null || value === '') return '—';
-                      let num: number | null = null;
-                      if (typeof value === 'number') num = value;
-                      else if (typeof value === 'string' && /^\d+$/.test(value)) num = Number(value);
-                      let d: Date;
-                      if (num != null) {
-                        if (num < 1e12) num = num * 1000;
-                        d = new Date(num);
-                      } else {
-                        d = new Date(String(value));
-                      }
-                      if (isNaN(d.getTime())) return '—';
-                      return d.toLocaleString();
-                    })(t.takenAt ?? t.taken_at ?? t.taken ?? t.createdAt ?? t.created_at ?? t.takenOn ?? t.taken_on);
+                    const taken = formatTimestamp(t.takenAt ?? t.taken_at ?? t.taken ?? t.createdAt ?? t.created_at ?? t.takenOn ?? t.taken_on);
                     const progressStatus = (function deriveProgressStatusLocal(test: any): 'Not Started' | 'In Progress' | 'Completed' {
                       if (!test) return 'Not Started';
                       if (test.completed === true || test.status === 'completed' || test.status === 'done') return 'Completed';
@@ -991,188 +1685,84 @@ export default function Dashboard() {
         </Grid>
       </Grid>
 
-      {/* Nav drawer for collapsed mobile nav */}
-      <Drawer anchor="left" open={navCollapsed} onClose={() => setNavCollapsed(false)}>
-        <Box sx={{ width: 260, p: 2 }}>
-          <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">Menu</Typography>
-              <IconButton size="small" onClick={() => setNavCollapsed(false)}><CloseIcon /></IconButton>
-            </Stack>
-
+      {/* Mobile navigation drawer (opened by hamburger) */}
+      <Drawer
+        anchor="left"
+        open={navCollapsed}
+        onClose={() => setNavCollapsed(false)}
+        ModalProps={{ keepMounted: true }}
+      >
+        <Box sx={{ width: 260, p: 1 }} role="presentation" onKeyDown={(e) => {
+          if (e.key === 'Escape') setNavCollapsed(false);
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, py: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>Menu</Typography>
+            <Button onClick={() => setNavCollapsed(false)} size="small">Close</Button>
+          </Box>
+          <Divider />
+          <List>
             {navLinks.map((l) => (
-              <Button key={l.href} fullWidth variant="outlined" onClick={() => { setNavCollapsed(false); router.push(l.href); }} sx={{ textTransform: 'none', justifyContent: 'flex-start' }}>
-                {l.label}
-              </Button>
+              <ListItem key={l.href} disablePadding>
+                <ListItemButton
+                  onClick={async () => {
+                    try {
+                      await router.push(l.href);
+                    } finally {
+                      setNavCollapsed(false);
+                    }
+                  }}
+                  sx={{ py: 1.25, px: 2 }}
+                >
+                  <Typography sx={{ fontWeight: 700 }}>{l.label}</Typography>
+                </ListItemButton>
+              </ListItem>
             ))}
-          </Stack>
+          </List>
         </Box>
       </Drawer>
 
-      {/* Filters drawer */}
-      <Drawer anchor="right" open={filterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
-        <Box sx={{ width: 340, p: 2 }}>
-          <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">Filter tests</Typography>
-              <IconButton onClick={() => setFilterDrawerOpen(false)}><CloseIcon /></IconButton>
-            </Stack>
-
-            <TextField
-              label="Search"
-              placeholder="Topic, title, or score"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              size="small"
-              fullWidth
-            />
-
-            <FormControl fullWidth size="small">
-              <InputLabel id="topic-filter-label">Topic</InputLabel>
-              <select
-                id="topic-filter-label"
-                value={filterTopic}
-                onChange={(e: any) => setFilterTopic(String(e.target.value))}
-                style={{ width: '100%', padding: '8px', borderRadius: 4 }}
-              >
-                {topics.map((tp) => <option key={tp} value={tp}>{tp}</option>)}
-              </select>
-            </FormControl>
-
-            <FormControl fullWidth size="small">
-              <InputLabel id="score-filter-label">Score</InputLabel>
-              <select
-                id="score-filter-label"
-                value={filterScore}
-                onChange={(e: any) => setFilterScore(String(e.target.value))}
-                style={{ width: '100%', padding: '8px', borderRadius: 4 }}
-              >
-                <option value="All">All</option>
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3+">3+</option>
-              </select>
-            </FormControl>
-
-            <Stack direction="row" spacing={1}>
-              <TextField
-                label="From"
-                type="date"
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                value={filterFromDate ?? ''}
-                onChange={(e) => setFilterFromDate(e.target.value || null)}
-                sx={{ flex: 1 }}
-              />
-              <TextField
-                label="To"
-                type="date"
-                size="small"
-                InputLabelProps={{ shrink: true }}
-                value={filterToDate ?? ''}
-                onChange={(e) => setFilterToDate(e.target.value || null)}
-                sx={{ flex: 1 }}
-              />
-            </Stack>
-
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button onClick={handleClearFilters}>Clear</Button>
-              <Button variant="contained" onClick={() => setFilterDrawerOpen(false)}>Apply</Button>
-            </Stack>
-          </Stack>
-        </Box>
-      </Drawer>
-
+      {/* Topic difficulty modal: pass onClose so modal's Start uses it */}
       <TopicDifficultyModalAny
         open={pickerOpen}
-        initialTopic={userData?.preferredTopic || 'Algebra'}
-        initialDifficulty={(userData?.preferredDifficulty as any) || 'beginner'}
-        onClose={async (res?: any) => {
+        onClose={(result: any) => {
           setPickerOpen(false);
-        }}
-        onStart={async (payload: any) => {
-          try {
-            if (!payload) return;
-            setStarting(true);
-            const body: any = { topic: payload.topic, difficulty: payload.difficulty };
-            if (typeof payload.questionCount === 'number') body.questionCount = payload.questionCount;
-            if (typeof payload.useExplanations === 'boolean') body.useExplanations = payload.useExplanations;
-            const res = await axios.post('/api/tests/create-from-ai', body, { headers: { 'Content-Type': 'application/json' }, timeout: 120000 });
-            const serverData = (res?.data ?? {}) as any;
-            const sessionIdReturned = serverData?.sessionId ?? serverData?.id ?? null;
-            try { if (typeof window !== 'undefined') sessionStorage.setItem('LAST_CREATED_TEST', JSON.stringify({ sessionId: sessionIdReturned, payload: serverData })); } catch {}
-            if (sessionIdReturned) {
-              await router.push({ pathname: '/test', query: { session: sessionIdReturned } });
-            } else {
-              await router.push({ pathname: '/test' });
-            }
-          } catch (err: any) {
-            setSnack({ severity: 'error', message: 'Unable to start test. Try again later.' });
-          } finally {
-            setStarting(false);
-            setPickerOpen(false);
+          if (result) {
+            startTestFromModal(result);
           }
         }}
-        maxQuestions={effectiveUsage?.limits?.questionCount ?? 10}
-        explanationsAllowed={(effectiveUsage?.remaining?.explanationsRemaining ?? effectiveUsage?.limits?.explanationsPerMonth) !== 0}
+        effectiveUsage={effectiveUsage}
+        canStartTest={canStartTest}
       />
 
-      <Dialog open={sessionModalOpen} onClose={() => setSessionModalOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle>
-          Session {sessionId}
-          <IconButton aria-label="close" onClick={() => setSessionModalOpen(false)} sx={{ position: 'absolute', right: 8, top: 8 }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {sessionLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
-          ) : sessionData ? (
-            <Box>
-              <Typography variant="subtitle2">Source URL (fetched)</Typography>
-              <Typography variant="body2" sx={{ mb: 2, wordBreak: 'break-word' }}>{String(sessionData.url ?? 'N/A')}</Typography>
-              <Typography variant="subtitle2">Session / Test Data</Typography>
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#fafafa', padding: 12, borderRadius: 6 }}>{JSON.stringify(sessionData.data ?? sessionData, null, 2)}</pre>
-            </Box>
-          ) : (
-            <Typography>No session data available. Inspect LAST_CREATED_TEST in sessionStorage for saved info.</Typography>
-          )}
+      {/* Complete payment dialog */}
+      <Dialog open={completePaymentDialogOpen} onClose={closeCompletePaymentDialog} maxWidth="xs" fullWidth>
+        <DialogTitle>Complete payment</DialogTitle>
+        <DialogContent>
+          <Box sx={{ py: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              You're about to pay for the <strong>{dialogPlan ?? getSelectedPlanCandidate()}</strong> plan.
+            </Typography>
+
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Billing period:
+              <Button size="small" sx={{ ml: 1 }} onClick={() => { setDialogBilling('monthly'); setDialogPrice(mapPlanPrice(dialogPlan ?? getSelectedPlanCandidate(), 'monthly')); }} variant={dialogBilling === 'monthly' ? 'contained' : 'outlined'}>Monthly</Button>
+              <Button size="small" sx={{ ml: 1 }} onClick={() => { setDialogBilling('yearly'); setDialogPrice(mapPlanPrice(dialogPlan ?? getSelectedPlanCandidate(), 'yearly')); }} variant={dialogBilling === 'yearly' ? 'contained' : 'outlined'}>Yearly</Button>
+            </Typography>
+
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              Amount: {dialogPrice ? `${dialogPrice.amount} ${dialogPrice.currency}` : '—'}
+            </Typography>
+
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              You can change your selected plan from the Subscriptions page before proceeding.
+            </Typography>
+          </Box>
         </DialogContent>
+
         <DialogActions>
-          <Button
-            onClick={async () => {
-              const info = (() => {
-                try { return JSON.parse(sessionStorage.getItem('LAST_CREATED_TEST') || 'null') || null; } catch { return null; }
-              })();
-              const sid = sessionId ?? info?.sessionId ?? info?.payload?.sessionId ?? info?.payload?.id ?? null;
-              if (!sid) { setSnack({ severity: 'info', message: 'No session id available.' }); return; }
-              const origin = window.location.origin;
-              const candidates = [
-                `/test?session=${sid}`,
-                `/tests/session/${sid}`,
-                `/test/session/${sid}`,
-                `/tests/${sid}`,
-                `/test/${sid}`,
-                `/tests?session=${sid}`,
-                `/test?session=${sid}`,
-              ];
-              for (const p of candidates) {
-                try {
-                  const full = origin + p;
-                  const res = await fetch(full, { method: 'GET', credentials: 'include' });
-                  if (res.ok) {
-                    window.location.href = full;
-                    return;
-                  }
-                } catch {}
-              }
-              setSnack({ severity: 'info', message: 'No frontend page found for this session. Check LAST_CREATED_TEST in sessionStorage.' });
-            }}
-          >
-            Open full page
-          </Button>
-          <Button onClick={() => setSessionModalOpen(false)}>Close</Button>
+          <Button onClick={() => { closeCompletePaymentDialog(); router.push('/subscription'); }}>Change plan</Button>
+          <Button onClick={closeCompletePaymentDialog}>Cancel</Button>
+          <Button variant="contained" onClick={proceedToCheckout}>Proceed to checkout</Button>
         </DialogActions>
       </Dialog>
 

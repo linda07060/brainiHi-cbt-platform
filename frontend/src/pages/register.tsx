@@ -36,23 +36,12 @@ const QUESTION_OPTIONS: { key: string; label: string }[] = [
   { key: 'best_friend', label: 'What is the first name of your best friend?' },
 ];
 
-// Plans with structured pricing for monthly/yearly
-const PLANS: {
-  key: string;
-  label: string;
-  monthlyPrice: string | null;
-  yearlyPrice: string | null;
-  caption?: string;
-  recommended?: boolean;
-}[] = [
+const PLANS = [
   { key: 'Free', label: 'FREE', monthlyPrice: null, yearlyPrice: null, caption: 'Try Mode — Free' },
   { key: 'Pro', label: 'PRO', monthlyPrice: '$12.99', yearlyPrice: '$79.99', recommended: true },
   { key: 'Tutor', label: 'TUTOR', monthlyPrice: '$24.99', yearlyPrice: '$149.99' },
 ];
 
-/**
- * Permissive server response shape for register endpoint.
- */
 interface RegisterResponse {
   access_token?: string;
   token?: string;
@@ -73,11 +62,8 @@ export default function Register() {
   const [recoveryPassphrase, setRecoveryPassphrase] = useState('');
   const [recoveryConfirm, setRecoveryConfirm] = useState('');
   const [plan, setPlan] = useState('Free');
-
-  // Billing period toggle: 'monthly' or 'yearly'
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
-  // security questions: we store 3 selections and answers
   const [q1, setQ1] = useState(QUESTION_OPTIONS[0].key);
   const [q2, setQ2] = useState(QUESTION_OPTIONS[1].key);
   const [q3, setQ3] = useState(QUESTION_OPTIONS[2].key);
@@ -89,27 +75,21 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // Age confirmation
   const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   useEffect(() => {
-    // Prefill email from query param (used by Google onboarding flow)
     if (router.isReady && router.query.email) {
       setEmail(String(router.query.email));
     }
   }, [router.isReady, router.query]);
 
-  // Prefill plan from query param if present (case-insensitive)
   useEffect(() => {
     if (!router.isReady) return;
     const p = router.query.plan;
     if (!p) return;
     const planParam = String(p).toLowerCase();
     const found = PLANS.find((pl) => pl.key.toLowerCase() === planParam);
-    if (found) {
-      setPlan(found.key);
-    }
+    if (found) setPlan(found.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.query.plan]);
 
@@ -120,12 +100,10 @@ export default function Register() {
     if (!password || password.length < 8) return 'Password must be at least 8 characters';
     if (!recoveryPassphrase || recoveryPassphrase.length < 8) return 'Recovery passphrase must be at least 8 characters';
     if (recoveryPassphrase !== recoveryConfirm) return 'Recovery passphrase and confirmation do not match';
-    // security answers
     const keys = [q1, q2, q3];
     const setKeys = new Set(keys);
     if (setKeys.size < 3) return 'Please choose three distinct security questions';
     if (!a1.trim() || !a2.trim() || !a3.trim()) return 'Please provide answers to all security questions';
-    // age confirmation
     if (!ageConfirmed) return 'You must confirm that you are at least the minimum required age to register';
     return null;
   }
@@ -159,8 +137,7 @@ export default function Register() {
         ageConfirmed: true,
       };
 
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, payload);
-
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || ''}/auth/register`, payload);
       const data = (res?.data ?? {}) as RegisterResponse;
 
       const token = data.access_token ?? data.token ?? data.accessToken ?? null;
@@ -177,25 +154,38 @@ export default function Register() {
       }
 
       setSuccess(true);
-      setMsg('Account created. Redirecting to dashboard…');
+      setMsg('Account created.');
       setOpen(true);
 
+      // If paid plan, route to checkout so payment completes
+      const chosenPlan = (payload.plan || 'Free').toString().toLowerCase();
+      if (chosenPlan !== 'free') {
+        const qs = new URLSearchParams({
+          plan: payload.plan ?? 'Pro',
+          billingPeriod: payload.billingPeriod ?? 'monthly',
+        }).toString();
+        setTimeout(() => {
+          router.push(`/checkout?${qs}`);
+        }, 700);
+        return;
+      }
+
+      // Free plan -> dashboard
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1200);
+      }, 700);
     } catch (error: any) {
       const serverData = (error?.response?.data ?? {}) as RegisterResponse;
       setMsg(serverData.message || error?.response?.data?.message || 'Registration failed. Please try again.');
       setSuccess(false);
       setOpen(true);
-      // eslint-disable-next-line no-console
       console.error('Registration error', error?.response || error);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const selectedPlan = PLANS.find(p => p.key === plan);
+  const selectedPlan = PLANS.find((p) => p.key === plan);
 
   const getPriceLabel = (p: typeof PLANS[number]) => {
     if (!p) return '';
@@ -214,11 +204,11 @@ export default function Register() {
         </Typography>
 
         <form onSubmit={handleSubmit} className={styles.form} noValidate>
-          <TextField label="Full name" required fullWidth value={name} onChange={e => setName(e.target.value)} className={styles.field} />
-          <TextField label="Email" required fullWidth type="email" value={email} onChange={e => setEmail(e.target.value)} className={styles.field} />
-          <TextField label="Phone number" required fullWidth value={phone} onChange={e => setPhone(e.target.value)} className={styles.field} />
+          <TextField label="Full name" required fullWidth value={name} onChange={(e) => setName(e.target.value)} className={styles.field} />
+          <TextField label="Email" required fullWidth type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={styles.field} />
+          <TextField label="Phone number" required fullWidth value={phone} onChange={(e) => setPhone(e.target.value)} className={styles.field} />
 
-          <TextField label="Password" required fullWidth type="password" value={password} onChange={e => setPassword(e.target.value)} helperText="Min 8 characters" className={styles.field} />
+          <TextField label="Password" required fullWidth type="password" value={password} onChange={(e) => setPassword(e.target.value)} helperText="Min 8 characters" className={styles.field} />
 
           <Box sx={{ mt: 1, mb: 1 }}>
             <Typography variant="subtitle2" mb={1}>Select three security questions</Typography>
@@ -228,7 +218,7 @@ export default function Register() {
                 <FormControl fullWidth size="small" className={styles.fieldSelect}>
                   <InputLabel id="q1-label">Question 1</InputLabel>
                   <Select labelId="q1-label" label="Question 1" value={q1} onChange={(e) => setQ1(String(e.target.value))}>
-                    {QUESTION_OPTIONS.map(opt => <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>)}
+                    {QUESTION_OPTIONS.map((opt) => <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>
@@ -237,7 +227,7 @@ export default function Register() {
                 <FormControl fullWidth size="small" className={styles.fieldSelect}>
                   <InputLabel id="q2-label">Question 2</InputLabel>
                   <Select labelId="q2-label" label="Question 2" value={q2} onChange={(e) => setQ2(String(e.target.value))}>
-                    {QUESTION_OPTIONS.map(opt => <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>)}
+                    {QUESTION_OPTIONS.map((opt) => <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>
@@ -246,21 +236,20 @@ export default function Register() {
                 <FormControl fullWidth size="small" className={styles.fieldSelect}>
                   <InputLabel id="q3-label">Question 3</InputLabel>
                   <Select labelId="q3-label" label="Question 3" value={q3} onChange={(e) => setQ3(String(e.target.value))}>
-                    {QUESTION_OPTIONS.map(opt => <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>)}
+                    {QUESTION_OPTIONS.map((opt) => <MenuItem key={opt.key} value={opt.key}>{opt.label}</MenuItem>)}
                   </Select>
                 </FormControl>
               </Grid>
             </Grid>
 
-            <TextField label="Answer to question 1" required fullWidth value={a1} onChange={e => setA1(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
-            <TextField label="Answer to question 2" required fullWidth value={a2} onChange={e => setA2(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
-            <TextField label="Answer to question 3" required fullWidth value={a3} onChange={e => setA3(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
+            <TextField label="Answer to question 1" required fullWidth value={a1} onChange={(e) => setA1(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
+            <TextField label="Answer to question 2" required fullWidth value={a2} onChange={(e) => setA2(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
+            <TextField label="Answer to question 3" required fullWidth value={a3} onChange={(e) => setA3(e.target.value)} className={styles.field} sx={{ mt: 1 }} />
           </Box>
 
           <TextField label="Recovery passphrase" required fullWidth type="password" value={recoveryPassphrase} onChange={(e) => setRecoveryPassphrase(e.target.value)} helperText="Keep this secret; used for account recovery" className={styles.field} />
           <TextField label="Confirm recovery passphrase" required fullWidth type="password" value={recoveryConfirm} onChange={(e) => setRecoveryConfirm(e.target.value)} className={styles.field} />
 
-          {/* Billing period toggle */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
             <Typography variant="subtitle2">Billing</Typography>
             <ToggleButtonGroup
@@ -284,7 +273,7 @@ export default function Register() {
           <FormControl fullWidth size="small" className={styles.fieldSelect} sx={{ mt: 2 }}>
             <InputLabel id="plan-label">Select plan</InputLabel>
             <Select labelId="plan-label" label="Select plan" value={plan} onChange={(e) => setPlan(String(e.target.value))}>
-              {PLANS.map(p => (
+              {PLANS.map((p) => (
                 <MenuItem
                   key={p.key}
                   value={p.key}
@@ -323,7 +312,6 @@ export default function Register() {
             </Typography>
           </FormControl>
 
-          {/* Paddle / Subscription transparency section */}
           <Box sx={{ mt: 2, mb: 1, p: 2, borderRadius: 1, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
             {selectedPlan && selectedPlan.key !== 'Free' ? (
               <>
@@ -335,7 +323,7 @@ export default function Register() {
                   Cancellation: <strong>Cancel anytime</strong>. Cancelling prevents future renewals but does not automatically refund past periods — see our Refund Policy.
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                  Payments are securely processed by Paddle. VAT/GST may apply based on your location.
+                  Payments are securely processed by PayPal. VAT/GST may apply based on your location.
                 </Typography>
               </>
             ) : (
@@ -343,12 +331,10 @@ export default function Register() {
             )}
           </Box>
 
-          {/* Age confirmation component (required) */}
           <Box sx={{ mt: 1 }}>
             <AgeConfirmationCheckbox checked={ageConfirmed} onChange={setAgeConfirmed} />
           </Box>
 
-          {/* Terms + privacy acknowledgement required by Paddle (placed near the submit button) */}
           <Box sx={{ mt: 1, mb: 1, fontSize: 13, color: 'text.secondary' }}>
             By continuing, you agree to our{' '}
             <Link href="/terms" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</Link>{' '}
@@ -362,7 +348,6 @@ export default function Register() {
 
         </form>
 
-        {/* Support & help visibility (Paddle requirement) */}
         <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>
           Need help? Contact: <a href="mailto:support@brainihi.com">support@brainihi.com</a>
         </Typography>
@@ -372,7 +357,6 @@ export default function Register() {
         </Typography>
       </Box>
 
-      {/* Transparency + legal blocks */}
       <AITransparency />
       <LegalDisclaimer />
 

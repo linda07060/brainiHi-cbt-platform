@@ -58,11 +58,10 @@ export default function SubscriptionControls({
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get<Sub | null>("/api/paddle/subscription", { headers: apiHeaders });
+        const res = await axios.get<Sub | null>("/api/payments/subscription", { headers: apiHeaders });
         if (!mounted) return;
         setSub(res.data ?? null);
       } catch (err: any) {
-        // fallback: use minimal plan & expiry if subscription endpoint not present
         if (!mounted) return;
         setError("Unable to load subscription details.");
         setSub({
@@ -95,7 +94,7 @@ export default function SubscriptionControls({
     setBusy(true);
     setError(null);
     try {
-      const res = await axios.post<Sub>("/api/paddle/cancel", {}, { headers: apiHeaders });
+      const res = await axios.post<Sub>("/api/payments/cancel", {}, { headers: apiHeaders });
       setSub(res.data ?? null);
       setConfirmOpen(false);
       if (typeof onCancelled === "function") onCancelled();
@@ -110,7 +109,7 @@ export default function SubscriptionControls({
     setBusy(true);
     setError(null);
     try {
-      const res = await axios.post<Sub>("/api/paddle/reactivate", {}, { headers: apiHeaders });
+      const res = await axios.post<Sub>("/api/payments/reactivate", {}, { headers: apiHeaders });
       setSub(res.data ?? null);
       setReactivateOpen(false);
     } catch (err: any) {
@@ -124,8 +123,7 @@ export default function SubscriptionControls({
     setBusy(true);
     setError(null);
     try {
-      // explicitly type response so TS knows .data.url exists (optional)
-      const res = await axios.post<{ url?: string }>("/api/paddle/portal", {}, { headers: apiHeaders });
+      const res = await axios.post<{ url?: string }>("/api/payments/portal", {}, { headers: apiHeaders });
       const url = res?.data?.url ?? null;
       if (url) window.open(url, "_blank");
       else setError("Billing portal unavailable.");

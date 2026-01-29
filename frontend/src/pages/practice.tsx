@@ -2,15 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Box,
   Button,
-  Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   Grid,
-  IconButton,
   Paper,
   Stack,
   Typography,
@@ -20,12 +17,12 @@ import {
   Alert,
   FormControlLabel,
   Switch,
+  Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import FlagIcon from '@mui/icons-material/Flag';
-import MenuIcon from '@mui/icons-material/Menu';
-import CloseIcon from '@mui/icons-material/Close';
 import Link from 'next/link';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -34,7 +31,7 @@ import TopicDifficultyModal from '../components/TopicDifficultyModal';
 import styles from '../styles/Practice.module.css';
 import Spinner from '../components/Spinner';
 
-/* ---------- Helpers (unchanged) ---------- */
+/* ---------- Helpers ---------- */
 
 function getLocalAuthTokenFromStorage(): string | null {
   if (typeof window === 'undefined') return null;
@@ -46,6 +43,17 @@ function getLocalAuthTokenFromStorage(): string | null {
   } catch {
     return null;
   }
+}
+
+function normalizePlanLabel(plan?: string | null): string {
+  if (!plan) return 'Free';
+  const p = String(plan).trim();
+  if (p === '') return 'Free';
+  const low = p.toLowerCase();
+  if (low.includes('tutor')) return 'Tutor';
+  if (low.includes('pro')) return 'Pro';
+  if (low.includes('free')) return 'Free';
+  return p.charAt(0).toUpperCase() + p.slice(1);
 }
 
 function defaultLimitsForPlan(planName?: string | null) {
@@ -91,10 +99,43 @@ function computeTestStatus(effectiveUsage: any | null): { status: 'A' | 'B' | 'C
   return { status: 'C', remainingLabel: remaining == null ? '—' : String(remaining) };
 }
 
+/* small price & limits helpers mirrored from subscription page */
+function mapPlanPrice(plan?: string, billingPeriod?: string) {
+  const p = (plan || 'Pro').toString().toLowerCase();
+  if (p.includes('pro')) {
+    if (billingPeriod === 'yearly') return { amount: '99.00', currency: 'USD' };
+    return { amount: '12.99', currency: 'USD' };
+  }
+  if (p.includes('tutor')) {
+    if (billingPeriod === 'yearly') return { amount: '199.00', currency: 'USD' };
+    return { amount: '24.99', currency: 'USD' };
+  }
+  return { amount: '0.00', currency: 'USD' };
+}
+
+function getPlanLimits(plan: string): string[] {
+  const p = String(plan || '').toLowerCase();
+  if (p === 'pro') {
+    return ['Unlimited tests', '15–20 questions per test', '2 attempts for each test', '50 AI explanations per month', 'No time limits'];
+  }
+  if (p === 'tutor') {
+    return [
+      'Unlimited tests',
+      '20–30 questions per test',
+      'Unlimited attempts',
+      '1000+ AI explanations per month (soft limit)',
+      'Personal AI tutor in chat',
+      'Full analytics of weak areas',
+    ];
+  }
+  return ['1 test per day', '10 questions per test', '1 attempt only', 'Up to 3 AI explanations per day'];
+}
+
 /* ---------- Component ---------- */
 
 export default function PracticePage(): JSX.Element {
   const { user, token: tokenFromContext } = useAuth() as any;
+  const profile = user as any;
   const authAny = user as any;
 
   const token: string | null =
@@ -107,18 +148,27 @@ export default function PracticePage(): JSX.Element {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+  const dialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // hide footer while on this page
+  // Prevent hydration flash
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  // Hide footer on this page (restore on unmount)
   useEffect(() => {
-    const footer = typeof document !== 'undefined' ? document.querySelector('footer') : null;
-    const prevDisplay = footer ? footer.style.display : '';
-    if (footer) footer.style.display = 'none';
+    if (typeof document === 'undefined') return;
+    const footer = document.querySelector('footer') as HTMLElement | null;
+    if (!footer) return;
+    const prev = footer.style.display;
+    footer.style.display = 'none';
     return () => {
-      if (footer) footer.style.display = prevDisplay || '';
+      try {
+        footer.style.display = prev || '';
+      } catch {}
     };
   }, []);
 
-  // UI & session state
+  // UI state
   const [modalOpen, setModalOpen] = useState(false);
   const [startingFromModal, setStartingFromModal] = useState(false);
   const [session, setSession] = useState<any | null>(null);
@@ -130,15 +180,12 @@ export default function PracticePage(): JSX.Element {
   const [adaptiveMode, setAdaptiveMode] = useState(true);
   const [allowExplanations, setAllowExplanations] = useState(true);
 
-  // fetch usage & admin settings
+  // load usage & admin settings
   useEffect(() => {
-    let mounted = true;
+    let mountedLocal = true;
     const load = async () => {
       if (!token) {
-        if (mounted) {
-          setUsage(null);
-          setAdminSettings(null);
-        }
+        if (mountedLocal) { setUsage(null); setAdminSettings(null); }
         return;
       }
       try {
@@ -146,66 +193,313 @@ export default function PracticePage(): JSX.Element {
           axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/ai/usage`, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/admin/settings`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
-
-        if (!mounted) return;
-
+        if (!mountedLocal) return;
         const uRes = results[0];
         const aRes = results[1];
-
-        if ((uRes as PromiseSettledResult<any>).status === 'fulfilled') {
-          setUsage((uRes as PromiseFulfilledResult<any>).value?.data ?? null);
-        } else {
-          setUsage(null);
-        }
-
-        if ((aRes as PromiseSettledResult<any>).status === 'fulfilled') {
-          const fulfilled = (aRes as PromiseFulfilledResult<any>).value;
-          setAdminSettings(fulfilled?.data?.settings ?? null);
-        } else {
-          setAdminSettings(null);
-        }
+        setUsage((uRes as PromiseSettledResult<any>).status === 'fulfilled' ? (uRes as PromiseFulfilledResult<any>).value?.data ?? null : null);
+        setAdminSettings((aRes as PromiseSettledResult<any>).status === 'fulfilled' ? (aRes as PromiseFulfilledResult<any>).value?.data?.settings ?? null : null);
       } catch {
-        if (mounted) {
-          setUsage(null);
-          setAdminSettings(null);
-        }
+        if (mountedLocal) { setUsage(null); setAdminSettings(null); }
       }
     };
     load();
-    return () => { mounted = false; };
+    return () => { mountedLocal = false; };
   }, [token]);
 
-  // derive effective usage
   const effectiveUsage = useMemo(() => {
     if (usage) return usage;
     if (adminSettings) {
       try {
         const lookup = String(authAny?.plan || 'free').toLowerCase();
         const planObj = adminSettings?.limits?.perPlan?.[lookup];
-        if (planObj) {
-          const appDefaults = defaultLimitsForPlan(authAny?.plan);
-          const testsPerDay = planObj.testsPerDay ?? appDefaults.limits.testsPerDay;
-          const questionCount = planObj.questionCountMax ?? appDefaults.limits.questionCount;
-          const attemptsPerTest = planObj.attemptsPerTest ?? appDefaults.limits.attemptsPerTest;
-          const explanationsPerMonth = planObj.explanationsPerMonth ?? appDefaults.limits.explanationsPerMonth;
-          return {
-            plan: authAny?.plan ?? 'Free',
-            limits: { testsPerDay, questionCount, attemptsPerTest, explanationsPerMonth },
-            usage: { testsTodayCount: 0, testsTodayDate: null, explanationsCount: 0, explanationsMonth: null },
-            remaining: { testsRemaining: testsPerDay === Infinity ? Infinity : testsPerDay, explanationsRemaining: explanationsPerMonth === Infinity ? Infinity : explanationsPerMonth },
-          } as any;
-        }
-      } catch {}
+        if (!planObj) return defaultLimitsForPlan(authAny?.plan);
+        const appDefaults = defaultLimitsForPlan(authAny?.plan);
+        const testsPerDay = planObj.testsPerDay ?? appDefaults.limits.testsPerDay;
+        const questionCount = planObj.questionCountMax ?? appDefaults.limits.questionCount;
+        const attemptsPerTest = planObj.attemptsPerTest ?? appDefaults.limits.attemptsPerTest;
+        const explanationsPerMonth = planObj.explanationsPerMonth ?? appDefaults.limits.explanationsPerMonth;
+        return {
+          plan: authAny?.plan ?? 'Free',
+          limits: { testsPerDay, questionCount, attemptsPerTest, explanationsPerMonth },
+          usage: { testsTodayCount: 0, testsTodayDate: null, explanationsCount: 0, explanationsMonth: null },
+          remaining: { testsRemaining: testsPerDay === Infinity ? Infinity : testsPerDay, explanationsRemaining: explanationsPerMonth === Infinity ? Infinity : explanationsPerMonth },
+        } as any;
+      } catch {
+        return defaultLimitsForPlan(authAny?.plan);
+      }
     }
     return defaultLimitsForPlan(authAny?.plan);
   }, [usage, adminSettings, authAny?.plan]);
 
   const testAvailability = computeTestStatus(effectiveUsage);
-  const canStartTest = testAvailability.status !== 'C';
 
-  /* createTestSession (mirrors dashboard Start Test behavior) */
+  // Payment/profile flags
+  const [paymentStatus, setPaymentStatus] = useState<any | null>(null);
+  const [paymentLoaded, setPaymentLoaded] = useState<boolean>(false);
+  const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  const [canonicalPlan, setCanonicalPlan] = useState<string | null>(null);
+
+  // Robust payment check
+  useEffect(() => {
+    let mountedLocal = true;
+    setPaymentLoaded(false);
+    const loadPaymentStatus = async () => {
+      if (!token) {
+        if (mountedLocal) { setPaymentStatus(null); setPaymentLoaded(true); }
+        return;
+      }
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_URL || ''}/api/payments/check-access`;
+        let response: any = null;
+        try {
+          response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` }, validateStatus: () => true });
+        } catch (errUnknown) {
+          const e = errUnknown as any;
+          response = e?.response ?? null;
+        }
+
+        if (!mountedLocal) return;
+
+        if (!response || typeof response.status !== 'number') {
+          setPaymentStatus({ allowed: false, reason: 'no_response' });
+          setPaymentLoaded(true);
+          return;
+        }
+
+        if (response.status < 200 || response.status >= 300) {
+          const body = response.data;
+          if (body && typeof body === 'object') {
+            setPaymentStatus({ ...body, reason: `http_${response.status}` });
+          } else {
+            setPaymentStatus({ allowed: false, reason: `http_${response.status}`, raw: String(body ?? '') });
+          }
+          setPaymentLoaded(true);
+          return;
+        }
+
+        const body = response.data;
+        if (body && typeof body === 'object') {
+          setPaymentStatus(body);
+        } else {
+          setPaymentStatus({ allowed: false, reason: 'non_json_body', raw: String(body ?? '') });
+        }
+      } catch (err) {
+        if (mountedLocal) {
+          setPaymentStatus({ allowed: false, reason: 'request_error', raw: String(err ?? '') });
+        }
+      } finally {
+        if (mountedLocal) setPaymentLoaded(true);
+      }
+    };
+    loadPaymentStatus();
+    return () => { mountedLocal = false; };
+  }, [token, effectiveUsage, adminSettings, usage]);
+
+  // profileLoaded
+  useEffect(() => {
+    if (!token) { setProfileLoaded(true); return; }
+    if (profile) {
+      const planFromProfile = profile?.plan ?? profile?.planName ?? profile?.subscription?.plan ?? null;
+      if (planFromProfile) setCanonicalPlan(normalizePlanLabel(String(planFromProfile)));
+      setProfileLoaded(true);
+      return;
+    }
+    let mountedLocal = true;
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || ''}/auth/me`, { headers: { Authorization: `Bearer ${token}` }, validateStatus: () => true });
+        if (!mountedLocal) return;
+        const fetchedUser = (res?.data ?? {}) as any;
+        const planFromProfile = fetchedUser?.plan ?? fetchedUser?.planName ?? fetchedUser?.subscription?.plan ?? null;
+        if (planFromProfile) setCanonicalPlan(normalizePlanLabel(String(planFromProfile)));
+      } catch {
+        // ignore
+      } finally {
+        if (mountedLocal) setProfileLoaded(true);
+      }
+    };
+    fetchProfile();
+    return () => { mountedLocal = false; };
+  }, [token, profile]);
+
+  const explicitProfilePlanNormalized = useMemo(() => {
+    const explicit = profile?.plan ?? profile?.planName ?? canonicalPlan ?? null;
+    return explicit ? normalizePlanLabel(String(explicit)) : null;
+  }, [profile, canonicalPlan]);
+
+  const profilePlanIsFree = explicitProfilePlanNormalized ? explicitProfilePlanNormalized.toLowerCase().includes('free') : null;
+
+  const planResolved = profileLoaded || paymentLoaded;
+  const resolvedPlanCandidate = useMemo(() => {
+    if (!planResolved) return null;
+    if (explicitProfilePlanNormalized && explicitProfilePlanNormalized !== 'Free') return explicitProfilePlanNormalized;
+    const p = paymentStatus?.plan ?? paymentStatus?.planName ?? effectiveUsage?.plan ?? canonicalPlan ?? null;
+    return p ? normalizePlanLabel(String(p)) : 'Free';
+  }, [planResolved, explicitProfilePlanNormalized, paymentStatus, effectiveUsage, canonicalPlan]);
+
+  const allowedByPayment = Boolean(
+    paymentStatus?.allowed === true ||
+    paymentStatus?.activeSubscription === true ||
+    paymentStatus?.hasSuccessfulPayment === true
+  );
+
+  const billingValid = paymentLoaded && allowedByPayment;
+
+  const canStartStrict = useMemo(() => {
+    if (!profileLoaded && !paymentLoaded) return false;
+    if (profileLoaded && profilePlanIsFree === true) return testAvailability.status !== 'C';
+    if (!paymentLoaded) return false;
+    if (billingValid) return testAvailability.status !== 'C';
+    if (resolvedPlanCandidate && resolvedPlanCandidate.toLowerCase().includes('free')) return testAvailability.status !== 'C';
+    return false;
+  }, [profileLoaded, profilePlanIsFree, paymentLoaded, billingValid, resolvedPlanCandidate, testAvailability]);
+
+  // stable-visible
+  const [canStartVisible, setCanStartVisible] = useState<boolean>(false);
+  const stableTimerRef = useRef<number | null>(null);
+  const STABLE_MS = 1000;
+
+  useEffect(() => {
+    const ready = mounted && profileLoaded && paymentLoaded;
+    if (!ready) {
+      if (stableTimerRef.current) { clearTimeout(stableTimerRef.current); stableTimerRef.current = null; }
+      setCanStartVisible(false);
+      return;
+    }
+
+    if (canStartStrict && ready) {
+      if (stableTimerRef.current) { clearTimeout(stableTimerRef.current); stableTimerRef.current = null; }
+      stableTimerRef.current = window.setTimeout(() => {
+        setCanStartVisible(true);
+        stableTimerRef.current = null;
+      }, STABLE_MS);
+    } else {
+      if (stableTimerRef.current) { clearTimeout(stableTimerRef.current); stableTimerRef.current = null; }
+      setCanStartVisible(false);
+    }
+
+    return () => {
+      if (stableTimerRef.current) { clearTimeout(stableTimerRef.current); stableTimerRef.current = null; }
+    };
+  }, [mounted, profileLoaded, paymentLoaded, canStartStrict]);
+
+  const interactiveReady = mounted && profileLoaded && paymentLoaded;
+  const isPaidPlanCurrent = Boolean(resolvedPlanCandidate && !String(resolvedPlanCandidate).toLowerCase().includes('free'));
+  const interactive = canStartVisible && (!isPaidPlanCurrent || billingValid);
+  const canStartFinal = interactiveReady && interactive;
+
+  /* ---------- Complete payment modal state (mirror subscription) ---------- */
+  const [completePaymentDialogOpen, setCompletePaymentDialogOpen] = useState(false);
+  const [dialogPlan, setDialogPlan] = useState<string | null>(null);
+  const [dialogBilling, setDialogBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const [dialogPrice, setDialogPrice] = useState<{ amount: string; currency: string } | null>(null);
+
+  const openCompletePaymentDialog = (planOverride?: string, billingOverride?: 'monthly' | 'yearly') => {
+    const plan = planOverride ? normalizePlanLabel(planOverride) ?? resolvedPlanCandidate : resolvedPlanCandidate;
+    const billing = billingOverride ?? billingPeriodComputed;
+    setDialogPlan(plan);
+    setDialogBilling(billing);
+    setDialogPrice(mapPlanPrice(plan ?? resolvedPlanCandidate ?? 'Pro', billing));
+    setCompletePaymentDialogOpen(true);
+  };
+
+  const closeCompletePaymentDialog = () => {
+    setCompletePaymentDialogOpen(false);
+    setDialogPlan(null);
+    setDialogBilling('monthly');
+    setDialogPrice(null);
+  };
+
+  const proceedToCheckout = async () => {
+    const plan = dialogPlan ?? resolvedPlanCandidate ?? 'Pro';
+    const billing = dialogBilling ?? billingPeriodComputed;
+    const amount = dialogPrice?.amount ?? mapPlanPrice(plan, billing).amount;
+    try {
+      await router.push({ pathname: '/checkout', query: { plan, billingPeriod: billing, amount } });
+    } catch {
+      try { window.location.href = `${window.location.origin}/subscription`; } catch {}
+    } finally {
+      closeCompletePaymentDialog();
+    }
+  };
+
+  /* ---------- Change plan modal & handlers (copied from subscription) ---------- */
+  const [changeOpen, setChangeOpen] = useState(false);
+  const [changeSelectedPlan, setChangeSelectedPlan] = useState<string | null>(null);
+  const [allowedChangeTargets, setAllowedChangeTargets] = useState<string[] | null>(null);
+
+  const handleOpenChangePlan = () => {
+    const current = (resolvedPlanCandidate ?? 'Free').toLowerCase();
+    let allowed: string[] = [];
+    if (current === 'free') allowed = ['Pro', 'Tutor'];
+    else if (current === 'pro') allowed = ['Tutor'];
+    else if (current === 'tutor') allowed = ['Pro'];
+    else allowed = ['Pro', 'Tutor'];
+    setAllowedChangeTargets(allowed);
+    setChangeSelectedPlan(allowed.length > 0 ? allowed[0] : null);
+    setChangeOpen(true);
+    // close complete-payment dialog while changing plan
+    closeCompletePaymentDialog();
+  };
+
+  const confirmChangePlan = async () => {
+    if (!changeSelectedPlan) return;
+    setChangeOpen(false);
+    try {
+      const amount = mapPlanPrice(changeSelectedPlan, dialogBilling ?? billingPeriodComputed).amount;
+      await router.push({ pathname: '/checkout', query: { plan: changeSelectedPlan, billingPeriod: dialogBilling ?? billingPeriodComputed, amount } });
+    } catch (err) {
+      console.warn('navigate to checkout failed', err);
+      setSnack({ severity: 'error', message: 'Unable to navigate to checkout. Please try again.' });
+    }
+  };
+
+  /* ---------- Pending payment & billingPeriod detection ---------- */
+  const hasPendingPayment = useMemo(() => {
+    if (!resolvedPlanCandidate || String(resolvedPlanCandidate).toLowerCase() === 'free') return false;
+    if (paymentStatus) {
+      const active = typeof paymentStatus.activeSubscription === 'boolean' ? paymentStatus.activeSubscription : Boolean(paymentStatus.active ?? false);
+      const hasPaid = Boolean(paymentStatus.hasSuccessfulPayment ?? paymentStatus.hasSuccessful ?? false);
+      return !active && !hasPaid;
+    }
+    return true; // conservative
+  }, [resolvedPlanCandidate, paymentStatus]);
+
+  const billingFrequencyRaw = (paymentStatus?.billing_frequency ?? profile?.billing_frequency ?? 'monthly').toString().toLowerCase();
+  const billingPeriodComputed = billingFrequencyRaw.includes('year') ? 'yearly' : 'monthly';
+
+  const completePaymentTooltip = useMemo(() => {
+    if (hasPendingPayment) {
+      const amount = paymentStatus?.pendingAmount ?? paymentStatus?.amount ?? paymentStatus?.due_amount ?? null;
+      const plan = resolvedPlanCandidate ?? 'your plan';
+      if (amount) return `Pending payment: ${String(amount)} ${paymentStatus?.currency ?? 'USD'} for ${plan} (${billingPeriodComputed})`;
+      const fallback = mapPlanPrice(plan, billingPeriodComputed);
+      return `Pending payment: ${fallback.amount} ${fallback.currency} for ${plan} (${billingPeriodComputed})`;
+    }
+    return 'You have no pending payment.';
+  }, [hasPendingPayment, paymentStatus, resolvedPlanCandidate, billingPeriodComputed]);
+
+  // Tooltip for primary start/resume buttons
+  const startTooltip = useMemo(() => {
+    if (!interactiveReady) return 'Checking access…';
+    if (!canStartFinal) {
+      if (paymentStatus?.pendingAmount) return `You selected a paid plan — you have a pending payment of ${String(paymentStatus.pendingAmount)}. Please complete payment to continue.`;
+      return 'You selected a paid plan — please complete payment to continue.';
+    }
+    return '';
+  }, [interactiveReady, canStartFinal, paymentStatus]);
+
+  // debug
+  // eslint-disable-next-line no-console
+  console.log('PRACTICE-RUNTIME', { mounted, profileLoaded, paymentLoaded, interactiveReady, isPaidPlanCurrent, billingValid, canStartVisible, canStartFinal, resolvedPlanCandidate, paymentStatus, hasPendingPayment });
+
+  /* ---------- Actions (create/resume) ---------- */
   const createTestSession = useCallback(
     async (topic: string, difficulty: string, questionCount?: number, useExplanations?: boolean) => {
+      if (!canStartFinal) {
+        setSnack({ severity: 'warning', message: paymentStatus?.pendingAmount ? `You have a pending payment of ${String(paymentStatus.pendingAmount)}.` : 'You do not have access to start tests.' });
+        return;
+      }
       if (!token) {
         try { if (typeof window !== 'undefined') window.location.replace('/login'); } catch {}
         return;
@@ -277,11 +571,14 @@ export default function PracticePage(): JSX.Element {
         setModalOpen(false);
       }
     },
-    [token, router]
+    [token, router, canStartFinal, paymentStatus]
   );
 
-  /* resume / clear saved handlers */
   const handleResume = () => {
+    if (!canStartFinal) {
+      setSnack({ severity: 'warning', message: paymentStatus?.pendingAmount ? `You have a pending payment of ${String(paymentStatus.pendingAmount)}.` : 'You do not have access to resume tests.' });
+      return;
+    }
     try {
       const raw = sessionStorage.getItem('PRACTICE_SESSION');
       if (!raw) {
@@ -301,52 +598,87 @@ export default function PracticePage(): JSX.Element {
     }
   };
 
-  const handleClearSaved = () => {
-    try {
-      sessionStorage.removeItem('PRACTICE_SESSION');
-      setSnack({ severity: 'success', message: 'Saved session cleared' });
-    } catch {
-      setSnack({ severity: 'error', message: 'Unable to clear saved session' });
-    }
-  };
-
-  const startButtonLabel = startingFromModal
-    ? 'Starting…'
-    : testAvailability.status === 'B'
-      ? `Start test (${testAvailability.remainingLabel} left)`
-      : 'Start practice';
-
-  // Dialog fullScreen on very small screens
-  const dialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
+  /* ---------- Render ---------- */
   return (
-    <Box className={styles.pageContainer}>
+    <Box className={styles.pageContainer} sx={{ pb: { xs: 12, md: 0 } }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3, gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="h4" sx={{ fontWeight: 800 }}>Practice</Typography>
           <Typography color="text.secondary" sx={{ mt: 0.5 }}>Start guided practice, adaptive mode or resume a saved session.</Typography>
         </Box>
 
-        {/* NEW: actionsWrap centers and limits the width of the Start practice button on small screens */}
-        <div className={styles.actionsWrap}>
-          <Stack direction="row" spacing={2} alignItems="center" className={styles.actionsInner}>
-            <FormControlLabel control={<Switch checked={adaptiveMode} onChange={(_, v) => setAdaptiveMode(v)} />} label="Adaptive mode" />
-            <FormControlLabel control={<Switch checked={allowExplanations} onChange={(_, v) => setAllowExplanations(v)} />} label="Allow explanations" />
-          </Stack>
+        {/*
+          Responsive actions:
+          - On small screens buttons stack and are full-width for easier tapping.
+          - Toggles are shown in a compact row beneath the buttons on mobile.
+        */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            gap: 1,
+            width: { xs: '100%', sm: 'auto' },
+            justifyContent: { xs: 'center', md: 'flex-end' },
+          }}
+        >
+          {/* Buttons group */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' }, alignItems: 'center' }}>
+            <Tooltip title={startTooltip} enterDelay={150} leaveDelay={50}>
+              <span style={{ display: 'block', width: isMobile ? '90%' : 'auto', marginLeft: isMobile ? 'auto' : undefined, marginRight: isMobile ? 'auto' : undefined }}>
+                <Button
+                  onClick={() => { if (!canStartFinal) return; setModalOpen(true); }}
+                  disabled={!canStartFinal}
+                  variant="contained"
+                  color={testAvailability.status === 'A' ? 'success' : 'primary'}
+                  startIcon={startingFromModal ? <Spinner size={16} /> : undefined}
+                  fullWidth={isMobile}
+                  sx={{ fontWeight: 700, py: isMobile ? 1.25 : undefined, borderRadius: 2 }}
+                >
+                  {startingFromModal ? 'Starting…' : (testAvailability.status === 'B' ? `Start test (${testAvailability.remainingLabel} left)` : 'Start practice')}
+                </Button>
+              </span>
+            </Tooltip>
 
-          <Button
-            variant="contained"
-            color={testAvailability.status === 'A' ? 'success' : 'primary'}
-            onClick={() => setModalOpen(true)}
-            disabled={!canStartTest || startingFromModal}
-            startIcon={startingFromModal ? <Spinner size={16} /> : undefined}
-            sx={{ fontWeight: 700 }}
-            className={styles.startBtn}
-          >
-            {startButtonLabel}
-          </Button>
-        </div>
+            <Tooltip title={completePaymentTooltip} enterDelay={150} leaveDelay={50}>
+              <span style={{ display: 'block', width: isMobile ? '90%' : 'auto', marginLeft: isMobile ? 'auto' : undefined, marginRight: isMobile ? 'auto' : undefined }}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => openCompletePaymentDialog(resolvedPlanCandidate ?? undefined, billingPeriodComputed)}
+                  disabled={!hasPendingPayment}
+                  fullWidth={isMobile}
+                  sx={{ fontWeight: 700, py: isMobile ? 1.25 : undefined, borderRadius: 2 }}
+                >
+                  Complete payment
+                </Button>
+              </span>
+            </Tooltip>
+          </Box>
+
+          {/* Toggles: placed below buttons on small screens */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mt: { xs: 1, sm: 0 }, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+            <FormControlLabel
+              control={<Switch checked={adaptiveMode} onChange={(_, v) => setAdaptiveMode(v)} size="small" />}
+              label="Adaptive mode"
+              sx={{ '& .MuiFormControlLabel-label': { whiteSpace: 'nowrap' } }}
+            />
+            <FormControlLabel
+              control={<Switch checked={allowExplanations} onChange={(_, v) => setAllowExplanations(v)} size="small" />}
+              label="Allow explanations"
+              sx={{ '& .MuiFormControlLabel-label': { whiteSpace: 'nowrap' } }}
+            />
+          </Box>
+        </Box>
       </Stack>
+
+      {(!canStartFinal && paymentStatus?.pendingAmount && interactiveReady) && (
+        <Box sx={{ mb: 2 }}>
+          <Alert severity="warning" action={<Button color="inherit" size="small" onClick={() => openCompletePaymentDialog(resolvedPlanCandidate ?? undefined, billingPeriodComputed)}>Complete payment</Button>}>
+            You have a pending payment of <strong>{String(paymentStatus.pendingAmount)}</strong>. Complete payment to access tests.
+          </Alert>
+        </Box>
+      )}
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
@@ -355,10 +687,21 @@ export default function PracticePage(): JSX.Element {
             <Divider sx={{ my: 1 }} />
             <Typography color="text.secondary">You can resume a saved session on this device.</Typography>
             <Box sx={{ mt: 2 }}>
-              <div className={styles.buttonGroup}>
-                <Button variant="contained" onClick={handleResume} fullWidth={isMobile} sx={{ mr: isMobile ? 0 : 1 }}>Resume</Button>
-                <Button variant="outlined" onClick={handleClearSaved} fullWidth={isMobile}>Clear saved</Button>
-              </div>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                <Tooltip title={startTooltip} enterDelay={150} leaveDelay={50}>
+                  <span style={{ width: isMobile ? '100%' : undefined }}>
+                    <Button variant="contained" onClick={handleResume} disabled={!canStartFinal} fullWidth={isMobile} sx={{ mr: isMobile ? 0 : 1 }}>
+                      Resume
+                    </Button>
+                  </span>
+                </Tooltip>
+
+                <span style={{ width: isMobile ? '100%' : undefined }}>
+                  <Button variant="outlined" onClick={() => { sessionStorage.removeItem('PRACTICE_SESSION'); setSnack({ severity: 'success', message: 'Saved session cleared' }); }} fullWidth={isMobile}>
+                    Clear saved
+                  </Button>
+                </span>
+              </Stack>
             </Box>
           </Paper>
         </Grid>
@@ -369,42 +712,80 @@ export default function PracticePage(): JSX.Element {
             <Divider sx={{ my: 1 }} />
             <Typography color="text.secondary">Start a guided session (topic, difficulty, question count).</Typography>
             <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" onClick={() => setModalOpen(true)} disabled={!canStartTest} sx={{ fontWeight: 700 }} fullWidth={isMobile}>
-                Start guided session
-              </Button>
-              {!canStartTest && <Typography color="warning.main" sx={{ mt: 1 }}>You have no tests remaining for today on your plan.</Typography>}
+              <Tooltip title={startTooltip} enterDelay={150} leaveDelay={50}>
+                <span style={{ display: 'inline-block', width: '100%' }}>
+                  <Button variant="outlined" onClick={() => setModalOpen(true)} disabled={!canStartFinal} sx={{ fontWeight: 700 }} fullWidth={isMobile}>
+                    Start guided session
+                  </Button>
+                </span>
+              </Tooltip>
+
+              {!canStartFinal && interactiveReady && <Typography color="warning.main" sx={{ mt: 1 }}>You have no tests remaining for today on your plan or your payment is not active.</Typography>}
             </Box>
           </Paper>
         </Grid>
       </Grid>
 
-      {session && (
-        <Box sx={{ mt: 3 }}>
-          <Paper className={styles.panel} elevation={1}>
-            <Stack direction={isSmall ? 'column' : 'row'} justifyContent="space-between" alignItems="center" spacing={2}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, wordBreak: 'break-word' }}>{session.topic} — {session.difficulty}</Typography>
-              <Stack direction={isSmall ? 'column' : 'row'} spacing={1} alignItems="center" sx={{ width: isSmall ? '100%' : 'auto' }}>
-                <Button onClick={() => { setRunning((r) => !r); }} variant="outlined" startIcon={running ? <PauseIcon /> : <PlayArrowIcon />} fullWidth={isSmall}>
-                  {running ? 'Pause' : 'Resume'}
-                </Button>
-                <Button onClick={() => { try { sessionStorage.setItem('PRACTICE_SESSION', JSON.stringify(session)); setSnack({ severity: 'success', message: 'Saved' }); } catch { setSnack({ severity: 'error', message: 'Save failed' }); } }} variant="outlined" fullWidth={isSmall}>Save</Button>
-              </Stack>
-            </Stack>
+      {/* Complete payment dialog (mirrors subscription) */}
+      <Dialog open={completePaymentDialogOpen} onClose={closeCompletePaymentDialog} maxWidth="xs" fullWidth>
+        <DialogTitle>Complete payment</DialogTitle>
+        <DialogContent>
+          <Box sx={{ py: 1 }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              You're about to pay for the <strong>{dialogPlan ?? resolvedPlanCandidate}</strong> plan.
+            </Typography>
 
-            <Divider sx={{ my: 2 }} />
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              Billing period:
+              <Button size="small" sx={{ ml: 1 }} onClick={() => { setDialogBilling('monthly'); setDialogPrice(mapPlanPrice(dialogPlan ?? resolvedPlanCandidate ?? 'Pro', 'monthly')); }} variant={dialogBilling === 'monthly' ? 'contained' : 'outlined'}>Monthly</Button>
+              <Button size="small" sx={{ ml: 1 }} onClick={() => { setDialogBilling('yearly'); setDialogPrice(mapPlanPrice(dialogPlan ?? resolvedPlanCandidate ?? 'Pro', 'yearly')); }} variant={dialogBilling === 'yearly' ? 'contained' : 'outlined'}>Yearly</Button>
+            </Typography>
 
-            <Typography color="text.secondary">Questions: {session.questions?.length ?? 0}</Typography>
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="body2" color="text.secondary">This interactive view is intentionally compact — full review and grading happen on the Review/Test page (opened after creation).</Typography>
-              <Box sx={{ mt: 2 }}>
-                <Button variant="contained" component={Link} href={session.sessionId ? `/test?session=${session.sessionId}` : '/test'} fullWidth={isSmall}>
-                  Open test page
-                </Button>
-              </Box>
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              Amount: {dialogPrice ? `${dialogPrice.amount} ${dialogPrice.currency}` : '—'}
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleOpenChangePlan}>Change plan</Button>
+          <Button onClick={closeCompletePaymentDialog}>Cancel</Button>
+          <Button variant="contained" onClick={proceedToCheckout}>Proceed to checkout</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Change plan dialog (copied UI from subscription) */}
+      <Dialog open={changeOpen} onClose={() => setChangeOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Upgrade plan</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ mt: 1 }}>
+            <FormControl fullWidth>
+              <InputLabel id="change-plan-label">Plan</InputLabel>
+              <Select
+                labelId="change-plan-label"
+                value={changeSelectedPlan ?? ''}
+                label="Plan"
+                onChange={(e) => setChangeSelectedPlan(String(e.target.value))}
+              >
+                {(allowedChangeTargets ?? []).filter(p => normalizePlanLabel(p) !== normalizePlanLabel(resolvedPlanCandidate ?? '')).map((p) => (
+                  <MenuItem key={p} value={p}>{p}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2">Plan limits ({changeSelectedPlan ?? '—'})</Typography>
+              {(changeSelectedPlan ? getPlanLimits(changeSelectedPlan) : getPlanLimits(resolvedPlanCandidate ?? 'Pro')).map((l, i) => (
+                <Typography key={i} variant="body2">• {l}</Typography>
+              ))}
             </Box>
-          </Paper>
-        </Box>
-      )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setChangeOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={confirmChangePlan} disabled={!changeSelectedPlan}>Proceed to checkout</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullWidth maxWidth="sm" fullScreen={dialogFullScreen}>
         <DialogTitle>Start guided session</DialogTitle>
@@ -416,6 +797,10 @@ export default function PracticePage(): JSX.Element {
             onClose={(res?: any) => {
               setModalOpen(false);
               if (!res) return;
+              if (!canStartFinal) {
+                setSnack({ severity: 'warning', message: paymentStatus?.pendingAmount ? `You have a pending payment of ${String(paymentStatus.pendingAmount)}.` : 'You do not have access to start tests.' });
+                return;
+              }
               const maxQuestions = effectiveUsage?.limits?.questionCount ?? 10;
               const qCount = Math.min(Number(res.questionCount || maxQuestions), maxQuestions);
               createTestSession(res.topic, res.difficulty, qCount, allowExplanations && !!res.useExplanations);
@@ -437,9 +822,19 @@ export default function PracticePage(): JSX.Element {
         </Snackbar>
       )}
 
-      {/* Back to Dashboard button - responsive placement */}
-      <Box className={styles.floatingAction}>
-        <Button component={Link} href="/dashboard" variant="outlined" size={isSmall ? 'small' : 'medium'}>
+      {/* Floating "Back to Dashboard" adjusted for mobile so it doesn't overlap content */}
+      <Box
+        className={styles.floatingAction}
+        sx={{
+          position: { xs: 'fixed', md: 'static' },
+          bottom: { xs: 12, md: 'auto' },
+          left: { xs: '50%', md: 'auto' },
+          transform: { xs: 'translateX(-50%)', md: 'none' },
+          width: { xs: '92%', md: 'auto' },
+          zIndex: 1200,
+        }}
+      >
+        <Button component={Link} href="/dashboard" variant="outlined" size={isSmall ? 'small' : 'medium'} fullWidth={isSmall}>
           Back to Dashboard
         </Button>
       </Box>
